@@ -1,0 +1,58 @@
+import React from "react";
+import { Moods } from "./Moods";
+import { Property1_2 } from "./Property1_2";
+import { Property1_3 } from "./Property1_3";
+import { Property1_4 } from "./Property1_4";
+import { Property1_5 } from "./Property1_5";
+import close from "./close.png";
+
+export const MoodCard = () => {
+  return (
+    <div className="inline-flex flex-col items-start justify-center gap-10 px-8 py-6 relative bg-white border border-solid border-transparent">
+      <div className="flex items-start justify-between self-stretch w-full relative flex-[0_0_auto]">
+        <p className="relative w-fit mt-[-1.00px] [font-family:'Satoshi-Bold',Helvetica] font-bold text-dark-blue800 text-xl tracking-[0] leading-[normal]">
+          How you feel right now ?
+        </p>
+
+        <img className="relative w-6 h-6" alt="Close" src={close} />
+      </div>
+
+      <div className="inline-flex items-center gap-8 relative flex-[0_0_auto]">
+        <div className="flex flex-col w-[81px] items-center gap-8 relative">
+          <Moods className="!relative !w-[62.79px] !h-[62.79px]" />
+          <div className="relative w-fit font-satoshi-16px-regular font-[number:var(--satoshi-16px-regular-font-weight)] text-dark-blue800 text-[length:var(--satoshi-16px-regular-font-size)] text-center tracking-[var(--satoshi-16px-regular-letter-spacing)] leading-[var(--satoshi-16px-regular-line-height)] [font-style:var(--satoshi-16px-regular-font-style)]">
+            Very Happy
+          </div>
+        </div>
+
+        <div className="flex flex-col w-[81px] items-center gap-8 relative">
+          <Property1_2 className="!relative !w-[62.79px] !h-[62.79px]" />
+          <div className="relative w-fit font-satoshi-16px-regular font-[number:var(--satoshi-16px-regular-font-weight)] text-dark-blue800 text-[length:var(--satoshi-16px-regular-font-size)] text-center tracking-[var(--satoshi-16px-regular-letter-spacing)] leading-[var(--satoshi-16px-regular-line-height)] [font-style:var(--satoshi-16px-regular-font-style)]">
+            Happy
+          </div>
+        </div>
+
+        <div className="flex flex-col w-[81px] items-center gap-8 relative">
+          <Property1_3 className="!relative !w-[62.79px] !h-[62.79px]" />
+          <div className="relative w-fit font-satoshi-16px-regular font-[number:var(--satoshi-16px-regular-font-weight)] text-dark-blue800 text-[length:var(--satoshi-16px-regular-font-size)] text-center tracking-[var(--satoshi-16px-regular-letter-spacing)] leading-[var(--satoshi-16px-regular-line-height)] [font-style:var(--satoshi-16px-regular-font-style)]">
+            Neutral
+          </div>
+        </div>
+
+        <div className="flex flex-col w-[81px] items-center gap-8 relative">
+          <Property1_4 className="!relative !w-[62.79px] !h-[62.79px]" />
+          <div className="relative w-fit font-satoshi-16px-regular font-[number:var(--satoshi-16px-regular-font-weight)] text-dark-blue800 text-[length:var(--satoshi-16px-regular-font-size)] text-center tracking-[var(--satoshi-16px-regular-letter-spacing)] leading-[var(--satoshi-16px-regular-line-height)] [font-style:var(--satoshi-16px-regular-font-style)]">
+            Sad
+          </div>
+        </div>
+
+        <div className="flex flex-col w-[81px] items-center gap-8 relative">
+          <Property1_5 className="!relative !w-[62.79px] !h-[62.79px]" />
+          <div className="relative w-fit font-satoshi-16px-regular font-[number:var(--satoshi-16px-regular-font-weight)] text-dark-blue800 text-[length:var(--satoshi-16px-regular-font-size)] text-center tracking-[var(--satoshi-16px-regular-letter-spacing)] leading-[var(--satoshi-16px-regular-line-height)] [font-style:var(--satoshi-16px-regular-font-style)]">
+            Very Sad
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
