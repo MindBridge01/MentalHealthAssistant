@@ -19,7 +19,7 @@ function App() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   return (
     <div className="flex flex-col min-h-screen">
-      {location.pathname !== '/ai-chat' && <Navbar user={user} />}
+      {!['/ai-chat', '/questions', '/play-games'].includes(location.pathname) && <Navbar user={user} />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
