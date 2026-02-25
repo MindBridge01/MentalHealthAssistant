@@ -18,7 +18,7 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
 
       // Save user info + JWT
       localStorage.setItem('user', JSON.stringify(response.data));
-      localStorage.setItem('token', response.data.token); 
+      localStorage.setItem('token', response.data.token);
       console.log("JWT Token:", response.data.token);// <-- store JWT
 
       // Redirect based on role
@@ -55,7 +55,7 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
       // Redirect based on role
       if (response.data.role === 'doctor') navigate('/doctor-only-dashboard');
       else if (response.data.role === 'admin') navigate('/admin-dashboard');
-      else navigate('/profile-settings'); // first time users
+      else navigate('/'); // redirects standard users to home page
     } catch (err) {
       setError(err.response?.data?.error || 'Authentication failed');
     }
