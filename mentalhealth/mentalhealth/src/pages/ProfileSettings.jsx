@@ -1,12 +1,27 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ProfileSettings = ({ user: propUser }) => {
+  const navigate = useNavigate();
   // Get current user (from localStorage or prop)
   const user = JSON.parse(localStorage.getItem("user") || "null") || propUser;
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [profilePic, setProfilePic] = useState(user?.profilePic || "");
+  const [birthday, setBirthday] = useState(user?.birthday || "");
+  const [age, setAge] = useState(user?.age || "");
+  const [gender, setGender] = useState(user?.gender || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [address, setAddress] = useState(user?.address || "");
+  const [zipcode, setZipcode] = useState(user?.zipcode || "");
+  const [country, setCountry] = useState(user?.country || "");
+  const [city, setCity] = useState(user?.city || "");
+  const [guardianName, setGuardianName] = useState(user?.guardianName || "");
+  const [guardianPhone, setGuardianPhone] = useState(user?.guardianPhone || "");
+  const [guardianEmail, setGuardianEmail] = useState(user?.guardianEmail || "");
+  const [illnesses, setIllnesses] = useState(user?.illnesses || "");
+
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,13 +63,21 @@ const ProfileSettings = ({ user: propUser }) => {
           "Content-Type": "application/json",
           ...(user?._id && { "x-user-id": user._id }),
         },
-        body: JSON.stringify({ name, email, profilePic }),
+        body: JSON.stringify({
+          name, email, profilePic,
+          birthday, age, gender, phone, address, zipcode, country, city,
+          guardianName, guardianPhone, guardianEmail, illnesses
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to update profile");
 
       // Update localStorage with new user info
-      const updatedUser = { ...user, name, email, profilePic };
+      const updatedUser = {
+        ...user, name, email, profilePic,
+        birthday, age, gender, phone, address, zipcode, country, city,
+        guardianName, guardianPhone, guardianEmail, illnesses
+      };
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       alert("Profile updated successfully!");
@@ -65,51 +88,104 @@ const ProfileSettings = ({ user: propUser }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-3xl shadow-md p-8 mt-12">
-      <h2 className="font-['General_Sans'] font-semibold text-dark-blue900 text-2xl md:text-4xl mb-6 text-center">
-        Edit Profile
-      </h2>
-
-      <div className="flex flex-col items-center gap-4 mb-6">
-        <img
-          src={profilePic || "/assets/images/default-user.png"}
-          alt="Profile"
-          className="w-24 h-24 rounded-full object-cover border-2 border-purple-200"
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          disabled={uploading}
-        />
-        {uploading && <div className="text-blue-600">Uploading...</div>}
-      </div>
-
-      <input
-        className="p-3 border border-gray-300 rounded-md mb-4 w-full"
-        type="text"
-        placeholder="Full Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-
-      <input
-        className="p-3 border border-gray-300 rounded-md mb-4 w-full"
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
-
-      <button
-        className="w-full py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-bold"
-        onClick={handleSave}
-        disabled={uploading}
+    <div
+      className="w-full min-h-[calc(100vh-100px)] flex justify-center items-start pt-8 pb-12 cursor-pointer bg-slate-50"
+      onClick={() => navigate("/")}
+    >
+      <div
+        className="w-full max-w-4xl mx-auto bg-white rounded-[2rem] shadow-xl p-8 md:p-12 cursor-default mt-8 border border-gray-100"
+        onClick={(e) => e.stopPropagation()}
       >
-        Save Changes
-      </button>
+        <h2 className="font-['General_Sans'] font-semibold text-dark-blue900 text-3xl md:text-4xl mb-8 text-center">
+          Edit Profile
+        </h2>
+
+        <div className="flex flex-col items-center gap-4 mb-10">
+          <img
+            src={profilePic || "/assets/images/default-user.png"}
+            alt="Profile"
+            className="w-28 h-28 rounded-full object-cover border-4 border-blue-50 shadow-md"
+          />
+          <div className="relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={uploading}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <button className="bg-blue-50 text-blue-600 px-4 py-2 rounded-full font-medium text-sm hover:bg-blue-100 transition border border-blue-100">
+              {uploading ? 'Uploading...' : 'Change Photo'}
+            </button>
+          </div>
+        </div>
+
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-center">{error}</div>}
+
+        <div className="space-y-8">
+          {/* Personal Details */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Personal Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full text-gray-500 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="date" placeholder="Birthday" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} />
+              <select className="p-3 border border-gray-200 rounded-xl w-full text-gray-500 bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="" disabled>Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Location Details */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Location</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input className="p-3 border border-gray-200 rounded-xl w-full md:col-span-2 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Zipcode" value={zipcode} onChange={(e) => setZipcode(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full md:col-span-2 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Guardian Info */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Guardian / Emergency Contact</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input className="p-3 border border-gray-200 rounded-xl w-full md:col-span-2 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Guardian's Name" value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="text" placeholder="Guardian's Phone Number" value={guardianPhone} onChange={(e) => setGuardianPhone(e.target.value)} />
+              <input className="p-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition" type="email" placeholder="Guardian's Email" value={guardianEmail} onChange={(e) => setGuardianEmail(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Medical Context */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Medical Profile</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <textarea
+                className="p-4 border border-gray-200 rounded-xl w-full resize-none h-32 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition"
+                placeholder="Provide any description of current or past illnesses, chronic conditions, or ongoing treatments here..."
+                value={illnesses}
+                onChange={(e) => setIllnesses(e.target.value)}
+              />
+            </div>
+          </div>
+
+        </div>
+
+        <div className="mt-12 flex justify-end">
+          <button
+            className="px-10 py-3.5 rounded-xl text-white bg-blue-600 hover:bg-blue-700 font-bold transition-colors shadow-lg shadow-blue-200 w-full md:w-auto"
+            onClick={handleSave}
+            disabled={uploading}
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
