@@ -1,0 +1,254 @@
+.fruit-match {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+  color: white;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.game-container {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
+}
+
+.game-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.start-screen {
+  background: rgba(70, 130, 180, 0.3);
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.start-screen p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.start-button {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.start-button:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.game-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  background: rgba(70, 130, 180, 0.3);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.reset-button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s;
+}
+
+.reset-button:hover {
+  background: #d32f2f;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  max-width: 600px;
+  width: 100%;
+}
+
+.card {
+  aspect-ratio: 1;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.card-back {
+  background: white;
+  color: #333;
+  transform: rotateY(180deg);
+  padding: 10px;
+}
+
+.fruit-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 5px;
+}
+
+.fruit-name {
+  font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.completion-screen {
+  background: rgba(70, 130, 180, 0.3);
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.completion-screen h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.final-stats {
+  margin: 20px 0;
+}
+
+.final-stats p {
+  font-size: 1.1rem;
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+.best-scores {
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.best-scores p {
+  margin: 5px 0;
+  font-size: 1rem;
+}
+
+.play-again-button {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.play-again-button:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .game-container h1 {
+    font-size: 2rem;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .game-stats {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .stat {
+    font-size: 1rem;
+  }
+
+  .card-front, .card-back {
+    font-size: 1.5rem;
+  }
+
+  .fruit-emoji {
+    font-size: 2rem;
+  }
+
+  .fruit-name {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .start-screen, .completion-screen {
+    padding: 20px;
+  }
+}

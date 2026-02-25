@@ -50,7 +50,7 @@ const StressCatch = () => {
     // move clouds
     setClouds(prev => prev.map(cloud => ({ ...cloud, y: cloud.y + cloud.speed })).filter(cloud => {
       if (cloud.y > 85) { // bottom, basket at 90%
-        if (Math.abs(cloud.x - basketX) < 10) { // caught, basket width ~10%
+        if (Math.abs(cloud.x - basketX) < 15) { // caught, basket width ~15%
           setScore(s => {
             const newS = s + 1;
             if (newS % 10 === 0) {
