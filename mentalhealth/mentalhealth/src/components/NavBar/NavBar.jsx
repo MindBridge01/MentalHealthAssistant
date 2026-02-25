@@ -136,7 +136,33 @@ const NavBar = ({ user }) => {
         <div className="flex gap-2 mt-4 md:mt-0">
           <button
             className="px-4 py-2 bg-red-600 rounded-2xl flex items-center gap-2.5 hover:bg-red-700"
-            onClick={() => alert("SOS Triggered!")}
+            onClick={async () => {
+              if (!user) {
+                alert("Please login first to trigger SOS.");
+                return;
+              }
+              if (!window.confirm("Are you sure you want to trigger an SOS alert to your Guardian?")) return;
+
+              try {
+                const res = await fetch("/api/profile/sos", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-user-id": user._id,
+                  },
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                  alert("SOS Alert Sent! Your guardian has been notified.");
+                } else {
+                  alert(`SOS Failed: ${data.error}`);
+                }
+              } catch (err) {
+                console.error(err);
+                alert("An error occurred while trying to send SOS.");
+              }
+            }}
           >
             <span className="material-icons text-white text-lg">report</span>
             <div className="text-white text-lg font-bold">SOS Help</div>
