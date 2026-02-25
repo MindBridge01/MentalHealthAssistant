@@ -4,7 +4,12 @@ const { getMongoClient } = require('../../api/lib/mongodb');
 const { ObjectId } = require('mongodb');
 
 router.put('/', async (req, res) => {
-  const { name, email, profilePic } = req.body;
+  const {
+    name, email, profilePic,
+    birthday, age, gender, phone, address, zipcode, country, city,
+    guardianName, guardianPhone, guardianEmail, illnesses
+  } = req.body;
+
   const userId = req.headers['x-user-id'];
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -14,7 +19,14 @@ router.put('/', async (req, res) => {
 
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { name, email, profilePic, updatedAt: new Date() } }
+      {
+        $set: {
+          name, email, profilePic,
+          birthday, age, gender, phone, address, zipcode, country, city,
+          guardianName, guardianPhone, guardianEmail, illnesses,
+          updatedAt: new Date()
+        }
+      }
     );
 
     if (result.modifiedCount === 0)
