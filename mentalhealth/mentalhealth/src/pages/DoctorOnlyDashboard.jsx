@@ -8,7 +8,10 @@ const DoctorOnlyDashboard = () => {
     specialty: "",
     bio: "",
     contact: "",
-    profilePic: ""
+    profilePic: "",
+    yearsOfExperience: "",
+    qualifications: "",
+    licenseNumber: ""
   });
   const [slots, setSlots] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -26,7 +29,7 @@ const DoctorOnlyDashboard = () => {
   useEffect(() => {
     if (!user || user.role !== "doctor") navigate("/");
     else fetchDoctorProfile();
-  }, [user]);
+  }, [user?._id]);
 
   const fetchDoctorProfile = async () => {
     try {
@@ -36,7 +39,10 @@ const DoctorOnlyDashboard = () => {
         specialty: res.data.specialty || "",
         bio: res.data.bio || "",
         contact: res.data.contact || "",
-        profilePic: res.data.profilePic || ""
+        profilePic: res.data.profilePic || "",
+        yearsOfExperience: res.data.yearsOfExperience || "",
+        qualifications: res.data.qualifications || "",
+        licenseNumber: res.data.licenseNumber || ""
       });
       setSlots(res.data.slots || []);
       setAppointments(res.data.appointments || []);
@@ -76,7 +82,7 @@ const DoctorOnlyDashboard = () => {
 
   const handleProfileSave = async () => {
     try {
-      await axios.put(`http://localhost:3000/api/doctor/profile/${user._id}`, { 
+      await axios.put(`http://localhost:3000/api/doctor/profile/${user._id}`, {
         ...profile,
         statusMessage
       });
@@ -90,38 +96,43 @@ const DoctorOnlyDashboard = () => {
   };
 
   const handleAddSlot = async () => {
-  const { date, startTime, endTime } = newSlot;
-  if (!date || !startTime || !endTime) return;
+    const { date, startTime, endTime } = newSlot;
+    if (!date || !startTime || !endTime) return;
 
-  try {
-    await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
-    setSlots([...slots, newSlot]);
-    setNewSlot({ date: "", startTime: "", endTime: "" });
-  } catch (err) {
-    setError("Add slot failed.");
-  }
-};
+    try {
+      await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
+      setSlots([...slots, newSlot]);
+      setNewSlot({ date: "", startTime: "", endTime: "" });
+    } catch (err) {
+      setError("Add slot failed.");
+    }
+  };
 
   const handleRemoveSlot = async (slot) => {
-  try {
-    if (!slot._id) {
-      setError("Cannot delete slot: missing ID.");
-      return;
+    try {
+      if (!slot._id) {
+        setError("Cannot delete slot: missing ID.");
+        return;
+      }
+
+      await axios.delete(
+        `http://localhost:3000/api/doctor/slots/${user._id}/${slot._id}`
+      );
+
+      // Update UI after successful delete
+      setSlots((prevSlots) =>
+        prevSlots.filter((s) => s._id !== slot._id)
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Remove slot failed.");
     }
+  };
+  const handleAppointmentStatus = (id, status) => {
+    // Basic local state update for now, until the backend appointment route is ready.
+    setAppointments(appointments.map((a) => (a.id === id ? { ...a, status } : a)));
+  };
 
-    await axios.delete(
-      `http://localhost:3000/api/doctor/slots/${user._id}/${slot._id}`
-    );
-
-    // Update UI after successful delete
-    setSlots((prevSlots) =>
-      prevSlots.filter((s) => s._id !== slot._id)
-    );
-  } catch (err) {
-    console.error(err);
-    setError("Remove slot failed.");
-  }
-};
   if (!profile) return <div>Loading...</div>;
 
   return (
@@ -137,62 +148,171 @@ const DoctorOnlyDashboard = () => {
           />
           <div className="flex-1">
             {editProfile ? (
-              <>
-                <input
-                  value={profile.name || ""}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  className="p-2 border rounded mb-2 w-full"
-                />
-                <input
-                  value={profile.specialty || ""}
-                  onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
-                  className="p-2 border rounded mb-2 w-full"
-                />
-                <textarea
-                  value={profile.bio || ""}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  className="p-2 border rounded mb-2 w-full"
-                />
-                <input
-                  value={profile.contact || ""}
-                  onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
-                  className="p-2 border rounded mb-2 w-full"
-                />
-                <input
-                  type="file"
-                  onChange={handleImageUpload}
-                  className="mb-2"
-                  disabled={uploading}
-                />
-                <input
-                  value={statusMessage || ""}
-                  onChange={(e) => setStatusMessage(e.target.value)}
-                  placeholder="Status message"
-                  className="p-2 border rounded mb-2 w-full"
-                />
-                <button
-                  onClick={handleProfileSave}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                  disabled={uploading}
-                >
-                  Save
-                </button>
-                {error && <div className="text-red-600 mt-1">{error}</div>}
-              </>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input
+                    value={profile.name || ""}
+                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="E.g. Dr. John Doe"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization (Psychiatrist / Psychologist / Therapist / Counselor)</label>
+                  <input
+                    value={profile.specialty || ""}
+                    onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="E.g. Clinical Psychologist"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                  <input
+                    type="number"
+                    value={profile.yearsOfExperience || ""}
+                    onChange={(e) => setProfile({ ...profile, yearsOfExperience: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="E.g. 10"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
+                  <input
+                    value={profile.qualifications || ""}
+                    onChange={(e) => setProfile({ ...profile, qualifications: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="E.g. MBBS, MD, MSc Psychology"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">License / Registration Number</label>
+                  <input
+                    value={profile.licenseNumber || ""}
+                    onChange={(e) => setProfile({ ...profile, licenseNumber: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="Enter Registration Number"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Professional Bio</label>
+                  <textarea
+                    value={profile.bio || ""}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none min-h-[100px]"
+                    placeholder="Share a short professional biography about yourself and your approach to therapy..."
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Information</label>
+                  <input
+                    value={profile.contact || ""}
+                    onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="Public email or Direct clinic phone number"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo (Upload new)</label>
+                  <input
+                    type="file"
+                    onChange={handleImageUpload}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer border border-gray-200 rounded-lg p-2 bg-white"
+                    disabled={uploading}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Availability Status Message</label>
+                  <input
+                    value={statusMessage || ""}
+                    onChange={(e) => setStatusMessage(e.target.value)}
+                    placeholder="Current status (e.g. Taking new patients currently)"
+                    className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  />
+                </div>
+
+                <div className="col-span-2 flex gap-4 mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={handleProfileSave}
+                    className="bg-blue-600 hover:bg-blue-700 transition-colors text-white px-8 py-2.5 rounded-lg font-medium shadow-sm disabled:opacity-50"
+                    disabled={uploading}
+                  >
+                    {uploading ? "Uploading Image..." : "Save Profile"}
+                  </button>
+                  <button
+                    onClick={() => setEditProfile(false)}
+                    className="bg-gray-100 hover:bg-gray-200 transition-colors text-gray-800 px-6 py-2.5 rounded-lg font-medium"
+                    disabled={uploading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {error && <div className="text-red-600 mt-1 col-span-2 font-medium bg-red-50 p-3 rounded-lg border border-red-200">{error}</div>}
+              </div>
             ) : (
-              <>
-                <div className="font-bold text-lg">{profile.name || ""}</div>
-                <div className="text-purple-700 font-medium">{profile.specialty || ""}</div>
-                <div className="text-gray-700 mb-2">{profile.bio || ""}</div>
-                <div className="text-gray-500">Contact: {profile.contact || ""}</div>
-                <div className="text-purple-600 mt-2">Status: {statusMessage || ""}</div>
+              <div className="space-y-4">
+                <div className="font-bold text-3xl text-gray-800">{profile.name || "Doctor Name Please Update"}</div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100/50 shadow-sm">
+                  <div>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-1 h-4 bg-purple-400 rounded-full inline-block"></span>Specialization</span>
+                    <div className="text-purple-900 font-semibold text-lg mt-0.5">{profile.specialty || "Not specified"}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-1 h-4 bg-blue-400 rounded-full inline-block"></span>Qualifications</span>
+                    <div className="text-gray-800 font-medium text-lg mt-0.5">{profile.qualifications || "Not specified"}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-1 h-4 bg-green-400 rounded-full inline-block"></span>Experience</span>
+                    <div className="text-gray-800 font-medium text-lg mt-0.5">{profile.yearsOfExperience ? `${profile.yearsOfExperience} years professional` : "Not specified"}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-1 h-4 bg-orange-400 rounded-full inline-block"></span>License Reg No.</span>
+                    <div className="text-gray-800 font-medium text-lg mt-0.5">{profile.licenseNumber || "Not specified"}</div>
+                  </div>
+                  <div className="col-span-1 md:col-span-2 mt-2">
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-1 h-4 bg-gray-400 rounded-full inline-block"></span>Direct Contact</span>
+                    <div className="text-gray-800 font-medium text-lg mt-0.5">{profile.contact || "Not specified"}</div>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block mb-2">Professional Biography</span>
+                  {profile.bio ? (
+                    <div className="text-gray-700 leading-relaxed bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-md break-words">
+                      {profile.bio}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
+                      No biography provided yet. Edit your profile to add one.
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-6 text-sm bg-indigo-50 text-indigo-800 w-fit px-4 py-2 rounded-full border border-indigo-200 font-medium shadow-sm">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                  </span>
+                  <span>{statusMessage ? `Status: ${statusMessage}` : "Status: Active & Online"}</span>
+                </div>
+
                 <button
-                  className="bg-purple-100 text-purple-700 px-4 py-2 rounded mt-2"
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all mt-6 active:scale-95"
                   onClick={() => setEditProfile(true)}
                 >
-                  Edit Profile
+                  Configure Profile Details
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -217,45 +337,45 @@ const DoctorOnlyDashboard = () => {
             ))}
           </div>
           <div className="flex gap-2 mt-2">
-  <input
-    type="date"
-    value={newSlot.date}
-    onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
-    className="p-2 border rounded"
-  />
-  <input
-    type="time"
-    value={newSlot.startTime}
-    onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
-    className="p-2 border rounded"
-  />
-  <input
-    type="time"
-    value={newSlot.endTime}
-    onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
-    className="p-2 border rounded"
-  />
-  <button
-    onClick={handleAddSlot}
-    className="bg-blue-600 text-white px-4 py-2 rounded"
-  >
-    Add Slot
-    </button>
-         </div>
-         {slots.map((slot, idx) => (
-  <div key={idx} className="flex items-center gap-2 mb-1">
-    <span>
-      {slot.date}: {slot.startTime} - {slot.endTime}
-    </span>
-    <button
-      onClick={() => handleRemoveSlot(slot)}
-      className="text-red-600 font-bold hover:text-red-800"
-      style={{ background: "none", border: "none", cursor: "pointer" }}
-    >
-      x
-    </button>
-  </div>
-))}
+            <input
+              type="date"
+              value={newSlot.date}
+              onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+              className="p-2 border rounded"
+            />
+            <input
+              type="time"
+              value={newSlot.startTime}
+              onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+              className="p-2 border rounded"
+            />
+            <input
+              type="time"
+              value={newSlot.endTime}
+              onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+              className="p-2 border rounded"
+            />
+            <button
+              onClick={handleAddSlot}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Add Slot
+            </button>
+          </div>
+          {slots.map((slot, idx) => (
+            <div key={idx} className="flex items-center gap-2 mb-1">
+              <span>
+                {slot.date}: {slot.startTime} - {slot.endTime}
+              </span>
+              <button
+                onClick={() => handleRemoveSlot(slot)}
+                className="text-red-600 font-bold hover:text-red-800"
+                style={{ background: "none", border: "none", cursor: "pointer" }}
+              >
+                x
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -266,6 +386,7 @@ const DoctorOnlyDashboard = () => {
           <thead>
             <tr>
               <th>Patient</th>
+              <th>Email</th>
               <th>Date</th>
               <th>Time</th>
               <th>Status</th>
@@ -277,6 +398,7 @@ const DoctorOnlyDashboard = () => {
             {appointments.map((a) => (
               <tr key={a.id} className="border-b">
                 <td>{a.patient}</td>
+                <td>{a.patientEmail || "N/A"}</td>
                 <td>{a.date}</td>
                 <td>{a.time}</td>
                 <td>{a.status}</td>

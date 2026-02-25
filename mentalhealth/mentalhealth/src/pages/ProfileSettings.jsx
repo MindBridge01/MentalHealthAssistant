@@ -10,6 +10,12 @@ const ProfileSettings = () => {
     return null;
   }
 
+  // Restrict Doctors from accessing the standard user profile settings page
+  if (user.role === "doctor") {
+    navigate("/doctor-dashboard");
+    return null;
+  }
+
   const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
   const [profilePic, setProfilePic] = useState(user.profilePic || "");

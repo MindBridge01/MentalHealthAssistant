@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logolight from "../../assets/logo/logolight.png";
 import { ButtonPrimary } from "../Buttons/ButtonPrimary/ButtonPrimary";
@@ -65,6 +65,20 @@ const Dropdown = ({ label, options }) => {
 const NavBar = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false); // mobile menu
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false); // profile dropdown
+  const userDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex w-full max-w-[1435px] items-center justify-between relative px-4 py-4">
@@ -172,7 +186,7 @@ const NavBar = ({ user }) => {
         </div>
 
         {/* User Profile */}
-        <div className="relative ml-4">
+        <div className="relative ml-4" ref={userDropdownRef}>
           <button
             className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 border border-purple-200"
             onClick={(e) => {
@@ -189,15 +203,17 @@ const NavBar = ({ user }) => {
 
           {isUserDropdownOpen && (
             <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
-              <div
-                className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
-                onClick={() => {
-                  setIsUserDropdownOpen(false);
-                  window.location.href = "/profile-settings";
-                }}
-              >
-                Edit Profile
-              </div>
+              {user?.role !== "doctor" && (
+                <div
+                  className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+                  onClick={() => {
+                    setIsUserDropdownOpen(false);
+                    window.location.href = "/profile-settings";
+                  }}
+                >
+                  Edit Profile
+                </div>
+              )}
 
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"

@@ -1,37 +1,91 @@
 import React, { useState } from "react";
 
-// Sample data for doctors (replace with API data in production)
-const doctors = [
-  {
-    id: 1,
-    name: "Dr. Jane Smith",
-    specialty: "Clinical Psychologist",
-    bio: "10+ years helping adults and teens with anxiety, depression, and trauma recovery.",
-    photo: "/assets/images/doctor1.png",
-    languages: ["English", "Spanish"],
-    experience: "10 years",
-    reviews: 4.8,
-    availableSlots: ["2026-02-12 10:00", "2026-02-12 14:00", "2026-02-13 09:00"]
-  },
-  {
-    id: 2,
-    name: "Dr. John Lee",
-    specialty: "Psychiatrist",
-    bio: "Specializes in mood disorders and medication management.",
-    photo: "/assets/images/doctor2.png",
-    languages: ["English", "Hindi"],
-    experience: "8 years",
-    reviews: 4.6,
-    availableSlots: ["2026-02-12 11:00", "2026-02-13 15:00"]
-  }
-];
+import axios from "axios";
 
 const DoctorDashboard = () => {
+  const [doctorsList, setDoctorsList] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [message, setMessage] = useState("");
-  const [showSOS, setShowSOS] = useState(false);
-  const [showFAQ, setShowFAQ] = useState(false);
+  const [myAppointments, setMyAppointments] = useState([]);
+  const [booking, setBooking] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  React.useEffect(() => {
+    // When selected doctor changes, reset slot and message
+    setSelectedSlot("");
+    setMessage("");
+  }, [selectedDoctor]);
+
+  React.useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/api/doctor/all");
+        // Filter out doctors that haven't at least provided a name
+        const activeDoctors = res.data.filter(doc => doc.name);
+        setDoctorsList(activeDoctors);
+      } catch (err) {
+        console.error("Failed to load doctors", err);
+      }
+    };
+
+    const fetchMyAppointments = async () => {
+      if (user?._id) {
+        try {
+          const res = await axios.get(`http://localhost:3000/api/doctor/patient-appointments/${user._id}`);
+          if (res.data.appointments) {
+            setMyAppointments(res.data.appointments);
+          }
+        } catch (err) {
+          console.error("Failed to load your appointments", err);
+        }
+      }
+    };
+
+    fetchDoctors();
+    fetchMyAppointments();
+  }, [user?._id]);
+
+  const handleBookAppointment = async () => {
+    if (!user) {
+      alert("Please login as a user to book an appointment.");
+      return;
+    }
+    if (!selectedSlot) return;
+
+    setBooking(true);
+
+    // Parse the slotStr "YYYY-MM-DD HH:MM - HH:MM"
+    const parts = selectedSlot.split(' ');
+    const slotDate = parts[0];
+    const slotTime = `${parts[1]} ${parts[2]} ${parts[3]}`;
+
+    try {
+      const res = await axios.post(`http://localhost:3000/api/doctor/appointments/${selectedDoctor.userId}`, {
+        patientId: user._id,
+        patientName: user.name,
+        patientEmail: user.email,
+        slotDate,
+        slotTime,
+        notes: message
+      });
+
+      if (res.data.success) {
+        alert("Appointment booked successfully!");
+        setMyAppointments([
+          ...myAppointments,
+          { doctorName: selectedDoctor.name, date: slotDate, time: slotTime, status: 'Upcoming' }
+        ]);
+        setSelectedSlot("");
+        setMessage("");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to book appointment. Please try again later.");
+    } finally {
+      setBooking(false);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-purple-50 py-12 px-4 flex flex-col items-center">
@@ -41,16 +95,22 @@ const DoctorDashboard = () => {
         <div className="flex-1 bg-white rounded-3xl shadow-md p-6">
           <h3 className="font-bold text-xl mb-4 text-dark-blue900">Available Doctors</h3>
           <div className="flex flex-col gap-6">
-            {doctors.map((doc) => (
-              <div key={doc.id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?.id === doc.id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={() => setSelectedDoctor(doc)}>
-                <img src={doc.photo} alt={doc.name} className="w-16 h-16 rounded-full object-cover border-2 border-purple-200" />
-                <div>
-                  <div className="font-bold text-lg text-dark-blue900">{doc.name}</div>
-                  <div className="text-purple-700 font-medium">{doc.specialty}</div>
-                  <div className="text-gray-500 text-sm">{doc.languages.join(", ")} | {doc.experience} | ⭐ {doc.reviews}</div>
-                </div>
+            {doctorsList.length === 0 ? (
+              <div className="text-gray-500 italic p-4 text-center border border-dashed rounded-xl border-gray-300">
+                No active doctors found in the system yet.
               </div>
-            ))}
+            ) : (
+              doctorsList.map((doc) => (
+                <div key={doc._id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={() => setSelectedDoctor(doc)}>
+                  <img src={doc.profilePic || "/assets/images/default-user.png"} alt={doc.name} className="w-16 h-16 rounded-full object-cover border-2 border-purple-200" />
+                  <div>
+                    <div className="font-bold text-lg text-dark-blue900">{doc.name}</div>
+                    <div className="text-purple-700 font-medium">{doc.specialty}</div>
+                    <div className="text-gray-500 text-sm">Experience: {doc.yearsOfExperience ? `${doc.yearsOfExperience} years` : "N/A"}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
         {/* Doctor Profile & Booking */}
@@ -58,57 +118,63 @@ const DoctorDashboard = () => {
           {selectedDoctor ? (
             <>
               <div className="flex flex-col items-center mb-4">
-                <img src={selectedDoctor.photo} alt={selectedDoctor.name} className="w-24 h-24 rounded-full object-cover border-2 border-purple-200 mb-2" />
+                <img src={selectedDoctor.profilePic || "/assets/images/default-user.png"} alt={selectedDoctor.name} className="w-24 h-24 rounded-full object-cover border-2 border-purple-200 mb-2" />
                 <div className="font-bold text-xl text-dark-blue900">{selectedDoctor.name}</div>
                 <div className="text-purple-700 font-medium">{selectedDoctor.specialty}</div>
-                <div className="text-gray-500 text-sm">{selectedDoctor.languages.join(", ")} | {selectedDoctor.experience} | ⭐ {selectedDoctor.reviews}</div>
+                <div className="text-gray-500 text-sm">Experience: {selectedDoctor.yearsOfExperience ? `${selectedDoctor.yearsOfExperience} years` : "N/A"} | Reg No: {selectedDoctor.licenseNumber || "N/A"}</div>
+                {selectedDoctor.qualifications && <div className="text-gray-600 font-medium text-sm mt-1">{selectedDoctor.qualifications}</div>}
                 <p className="text-gray-700 mt-2 text-center">{selectedDoctor.bio}</p>
               </div>
               <div className="mb-4">
                 <h4 className="font-semibold text-dark-blue900 mb-2">Book Appointment</h4>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedDoctor.availableSlots.map((slot) => (
-                    <button key={slot} className={`px-3 py-1 rounded-lg border ${selectedSlot === slot ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 border-purple-200'}`} onClick={() => setSelectedSlot(slot)}>{slot}</button>
-                  ))}
+                  {selectedDoctor.slots?.map((slot, idx) => {
+                    const slotStr = `${slot.date} ${slot.startTime}`;
+                    return (
+                      <button key={idx} className={`px-3 py-1 rounded-lg border ${selectedSlot === slotStr ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 border-purple-200'}`} onClick={() => setSelectedSlot(slotStr)}>{slot.date} {slot.startTime} - {slot.endTime}</button>
+                    )
+                  })}
+                  {(!selectedDoctor.slots || selectedDoctor.slots.length === 0) && (
+                    <div className="text-sm text-gray-500 italic">No available slots listed currently.</div>
+                  )}
                 </div>
                 <textarea className="w-full p-2 border border-gray-300 rounded-md mb-2" rows="2" placeholder="Message to doctor (optional)" value={message} onChange={e => setMessage(e.target.value)} />
-                <button className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold" disabled={!selectedSlot}>Confirm Appointment</button>
+                <button
+                  onClick={handleBookAppointment}
+                  className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold disabled:opacity-50"
+                  disabled={!selectedSlot || booking}
+                >
+                  {booking ? "Booking..." : "Confirm Appointment"}
+                </button>
               </div>
+
             </>
           ) : (
-            <div className="text-gray-500 text-center">Select a doctor to view details and book an appointment.</div>
+            <div className="text-gray-500 text-center flex flex-col items-center justify-center h-full min-h-[300px]">
+              <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              Select a doctor from the list to view their complete profile and securely book your consultation.
+            </div>
           )}
-          <div className="mt-6 flex flex-col gap-2">
-            <button className="w-full py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-bold" onClick={() => setShowSOS(true)}>Emergency / SOS</button>
-            <button className="w-full py-2 rounded-md bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold" onClick={() => setShowFAQ(true)}>FAQ / Guidance</button>
-          </div>
+
+          {/* Patient's booked appointments displayed universally */}
+          {myAppointments.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-gray-200 w-full">
+              <h4 className="font-semibold text-dark-blue900 mb-4 text-xl">My Upcoming Appointments</h4>
+              <div className="flex flex-col gap-3">
+                {myAppointments.map((appt, idx) => (
+                  <div key={idx} className="bg-green-50 border border-green-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                    <div>
+                      <div className="font-bold text-green-900 text-lg">{appt.doctorName}</div>
+                      <div className="text-green-800 font-medium">{appt.date} at {appt.time}</div>
+                    </div>
+                    <span className="bg-green-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-sm">{appt.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {/* SOS Modal */}
-      {showSOS && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-            <h3 className="text-2xl font-bold text-red-600 mb-4">Emergency Help</h3>
-            <p className="mb-4">If you are in crisis or need immediate help, please call your local emergency number or a mental health hotline.</p>
-            <button className="mt-2 px-6 py-2 bg-red-600 text-white rounded-lg font-bold" onClick={() => setShowSOS(false)}>Close</button>
-          </div>
-        </div>
-      )}
-      {/* FAQ Modal */}
-      {showFAQ && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-            <h3 className="text-2xl font-bold text-purple-700 mb-4">FAQ & Guidance</h3>
-            <ul className="text-left list-disc pl-6 mb-4">
-              <li>All consultations are private and confidential.</li>
-              <li>You can choose video, voice, or chat for your session.</li>
-              <li>Payment and insurance details will be discussed before your session.</li>
-              <li>If you need to reschedule, please contact your doctor in advance.</li>
-            </ul>
-            <button className="mt-2 px-6 py-2 bg-purple-600 text-white rounded-lg font-bold" onClick={() => setShowFAQ(false)}>Close</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
