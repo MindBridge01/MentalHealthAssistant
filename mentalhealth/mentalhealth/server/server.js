@@ -152,18 +152,19 @@ app.post("/api/chat", async (req, res) => {
   const { message } = req.body;
   try {
     const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      { model: "meta-llama/llama-4-maverick:free", messages: [{ role: "user", content: message }] },
+      "http://localhost:11434/api/generate",
+      {
+        model: "llama2:7b",
+        prompt: message,
+        stream: false
+      },
       {
         headers: {
-          Authorization: "Bearer YOUR_API_KEY_HERE",
           "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:5173",
-          "X-Title": "MindBridge Chat",
         },
       }
     );
-    res.json({ content: response.data.choices[0].message.content });
+    res.json({ content: response.data.response });
   } catch (error) {
     console.error("Chat API error:", error?.response?.data || error.message);
     res.status(500).json({ error: "Failed to get AI response" });
