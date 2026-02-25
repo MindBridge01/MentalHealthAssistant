@@ -186,48 +186,51 @@ const NavBar = ({ user }) => {
         </div>
 
         {/* User Profile */}
-        <div className="relative ml-4" ref={userDropdownRef}>
-          <button
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 border border-purple-200"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsUserDropdownOpen((prev) => !prev);
-            }}
-          >
-            <img
-              src={user?.profilePic || "/assets/images/default-user.png"}
-              alt="User"
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          </button>
+        {user && (
+          <div className="relative ml-4" ref={userDropdownRef}>
+            <button
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 border border-purple-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsUserDropdownOpen((prev) => !prev);
+              }}
+            >
+              <img
+                src={user.profilePic || "/assets/images/default-user.png"}
+                alt="User"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            </button>
 
-          {isUserDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
-              {user?.role !== "doctor" && (
-                <div
-                  className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+            {isUserDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
+                {user.role !== "doctor" && (
+                  <div
+                    className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+                    onClick={() => {
+                      setIsUserDropdownOpen(false);
+                      window.location.href = "/profile-settings";
+                    }}
+                  >
+                    Edit Profile
+                  </div>
+                )}
+
+                <button
+                  className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
                   onClick={() => {
                     setIsUserDropdownOpen(false);
-                    window.location.href = "/profile-settings";
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("token");
+                    window.location.href = "/";
                   }}
                 >
-                  Edit Profile
-                </div>
-              )}
-
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
-                onClick={() => {
-                  setIsUserDropdownOpen(false);
-                  localStorage.removeItem("user");
-                  window.location.href = "/";
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
