@@ -12,6 +12,7 @@ import Community from './pages/Community';
 import DoctorOnlyDashboard from './pages/DoctorOnlyDashboard';
 import Questions from './pages/Questions';
 import PlayGames from './pages/PlayGames';
+import StressCatch from './games/StressCatch';
 
 function App() {
   const location = useLocation();
@@ -19,7 +20,7 @@ function App() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   return (
     <div className="flex flex-col min-h-screen">
-      {!['/ai-chat', '/questions', '/play-games'].includes(location.pathname) && <Navbar user={user} />}
+      {!['/ai-chat', '/questions', '/play-games', '/stress-catch'].includes(location.pathname) && <Navbar user={user} />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -27,6 +28,7 @@ function App() {
           <Route path="/community" element={<Community />} />
           <Route path="/questions" element={<Questions />} />
           <Route path="/play-games" element={<PlayGames />} />
+          <Route path="/stress-catch" element={<StressCatch />} />
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/profile-settings" element={<ProfileSettings user={user} />} />

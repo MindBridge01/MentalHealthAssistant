@@ -12,9 +12,15 @@ const PlayGames = () => {
                 close
             </span>
             <h1 className="text-4xl font-bold text-dark-blue900 mb-4">Play Games</h1>
-            <p className="text-xl text-gray-600 max-w-2xl text-center">
+            <p className="text-xl text-gray-600 max-w-2xl text-center mb-8">
                 Our relaxing and therapeutic mental health mini-games will be available here soon.
             </p>
+            <button
+                className="relative px-6 py-4 bg-slate-800 rounded-2xl inline-flex justify-center items-center gap-2.5 gradient-stroke-darkblue text-white text-l font-bold font-[Satoshi]"
+                onClick={() => navigate('/stress-catch')}
+            >
+                Stress Catching
+            </button>
         </div>
     );
 };
