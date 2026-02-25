@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+
 import PostWall from "./Postwall";
 import UploadSec from "./UploadSec";
 import NavBar from "../components/NavBar/NavBar";
 import HeroSection from "./communityHero";
 import Footer from '../components/Footer/Footer';
+import CommunityChat from "./CommunityChat";
 
 import Ellipse3 from "../assets/Elipses/Ellipse3.png";
 import Ellipse4 from "../assets/Elipses/Ellipse4.png";
@@ -39,8 +41,12 @@ const CommunitySection = () => {
 
       {/* Main Content */}
       <div className="px-4 sm:px-8 md:px-[156px] relative z-10">
-        <NavBar />
+        {/* <NavBar /> Removed: NavBar is rendered by App.jsx */}
         <HeroSection />
+        {/* Community-wide Chat Section */}
+        <div className="my-8">
+          <CommunityChat userId={"community-guest"} username={"Community Guest"} room={"main-community"} />
+        </div>
         <PostWall key={refresh} />
         <UploadSec onPostUpload={handlePostUpload} />
       </div>

@@ -1,30 +1,54 @@
+// server.js
 const express = require("express");
 const { MongoClient, ObjectId } = require("mongodb");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const axios = require("axios");
+const http = require("http");
+const { Server } = require("socket.io");
 require("dotenv").config({ debug: true });
 
 const app = express();
+const server = http.createServer(app);
 
-// ✅ Multer setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+// ========== SOCKET.IO SETUP ==========
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true,
   },
 });
-const upload = multer({ storage });
 
-// ✅ Middleware
-app.use(cors({ origin: "http://localhost:5173" }));
+// ========== MIDDLEWARE ==========
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true,
+}));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ MongoDB setup
+// ========== ROUTES ==========
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const doctorRoutes = require('./routes/doctor');
+const profileRoutes = require('./routes/profile');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/doctor', doctorRoutes);
+app.use('/api/profile', profileRoutes);
+
+// ========== MULTER SETUP ==========
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
+const upload = multer({ storage });
+
+// ========== MONGODB SETUP ==========
 console.log("Loading MONGODB_URI from .env:", process.env.MONGODB_URI);
 const uri = process.env.MONGODB_URI;
 
@@ -36,10 +60,12 @@ if (!uri) {
 const client = new MongoClient(uri);
 let db;
 
+// server.js, after Mongo connect
 async function connectToMongo() {
   try {
     await client.connect();
-    db = client.db("MindBridgeDB");
+    db = client.db("Mind_Bridge");
+    app.locals.db = db; // <--- make it accessible to routes
     await db.command({ ping: 1 });
     console.log("Pinged your deployment. Successfully connected to MongoDB!");
   } catch (error) {
@@ -48,25 +74,18 @@ async function connectToMongo() {
   }
 }
 
-// ✅ Routes
-app.get("/health", (req, res) => {
-  res.json({ status: "Server is running" });
-});
+// ========== HEALTH CHECK ==========
+app.get("/health", (req, res) => res.json({ status: "Server is running" }));
 
+// ========== IMAGE UPLOAD ==========
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No image uploaded" });
-    }
-    const imagePath = `/uploads/${req.file.filename}`;
-    console.log("Uploaded image:", imagePath);
-    res.status(200).json({ imagePath });
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    res.status(400).json({ error: "Failed to upload image" });
-  }
+  if (!req.file) return res.status(400).json({ error: "No image uploaded" });
+  const imagePath = `/uploads/${req.file.filename}`;
+  console.log("Uploaded image:", imagePath);
+  res.status(200).json({ imagePath });
 });
 
+// ========== POSTS ==========
 app.get("/api/posts", async (req, res) => {
   if (!db) return res.status(500).json({ error: "Database not connected" });
   try {
@@ -80,13 +99,14 @@ app.get("/api/posts", async (req, res) => {
 
 app.post("/api/posts", async (req, res) => {
   if (!db) return res.status(500).json({ error: "Database not connected" });
-  const { caption, name, location } = req.body;
+  const { caption, name, location, image } = req.body;
   if (!caption) return res.status(400).json({ error: "Caption is required" });
 
   const newPost = {
     caption,
     ...(name ? { name } : {}),
     ...(location ? { location } : {}),
+    ...(image ? { image } : {}),
     likes: 0,
     comments: 0,
     saved: 0,
@@ -107,9 +127,7 @@ app.patch("/api/posts/:id", async (req, res) => {
   const { id } = req.params;
   const { action } = req.body;
 
-  if (!["like", "comment", "save"].includes(action)) {
-    return res.status(400).json({ error: "Invalid action" });
-  }
+  if (!["like", "comment", "save"].includes(action)) return res.status(400).json({ error: "Invalid action" });
 
   const update = {};
   if (action === "like") update.likes = 1;
@@ -121,11 +139,7 @@ app.patch("/api/posts/:id", async (req, res) => {
       { _id: new ObjectId(id) },
       { $inc: update }
     );
-
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
+    if (result.modifiedCount === 0) return res.status(404).json({ error: "Post not found" });
     res.status(200).json({ message: "Post updated" });
   } catch (error) {
     console.error(`Error updating post (${action}):`, error);
@@ -133,46 +147,45 @@ app.patch("/api/posts/:id", async (req, res) => {
   }
 });
 
-// ✅ Chat API integration
+// ========== CHAT API ==========
 app.post("/api/chat", async (req, res) => {
   const { message } = req.body;
-
   try {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "meta-llama/llama-4-maverick:free",
-        messages: [
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      },
+      { model: "meta-llama/llama-4-maverick:free", messages: [{ role: "user", content: message }] },
       {
         headers: {
-          Authorization: "Bearer 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",
+          Authorization: "Bearer YOUR_API_KEY_HERE",
           "Content-Type": "application/json",
           "HTTP-Referer": "http://localhost:5173",
           "X-Title": "MindBridge Chat",
         },
       }
     );
-
-    const content = response.data.choices[0].message.content;
-    res.json({ content });
+    res.json({ content: response.data.choices[0].message.content });
   } catch (error) {
     console.error("Chat API error:", error?.response?.data || error.message);
     res.status(500).json({ error: "Failed to get AI response" });
   }
 });
 
-// ✅ Start server
+// ========== SOCKET.IO REAL-TIME CHAT ==========
+const onlineUsers = new Map();
+
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+
+  // Add your socket events here...
+});
+
+// ========== START SERVER ==========
 async function startServer() {
   await connectToMongo();
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Socket.IO running on ws://localhost:${PORT}`);
   });
 }
 

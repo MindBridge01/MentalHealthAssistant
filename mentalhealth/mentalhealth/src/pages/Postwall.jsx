@@ -11,6 +11,7 @@ const PostWall = () => {
     const [posts, setPosts] = useState([]);
     const [error, setError] = useState(null);
 
+
     const postImages = [post1, post2, post3, post4, post5, post6];
 
     useEffect(() => {
@@ -22,10 +23,10 @@ const PostWall = () => {
                 }
                 const data = await response.json();
 
-                // Attach images to posts
+                // Use uploaded image if present, else fallback
                 const postsWithImages = data.map((post, index) => ({
                     ...post,
-                    image: postImages[index % postImages.length], // Cycle through images
+                    image: post.image || postImages[index % postImages.length],
                 }));
 
                 setPosts(postsWithImages);
@@ -39,7 +40,7 @@ const PostWall = () => {
         fetchPosts();
         const interval = setInterval(fetchPosts, 5000); // Poll every 5 seconds for demo
         return () => clearInterval(interval);
-    },);
+    }, []);
 
     return (
         <div className="w-full mt-24 p-4">

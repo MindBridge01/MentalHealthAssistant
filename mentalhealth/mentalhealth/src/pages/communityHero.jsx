@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import CommunityChat from "./CommunityChat";
 import post1 from "../assets/images/post1.jpg";
 import post2 from "../assets/images/post2.jpg";
 import post3 from "../assets/images/post3.jpg";
@@ -10,6 +11,7 @@ import Shape from "../assets/images/Shape.png";
 const images = [post1, post2, post3, post4, post5, post6, Shape];
 
 const HeroSection = () => {
+  const [showChat, setShowChat] = useState(false);
   const [circles, setCircles] = useState(
     images.map(() => ({
       visible: Math.random() > 0.5,
@@ -66,6 +68,7 @@ const HeroSection = () => {
         <p className="text-lg md:text-xl text-gray-600 max-w-xl mx-auto">
           "A circle where you’re heard—share, listen, <span className='mx-1'>|</span> or just belong."
         </p>
+        {/* CommunityChat removed from hero section to avoid duplicate chat input */}
       </div>
     </div>
   );

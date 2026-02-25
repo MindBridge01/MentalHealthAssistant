@@ -1,8 +1,12 @@
 import React, { useState } from "react";
+import CommunityChat from "./CommunityChat";
+
 
 const UploadSec = ({ onPostUpload }) => {
-  const [caption, setCaption] = useState("");
+  // Chat state
   const [name, setName] = useState("");
+  // Removed CommunityChat state and logic
+  const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -77,22 +81,24 @@ const UploadSec = ({ onPostUpload }) => {
     setIsUploading(true);
     setError(null);
     try {
-      let imagePath = null;
+      let imageUrl = null;
       if (selectedImage) {
         const formData = new FormData();
-        formData.append("image", selectedImage);
-        const uploadResponse = await fetch("http://localhost:3000/api/upload", {
+        formData.append("file", selectedImage);
+        formData.append("upload_preset", "Mind_Bridge"); // Your Cloudinary preset
+        const cloudRes = await fetch("https://api.cloudinary.com/v1_1/drwpr138z/image/upload", {
           method: "POST",
           body: formData,
         });
-        if (!uploadResponse.ok) throw new Error("Failed to upload image");
-        const uploadResult = await uploadResponse.json();
-        imagePath = uploadResult.imagePath;
+        const cloudData = await cloudRes.json();
+        if (!cloudData.secure_url) throw new Error("Failed to upload image to Cloudinary");
+        imageUrl = cloudData.secure_url;
       }
 
       const postData = {
         caption,
         ...(isAnonymous ? {} : { name: name.trim(), location: location.trim() }),
+        ...(imageUrl ? { image: imageUrl } : {}),
       };
       const postResponse = await fetch("http://localhost:3000/api/posts", {
         method: "POST",
@@ -102,13 +108,20 @@ const UploadSec = ({ onPostUpload }) => {
       if (!postResponse.ok) throw new Error("Failed to create post");
 
       const newPost = await postResponse.json();
-      onPostUpload({ ...newPost, imagePath });
+      onPostUpload({ ...newPost, image: imageUrl });
       setSelectedImage(null);
       setImagePreview(null);
       setCaption("");
       setName("");
       setLocation("");
       setIsAnonymous(false);
+      // After successful post, optionally show chat
+      setChatUser({
+        userId: name || "anon-" + Math.random().toString(36).slice(2, 10),
+        username: name || "Anonymous",
+        room: "main-community",
+      });
+      setShowChat(true);
     } catch {
       setError("Failed to upload post. Please try again.");
     } finally {
@@ -126,6 +139,7 @@ const UploadSec = ({ onPostUpload }) => {
           A place to share your thoughts and feelings. So let’s try fast enough to fit anywhere.
         </p>
       </div>
+      {/* Community Chat Section removed to avoid duplicate chat input */}
       <div className="bg-white p-6 rounded-lg shadow-md border border-purple-200">
         {error && <p className="text-red-600 mb-4">{error}</p>}
         <p className="text-gray-600 mb-4">

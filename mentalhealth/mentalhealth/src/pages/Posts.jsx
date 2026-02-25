@@ -21,7 +21,7 @@ const Posts = ({ post, image }) => {
                 <div className="absolute w-[41px] h-[41px] top-[13px] left-[18px] bg-[#2ab1ec] rounded-full" />
                 <div className="flex flex-col w-[72px] items-start absolute top-4 left-[69px]">
                     <div className="self-stretch font-bold text-[13px] text-[#1a3c6d] leading-[normal] tracking-[0.015em]">
-                        {post.author || "Rikki Janae"}
+                        {post.name || post.author || "Anonymous"}
                     </div>
                     <div className="self-stretch font-medium text-[10px] text-[#6b7280] leading-[normal] tracking-[0.015em]">
                         {post.location || " "}

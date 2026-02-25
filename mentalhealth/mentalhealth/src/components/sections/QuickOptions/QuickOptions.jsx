@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import Quickoptioncard from "../../Quickoptioncard/Quickoptioncard";
 
@@ -11,6 +12,7 @@ const QuickOptions = () => {
   const [ref2, inView2] = useInView({ triggerOnce: true });
   const [ref3, inView3] = useInView({ triggerOnce: true });
 
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center gap-8 sm:gap-16 py-8 sm:py-12 px-4">
       {/* Title and Subtitle */}
@@ -36,6 +38,7 @@ const QuickOptions = () => {
             title="Talk to a Doctor"
             description="Connect with a licensed professional for a private consultation—available through video or voice, booked right from the platform."
             buttonText="Meet Doctor"
+            onClick={() => navigate("/doctor-dashboard")}
           />
         </div>
         <div
@@ -49,6 +52,7 @@ const QuickOptions = () => {
             title="Join Our Community"
             description="Share your thoughts or find strength in others’ stories—an anonymous, moderated space to connect on the Community page."
             buttonText="Join Community"
+            onClick={() => navigate("/community")}
           />
         </div>
         <div
@@ -62,6 +66,7 @@ const QuickOptions = () => {
             title="Call Help Now"
             description="Immediate support, 24/7—reach out anytime"
             buttonText="Get a Call"
+            onClick={() => navigate("/doctor-dashboard")}
           />
         </div>
       </div>

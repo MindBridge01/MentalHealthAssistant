@@ -1,4 +1,6 @@
-/* eslint-disable no-undef */
+
+// Ensure environment variables are loaded
+import 'dotenv/config';
 import { MongoClient } from "mongodb";
 
 // MongoDB connection string (use environment variable for security)

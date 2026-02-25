@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import NavBar from '../components/NavBar/NavBar';
 import HeroSec from '../components/sections/HeroSec/HeroSec';
 import QuickOptions from '../components/sections/QuickOptions/QuickOptions';
 import BreathingActivity from '../components/sections/BreathingActivity/BreathingActivity';
@@ -119,10 +118,6 @@ export class Home extends Component {
 
         {/* Main Content */}
         <div className="w-full h-full max-w-screen overflow-hidden mx-auto px-4 py-8 relative z-10">
-          {/* Sticky Navbar */}
-          <div className="sticky top-[-10] z-50 flex justify-center bg-transparent">
-            <NavBar />
-          </div>
 
           {/* Sections with Smooth Scroll */}
           <div
@@ -139,7 +134,7 @@ export class Home extends Component {
         </div>
 
         {/* Inline CSS for Animations */}
-        <style jsx>{`
+        <style>{`
           @keyframes floatLeft {
             0% {
               transform: translateY(0) rotate(15deg);
