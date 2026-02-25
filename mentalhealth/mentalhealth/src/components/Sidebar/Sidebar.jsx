@@ -63,7 +63,7 @@ const Sidebar = ({ onNewConversation }) => {
         </div>
         <div className="w-full flex justify-start">
           <a
-            href="#"
+            href="/questions"
             className="font-regular font-[Satoshi] flex items-center gap-6 text-gray-700 hover:text-blue-600 py-2 px-4 md:px-0"
             onClick={() => setIsNavOpen(false)}
           >
@@ -73,7 +73,7 @@ const Sidebar = ({ onNewConversation }) => {
         </div>
         <div className="w-full flex justify-start">
           <a
-            href="#"
+            href="/play-games"
             className="font-regular font-[Satoshi] flex items-center gap-6 text-gray-700 hover:text-blue-600 py-2 px-4 md:px-0"
             onClick={() => setIsNavOpen(false)}
           >

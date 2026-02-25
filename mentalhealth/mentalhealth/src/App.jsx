@@ -10,6 +10,8 @@ import Home from './pages/Home';
 import Aichat from './pages/Aichat';
 import Community from './pages/Community';
 import DoctorOnlyDashboard from './pages/DoctorOnlyDashboard';
+import Questions from './pages/Questions';
+import PlayGames from './pages/PlayGames';
 
 function App() {
   const location = useLocation();
@@ -23,6 +25,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/ai-chat" element={<Aichat />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/questions" element={<Questions />} />
+          <Route path="/play-games" element={<PlayGames />} />
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/profile-settings" element={<ProfileSettings user={user} />} />
