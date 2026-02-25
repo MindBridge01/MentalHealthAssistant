@@ -3,19 +3,19 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const DoctorOnlyDashboard = () => {
-  // Initialize profile with default values to avoid uncontrolled inputs
   const [profile, setProfile] = useState({
     name: "",
     specialty: "",
     bio: "",
     contact: "",
-    photo: ""
+    profilePic: ""
   });
   const [slots, setSlots] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [messages, setMessages] = useState([]);
   const [editProfile, setEditProfile] = useState(false);
-  const [newSlot, setNewSlot] = useState({ date: "", time: "" });
+  const [newSlot, setNewSlot] = useState({ date: "", startTime: "", endTime: "" });
+
   const [statusMessage, setStatusMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -23,13 +23,11 @@ const DoctorOnlyDashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  // Redirect if not doctor and fetch profile
   useEffect(() => {
     if (!user || user.role !== "doctor") navigate("/");
     else fetchDoctorProfile();
   }, [user]);
 
-  // Fetch doctor profile from backend
   const fetchDoctorProfile = async () => {
     try {
       const res = await axios.get(`http://localhost:3000/api/doctor/profile/${user._id}`);
@@ -38,7 +36,7 @@ const DoctorOnlyDashboard = () => {
         specialty: res.data.specialty || "",
         bio: res.data.bio || "",
         contact: res.data.contact || "",
-        photo: res.data.photo || ""
+        profilePic: res.data.profilePic || ""
       });
       setSlots(res.data.slots || []);
       setAppointments(res.data.appointments || []);
@@ -49,36 +47,38 @@ const DoctorOnlyDashboard = () => {
     }
   };
 
-  // ProfilePic upload handler (Cloudinary)
+  // Handle profile picture upload
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setUploading(true);
     setError("");
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "Mind_Bridge"); // Cloudinary preset
+    formData.append("upload_preset", "Mind_Bridge");
+
     try {
       const res = await fetch(
         "https://api.cloudinary.com/v1_1/drwpr138z/image/upload",
         { method: "POST", body: formData }
       );
       const data = await res.json();
-      setProfile({ ...profile, photo: data.secure_url || "" });
+      setProfile({ ...profile, profilePic: data.secure_url || "" });
     } catch (err) {
+      console.error("Image upload error:", err);
       setError("Image upload failed.");
     } finally {
       setUploading(false);
     }
   };
 
-  // Save profile updates to backend
   const handleProfileSave = async () => {
     try {
       await axios.put(`http://localhost:3000/api/doctor/profile/${user._id}`, { 
-        ...profile, 
-        statusMessage,
-        profilePic: profile.photo
+        ...profile,
+        statusMessage
       });
       setEditProfile(false);
       fetchDoctorProfile();
@@ -89,35 +89,39 @@ const DoctorOnlyDashboard = () => {
     }
   };
 
-  // Add new availability slot
   const handleAddSlot = async () => {
-    if (!newSlot.date || !newSlot.time) return;
-    try {
-      await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
-      setSlots([...slots, newSlot]);
-      setNewSlot({ date: "", time: "" });
-    } catch (err) {
-      console.error("Add slot failed:", err);
-      setError("Add slot failed.");
-    }
-  };
+  const { date, startTime, endTime } = newSlot;
+  if (!date || !startTime || !endTime) return;
 
-  // Remove slot from backend and state
+  try {
+    await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
+    setSlots([...slots, newSlot]);
+    setNewSlot({ date: "", startTime: "", endTime: "" });
+  } catch (err) {
+    setError("Add slot failed.");
+  }
+};
+
   const handleRemoveSlot = async (slot) => {
-    try {
-      await axios.delete(`http://localhost:3000/api/doctor/slots/${user._id}`, { data: slot });
-      setSlots(slots.filter((s) => !(s.date === slot.date && s.time === slot.time)));
-    } catch (err) {
-      console.error("Remove slot failed:", err);
-      setError("Remove slot failed.");
+  try {
+    if (!slot._id) {
+      setError("Cannot delete slot: missing ID.");
+      return;
     }
-  };
 
-  // Update appointment status locally
-  const handleAppointmentStatus = (id, status) => {
-    setAppointments(appointments.map((a) => (a.id === id ? { ...a, status } : a)));
-  };
+    await axios.delete(
+      `http://localhost:3000/api/doctor/slots/${user._id}/${slot._id}`
+    );
 
+    // Update UI after successful delete
+    setSlots((prevSlots) =>
+      prevSlots.filter((s) => s._id !== slot._id)
+    );
+  } catch (err) {
+    console.error(err);
+    setError("Remove slot failed.");
+  }
+};
   if (!profile) return <div>Loading...</div>;
 
   return (
@@ -127,7 +131,7 @@ const DoctorOnlyDashboard = () => {
         <h3 className="font-bold text-xl mb-4">Profile Management</h3>
         <div className="flex gap-6 items-center">
           <img
-            src={profile.photo || "/assets/images/default-user.png"}
+            src={profile.profilePic || "/assets/images/default-user.png"}
             alt={profile.name || "Doctor"}
             className="w-24 h-24 rounded-full object-cover border-2 border-purple-200"
           />
@@ -212,26 +216,46 @@ const DoctorOnlyDashboard = () => {
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={newSlot.date || ""}
-              onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
-              className="p-2 border rounded"
-            />
-            <input
-              type="time"
-              value={newSlot.time || ""}
-              onChange={(e) => setNewSlot({ ...newSlot, time: e.target.value })}
-              className="p-2 border rounded"
-            />
-            <button
-              onClick={handleAddSlot}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Add Slot
-            </button>
-          </div>
+          <div className="flex gap-2 mt-2">
+  <input
+    type="date"
+    value={newSlot.date}
+    onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+    className="p-2 border rounded"
+  />
+  <input
+    type="time"
+    value={newSlot.startTime}
+    onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+    className="p-2 border rounded"
+  />
+  <input
+    type="time"
+    value={newSlot.endTime}
+    onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+    className="p-2 border rounded"
+  />
+  <button
+    onClick={handleAddSlot}
+    className="bg-blue-600 text-white px-4 py-2 rounded"
+  >
+    Add Slot
+    </button>
+         </div>
+         {slots.map((slot, idx) => (
+  <div key={idx} className="flex items-center gap-2 mb-1">
+    <span>
+      {slot.date}: {slot.startTime} - {slot.endTime}
+    </span>
+    <button
+      onClick={() => handleRemoveSlot(slot)}
+      className="text-red-600 font-bold hover:text-red-800"
+      style={{ background: "none", border: "none", cursor: "pointer" }}
+    >
+      x
+    </button>
+  </div>
+))}
         </div>
       </div>
 
