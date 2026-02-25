@@ -9,18 +9,22 @@ const Dropdown = ({ label, options }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative inline-block text-left z-50">
+    <div
+      className="relative inline-block text-left z-50"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="inline-flex items-center justify-center gap-2.5 p-2.5 text-xl font-medium font-[Satoshi] text-dark-blue900"
+        className="inline-flex items-center justify-center gap-2.5 p-2.5 text-xl font-medium text-dark-blue900"
         type="button"
       >
         {label}
         <svg
-          className="w-4 h-4 ml-1"
+          className={`w-4 h-4 ml-1 transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -35,20 +39,22 @@ const Dropdown = ({ label, options }) => {
       </button>
 
       {open && (
-        <div className="absolute z-[999] mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
-          {options.map((opt) => (
-            <button
-              key={opt.label}
-              className="block w-full text-left px-4 py-2 text-dark-blue900 hover:bg-purple-50 cursor-pointer"
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                navigate(opt.to);
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="absolute z-[999] pt-2 w-48">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+            {options.map((opt) => (
+              <button
+                key={opt.label}
+                className="block w-full text-left px-4 py-2 text-dark-blue900 hover:bg-purple-50 cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  navigate(opt.to);
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -88,9 +94,8 @@ const NavBar = ({ user }) => {
 
       {/* Navigation */}
       <div
-        className={`${
-          isMenuOpen ? "flex" : "hidden"
-        } md:flex flex-col md:flex-row gap-[34px] items-center absolute md:static top-16 left-0 w-full md:w-auto bg-white md:bg-transparent p-4 md:p-0 z-50`}
+        className={`${isMenuOpen ? "flex" : "hidden"
+          } md:flex flex-col md:flex-row gap-[34px] items-center absolute md:static top-16 left-0 w-full md:w-auto bg-white md:bg-transparent p-4 md:p-0 z-50`}
       >
         {/* Links */}
         <Link to="/" className="p-2.5 text-xl font-medium text-dark-blue900">
@@ -109,14 +114,14 @@ const NavBar = ({ user }) => {
         </Link>
 
         {/* Login Dropdown */}
-          <Dropdown
-            label="Login"
-            options={[
-              { label: "Login as User", to: "/login/user" },
-              { label: "Login as Doctor", to: "/login/doctor" },
-              { label: "Login as Admin", to: "/login/admin" },
-            ]}
-          />
+        <Dropdown
+          label="Login"
+          options={[
+            { label: "Login as User", to: "/login/user" },
+            { label: "Login as Doctor", to: "/login/doctor" },
+            { label: "Login as Admin", to: "/login/admin" },
+          ]}
+        />
 
         {/* Signup Dropdown */}
         <Dropdown
