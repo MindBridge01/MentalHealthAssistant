@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { getMongoClient } = require('../../api/lib/mongodb');
 const { ObjectId } = require('mongodb');
 
 router.put('/', async (req, res) => {
@@ -14,23 +13,29 @@ router.put('/', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const client = await getMongoClient();
-    const db = client.db();
+    // Access the shared database instance from server.js
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database not connected' });
 
-    const result = await db.collection('users').updateOne(
+    // 1. Update Core Auth Entity
+    await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
+      { $set: { name, email, profilePic, updatedAt: new Date() } }
+    );
+
+    // 2. Update Separate Profile Details Entity
+    await db.collection('profiles').updateOne(
+      { userId: new ObjectId(userId) }, // Reference to the user
       {
         $set: {
-          name, email, profilePic,
+          name, email,
           birthday, age, gender, phone, address, zipcode, country, city,
           guardianName, guardianPhone, guardianEmail, illnesses,
           updatedAt: new Date()
         }
-      }
+      },
+      { upsert: true } // Creates the document if it doesn't already exist
     );
-
-    if (result.modifiedCount === 0)
-      return res.status(404).json({ error: 'User not found' });
 
     res.json({ success: true });
   } catch (err) {

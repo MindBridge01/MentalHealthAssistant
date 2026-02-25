@@ -56,6 +56,9 @@ router.post('/google-login', async (req, res) => {
       console.log('Google login: Existing user', user);
     }
 
+    // Fetch extended profile data if it exists in the new separate entity
+    const profileData = await db.collection('profiles').findOne({ userId: user._id });
+
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
 
     res.json({
@@ -64,6 +67,7 @@ router.post('/google-login', async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
+      ...(profileData || {}), // Merge separated profile data smoothly
       token
     });
 
@@ -158,6 +162,9 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Role mismatch' });
     }
 
+    // Fetch extended profile data if it exists in the new separate entity
+    const profileData = await db.collection('profiles').findOne({ userId: user._id });
+
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     console.log('Login: Success', { email, role });
 
@@ -166,6 +173,8 @@ router.post('/login', async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      profilePic: user.profilePic,
+      ...(profileData || {}), // Merge separated profile data smoothly
       token
     });
 
