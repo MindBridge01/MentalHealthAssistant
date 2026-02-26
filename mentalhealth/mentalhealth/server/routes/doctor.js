@@ -100,14 +100,31 @@ router.post('/slots/:userId', async (req, res) => {
     const client = await getMongoClient();
     const db = client.db();
 
+    // Fetch doctor to get name
+    const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+
+    const slotId = new ObjectId();
+
+    // 1. Add to separate doctor_availability entity
+    const newAvailability = {
+      _id: slotId,
+      doctorId: userId,
+      doctorName: doctor.name || "Unknown Doctor",
+      date,
+      startTime,
+      endTime,
+      createdAt: new Date()
+    };
+    await db.collection('doctor_availability').insertOne(newAvailability);
+
+    // 2. Add to doctor's internal array (for backwards compat)
     const result = await db.collection('doctors').updateOne(
       { userId: new ObjectId(userId) },
-      { $push: { slots: { _id: new ObjectId(), date, startTime, endTime } } }
+      { $push: { slots: { _id: slotId, date, startTime, endTime } } }
     );
 
-    if (result.matchedCount === 0) return res.status(404).json({ error: 'Doctor not found' });
-
-    res.json({ success: true });
+    res.json({ success: true, availability: newAvailability });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -147,6 +164,10 @@ router.delete('/slots/:userId/:slotId', async (req, res) => {
     const client = await getMongoClient();
     const db = client.db();
 
+    // 1. Remove from separate doctor_availability collection
+    await db.collection('doctor_availability').deleteOne({ _id: new ObjectId(slotId) });
+
+    // 2. Remove from doctor internal array
     const result = await db.collection('doctors').updateOne(
       { userId: new ObjectId(userId) },
       { $pull: { slots: { _id: new ObjectId(slotId) } } }
@@ -177,6 +198,19 @@ router.put('/slots/:userId/:slotId', async (req, res) => {
     const client = await getMongoClient();
     const db = client.db();
 
+    // 1. Update separate doctor_availability collection
+    await db.collection('doctor_availability').updateOne(
+      { _id: new ObjectId(slotId) },
+      {
+        $set: {
+          date: date,
+          startTime: startTime,
+          endTime: endTime
+        }
+      }
+    );
+
+    // 2. Update doctor internal array
     const result = await db.collection('doctors').updateOne(
       {
         userId: new ObjectId(userId),
@@ -196,6 +230,20 @@ router.put('/slots/:userId/:slotId', async (req, res) => {
 
     res.json({ success: true });
 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Get all availability records (New Entity endpoint) ----------
+router.get('/availabilities', async (req, res) => {
+  try {
+    const client = await getMongoClient();
+    const db = client.db();
+
+    // Fetch all available slots from the standalone collection
+    const availabilities = await db.collection('doctor_availability').find({}).toArray();
+    res.json(availabilities);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
