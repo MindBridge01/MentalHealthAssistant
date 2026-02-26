@@ -61,13 +61,17 @@ const DoctorDashboard = () => {
     const slotTime = `${parts[1]} ${parts[2]} ${parts[3]}`;
 
     try {
+      const selectedSlotObj = selectedDoctor.slots.find(s => `${s.date} ${s.startTime} - ${s.endTime}` === selectedSlot);
+      const slotId = selectedSlotObj ? selectedSlotObj._id : null;
+
       const res = await axios.post(`http://localhost:3000/api/doctor/appointments/${selectedDoctor.userId}`, {
         patientId: user._id,
         patientName: user.name,
         patientEmail: user.email,
         slotDate,
         slotTime,
-        notes: message
+        notes: message,
+        slotId
       });
 
       if (res.data.success) {
@@ -76,6 +80,12 @@ const DoctorDashboard = () => {
           ...myAppointments,
           { doctorName: selectedDoctor.name, date: slotDate, time: slotTime, status: 'Upcoming' }
         ]);
+
+        // Remove locally immediately
+        setSelectedDoctor(prev => ({
+          ...prev,
+          slots: prev.slots.filter(s => s._id !== slotId)
+        }));
         setSelectedSlot("");
         setMessage("");
       }
@@ -101,7 +111,13 @@ const DoctorDashboard = () => {
               </div>
             ) : (
               doctorsList.map((doc) => (
-                <div key={doc._id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={() => setSelectedDoctor(doc)}>
+                <div key={doc._id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={async () => {
+                  setSelectedDoctor(doc);
+                  try {
+                    const res = await axios.get(`http://localhost:3000/api/doctor/profile/${doc.userId}`);
+                    setSelectedDoctor(res.data);
+                  } catch (e) { }
+                }}>
                   <img src={doc.profilePic || "/assets/images/default-user.png"} alt={doc.name} className="w-16 h-16 rounded-full object-cover border-2 border-purple-200" />
                   <div>
                     <div className="font-bold text-lg text-dark-blue900">{doc.name}</div>
@@ -127,18 +143,46 @@ const DoctorDashboard = () => {
               </div>
               <div className="mb-4">
                 <h4 className="font-semibold text-dark-blue900 mb-2">Book Appointment</h4>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedDoctor.slots?.map((slot, idx) => {
-                    const slotStr = `${slot.date} ${slot.startTime}`;
-                    return (
-                      <button key={idx} className={`px-3 py-1 rounded-lg border ${selectedSlot === slotStr ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 border-purple-200'}`} onClick={() => setSelectedSlot(slotStr)}>{slot.date} {slot.startTime} - {slot.endTime}</button>
-                    )
-                  })}
-                  {(!selectedDoctor.slots || selectedDoctor.slots.length === 0) && (
-                    <div className="text-sm text-gray-500 italic">No available slots listed currently.</div>
-                  )}
+                <div className="flex flex-col gap-4 mb-2 w-full">
+                  {(() => {
+                    if (!selectedDoctor.slots || selectedDoctor.slots.length === 0) {
+                      return <div className="text-sm text-gray-500 italic">No available slots listed currently.</div>;
+                    }
+
+                    // Group slots by date
+                    const slotsByDate = selectedDoctor.slots.reduce((acc, slot) => {
+                      if (!acc[slot.date]) acc[slot.date] = [];
+                      acc[slot.date].push(slot);
+                      return acc;
+                    }, {});
+
+                    // Sort dates (optional: you could sort by string or Date object)
+                    const sortedDates = Object.keys(slotsByDate).sort();
+
+                    return sortedDates.map(date => (
+                      <div key={date} className="w-full border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm">
+                        <div className="font-bold text-dark-blue900 mb-3 border-b border-gray-200 pb-2 text-lg">{date}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {slotsByDate[date].map((slot, idx) => {
+                            const slotStr = `${slot.date} ${slot.startTime} - ${slot.endTime}`;
+                            const isSelected = selectedSlot === slotStr;
+                            return (
+                              <button
+                                key={idx}
+                                className={`flex justify-start px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${isSelected ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-100'}`}
+                                onClick={() => setSelectedSlot(slotStr)}
+                              >
+                                <span className={isSelected ? 'text-purple-200 mr-2 font-bold' : 'text-purple-400 mr-2 font-bold'}>{idx + 1} -</span>
+                                <span>{slot.startTime} - {slot.endTime}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
-                <textarea className="w-full p-2 border border-gray-300 rounded-md mb-2" rows="2" placeholder="Message to doctor (optional)" value={message} onChange={e => setMessage(e.target.value)} />
+                <textarea className="w-full p-3 border border-gray-300 rounded-xl mb-4 mt-2 focus:ring-2 focus:ring-purple-500 outline-none placeholder-gray-400 resize-none" rows="3" placeholder="Additional notes or message to doctor (optional)" value={message} onChange={e => setMessage(e.target.value)} />
                 <button
                   onClick={handleBookAppointment}
                   className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold disabled:opacity-50"

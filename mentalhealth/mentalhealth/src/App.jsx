@@ -14,6 +14,7 @@ import Questions from './pages/Questions';
 import PlayGames from './pages/PlayGames';
 import StressCatch from './games/StressCatch';
 import FruitMatch from './games/FruitMatch';
+import PatientProfile from './pages/PatientProfile';
 
 function App() {
   const location = useLocation();
@@ -35,6 +36,7 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/profile-settings" element={<ProfileSettings user={user} />} />
           <Route path="/doctor-only-dashboard" element={<DoctorOnlyDashboard />} />
+          <Route path="/patient-profile/:id" element={<PatientProfile />} />
 
           {/* Login */}
           <Route path="/login/user" element={<AuthWindow mode="login" role="user" onSwitch={() => { }} />} />

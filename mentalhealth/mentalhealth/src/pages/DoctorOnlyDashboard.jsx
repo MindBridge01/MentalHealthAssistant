@@ -469,8 +469,14 @@ const DoctorOnlyDashboard = () => {
           </thead>
           <tbody>
             {appointments.map((a) => (
-              <tr key={a.id} className="border-b">
-                <td>{a.patient}</td>
+              <tr key={a.id} className="border-b hover:bg-gray-50 transition-colors">
+                <td
+                  className="font-medium text-purple-700 cursor-pointer hover:underline"
+                  onClick={() => navigate(`/patient-profile/${a.patientId}`)}
+                  title="View Patient Profile"
+                >
+                  {a.patient}
+                </td>
                 <td>{a.patientEmail || "N/A"}</td>
                 <td>{a.date}</td>
                 <td>{a.time}</td>

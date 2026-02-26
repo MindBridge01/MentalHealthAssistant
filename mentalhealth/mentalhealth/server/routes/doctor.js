@@ -104,27 +104,60 @@ router.post('/slots/:userId', async (req, res) => {
     const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
 
-    const slotId = new ObjectId();
+    // Helper to divide time into 30-min intervals
+    const generateIntervals = (startStr, endStr) => {
+      const intervals = [];
+      let [startH, startM] = startStr.split(':').map(Number);
+      let [endH, endM] = endStr.split(':').map(Number);
+
+      let currentMin = startH * 60 + startM;
+      let endMin = endH * 60 + endM;
+
+      while (currentMin + 30 <= endMin) {
+        const h1 = Math.floor(currentMin / 60).toString().padStart(2, '0');
+        const m1 = (currentMin % 60).toString().padStart(2, '0');
+        const nextMin = currentMin + 30;
+        const h2 = Math.floor(nextMin / 60).toString().padStart(2, '0');
+        const m2 = (nextMin % 60).toString().padStart(2, '0');
+        intervals.push({ startTime: `${h1}:${m1}`, endTime: `${h2}:${m2}` });
+        currentMin = nextMin;
+      }
+      return intervals;
+    };
+
+    const slotsToCreate = generateIntervals(startTime, endTime);
+    if (slotsToCreate.length === 0) {
+      return res.status(400).json({ error: 'Time range must be at least 30 minutes' });
+    }
+
+    const availabilities = [];
+    const internalSlots = [];
+
+    for (const slot of slotsToCreate) {
+      const slotId = new ObjectId();
+      const newAvailability = {
+        _id: slotId,
+        doctorId: userId,
+        doctorName: doctor.name || "Unknown Doctor",
+        date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        createdAt: new Date()
+      };
+      availabilities.push(newAvailability);
+      internalSlots.push({ _id: slotId, date, startTime: slot.startTime, endTime: slot.endTime });
+    }
 
     // 1. Add to separate doctor_availability entity
-    const newAvailability = {
-      _id: slotId,
-      doctorId: userId,
-      doctorName: doctor.name || "Unknown Doctor",
-      date,
-      startTime,
-      endTime,
-      createdAt: new Date()
-    };
-    await db.collection('doctor_availability').insertOne(newAvailability);
+    await db.collection('doctor_availability').insertMany(availabilities);
 
     // 2. Add to doctor's internal array (for backwards compat)
-    const result = await db.collection('doctors').updateOne(
+    await db.collection('doctors').updateOne(
       { userId: new ObjectId(userId) },
-      { $push: { slots: { _id: slotId, date, startTime, endTime } } }
+      { $push: { slots: { $each: internalSlots } } }
     );
 
-    res.json({ success: true, availability: newAvailability });
+    res.json({ success: true, availabilities });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -252,7 +285,7 @@ router.get('/availabilities', async (req, res) => {
 router.post('/appointments/:doctorId', async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const { patientId, patientName, patientEmail, slotDate, slotTime, notes } = req.body;
+    const { patientId, patientName, patientEmail, slotDate, slotTime, notes, slotId } = req.body;
 
     if (!patientId || !slotDate || !slotTime) {
       return res.status(400).json({ error: 'Missing required appointment fields' });
@@ -288,6 +321,31 @@ router.post('/appointments/:doctorId', async (req, res) => {
 
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    // 3. Remove the booked slot so no other patient can book it
+    if (slotId) {
+      await db.collection('doctor_availability').deleteOne({ _id: new ObjectId(slotId) });
+      await db.collection('doctors').updateOne(
+        { userId: new ObjectId(doctorId) },
+        { $pull: { slots: { _id: new ObjectId(slotId) } } }
+      );
+    } else {
+      // Fallback: split the slotTime string and pull by values
+      const parts = slotTime.split(' - ');
+      if (parts.length === 2) {
+        const [st, et] = parts;
+        await db.collection('doctor_availability').deleteOne({
+          doctorId: doctorId,
+          date: slotDate,
+          startTime: st,
+          endTime: et
+        });
+        await db.collection('doctors').updateOne(
+          { userId: new ObjectId(doctorId) },
+          { $pull: { slots: { date: slotDate, startTime: st, endTime: et } } }
+        );
+      }
     }
 
     res.json({ success: true, message: 'Appointment booked successfully', appointment: doctorAppointmentCopy });
