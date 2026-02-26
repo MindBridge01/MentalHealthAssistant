@@ -28,6 +28,23 @@ router.get('/profile/:userId', async (req, res) => {
       return res.json({ name: '', specialty: '', bio: '', contact: '', profilePic: '' });
     }
 
+    // Backfill _id for any older slots that don't have one
+    let needsUpdate = false;
+    if (doctor.slots && Array.isArray(doctor.slots)) {
+      doctor.slots.forEach(slot => {
+        if (!slot._id) {
+          slot._id = new ObjectId();
+          needsUpdate = true;
+        }
+      });
+      if (needsUpdate) {
+        await db.collection('doctors').updateOne(
+          { userId: new ObjectId(userId) },
+          { $set: { slots: doctor.slots } }
+        );
+      }
+    }
+
     res.json(doctor);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -85,7 +102,7 @@ router.post('/slots/:userId', async (req, res) => {
 
     const result = await db.collection('doctors').updateOne(
       { userId: new ObjectId(userId) },
-      { $push: { slots: { date, startTime, endTime } } }
+      { $push: { slots: { _id: new ObjectId(), date, startTime, endTime } } }
     );
 
     if (result.matchedCount === 0) return res.status(404).json({ error: 'Doctor not found' });
@@ -123,6 +140,10 @@ router.delete('/slots/:userId/:slotId', async (req, res) => {
   try {
     const { userId, slotId } = req.params;
 
+    if (!slotId || slotId === 'undefined') {
+      return res.status(400).json({ error: 'Invalid slot ID. Please refresh your browser.' });
+    }
+
     const client = await getMongoClient();
     const db = client.db();
 
@@ -133,6 +154,45 @@ router.delete('/slots/:userId/:slotId', async (req, res) => {
 
     if (result.matchedCount === 0)
       return res.status(404).json({ error: 'Doctor not found' });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Edit a slot ----------
+router.put('/slots/:userId/:slotId', async (req, res) => {
+  try {
+    const { userId, slotId } = req.params;
+    const { date, startTime, endTime } = req.body;
+
+    if (!date || !startTime || !endTime) return res.status(400).json({ error: 'Date, startTime, and endTime required' });
+
+    if (!slotId || slotId === 'undefined') {
+      return res.status(400).json({ error: 'Invalid slot ID. Please refresh your browser.' });
+    }
+
+    const client = await getMongoClient();
+    const db = client.db();
+
+    const result = await db.collection('doctors').updateOne(
+      {
+        userId: new ObjectId(userId),
+        "slots._id": new ObjectId(slotId)
+      },
+      {
+        $set: {
+          "slots.$.date": date,
+          "slots.$.startTime": startTime,
+          "slots.$.endTime": endTime
+        }
+      }
+    );
+
+    if (result.matchedCount === 0)
+      return res.status(404).json({ error: 'Doctor or slot not found' });
 
     res.json({ success: true });
 

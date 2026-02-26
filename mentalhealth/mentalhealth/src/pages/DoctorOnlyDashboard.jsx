@@ -18,6 +18,8 @@ const DoctorOnlyDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [editProfile, setEditProfile] = useState(false);
   const [newSlot, setNewSlot] = useState({ date: "", startTime: "", endTime: "" });
+  const [editingSlotId, setEditingSlotId] = useState(null);
+  const [editSlotData, setEditSlotData] = useState({ date: "", startTime: "", endTime: "" });
 
   const [statusMessage, setStatusMessage] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -101,17 +103,42 @@ const DoctorOnlyDashboard = () => {
 
     try {
       await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
-      setSlots([...slots, newSlot]);
       setNewSlot({ date: "", startTime: "", endTime: "" });
+      fetchDoctorProfile();
     } catch (err) {
-      setError("Add slot failed.");
+      alert("Add slot failed. Please try again.");
     }
+  };
+
+  const handleEditSlotClick = (slot) => {
+    setEditingSlotId(slot._id);
+    setEditSlotData({
+      date: slot.date || "",
+      startTime: slot.startTime || "",
+      endTime: slot.endTime || ""
+    });
+  };
+
+  const handleSaveEditSlot = async () => {
+    try {
+      if (!editSlotData.date || !editSlotData.startTime || !editSlotData.endTime) return;
+      await axios.put(`http://localhost:3000/api/doctor/slots/${user._id}/${editingSlotId}`, editSlotData);
+      setEditingSlotId(null);
+      fetchDoctorProfile();
+    } catch (err) {
+      alert(err.response?.data?.error || "Edit slot failed. Please refresh and try again.");
+      setEditingSlotId(null);
+    }
+  };
+
+  const handleCancelEditSlot = () => {
+    setEditingSlotId(null);
   };
 
   const handleRemoveSlot = async (slot) => {
     try {
       if (!slot._id) {
-        setError("Cannot delete slot: missing ID.");
+        alert("Cannot delete slot: missing ID. Please refresh the page.");
         return;
       }
 
@@ -125,7 +152,7 @@ const DoctorOnlyDashboard = () => {
       );
     } catch (err) {
       console.error(err);
-      setError("Remove slot failed.");
+      alert(err.response?.data?.error || "Remove slot failed. Please refresh and try again.");
     }
   };
   const handleAppointmentStatus = (id, status) => {
@@ -319,63 +346,109 @@ const DoctorOnlyDashboard = () => {
 
         {/* Availability Slots */}
         <div className="mt-6">
-          <h4 className="font-semibold">Availability</h4>
-          <div className="flex gap-2 flex-wrap mb-2">
-            {slots.map((slot, idx) => (
-              <div
-                key={idx}
-                className="px-3 py-1 rounded-lg border bg-purple-50 text-purple-700 flex items-center gap-2"
-              >
-                {slot.date} {slot.time}
-                <button
-                  className="text-red-600 font-bold ml-2"
-                  onClick={() => handleRemoveSlot(slot)}
-                >
-                  x
-                </button>
+          <h4 className="font-semibold text-lg text-gray-800 mb-3">Availability</h4>
+
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
+            <h5 className="text-sm font-semibold text-gray-700 mb-2">Add New Slot</h5>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={newSlot.date}
+                  onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+                  className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                />
               </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <input
-              type="date"
-              value={newSlot.date}
-              onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
-              className="p-2 border rounded"
-            />
-            <input
-              type="time"
-              value={newSlot.startTime}
-              onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
-              className="p-2 border rounded"
-            />
-            <input
-              type="time"
-              value={newSlot.endTime}
-              onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
-              className="p-2 border rounded"
-            />
-            <button
-              onClick={handleAddSlot}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Add Slot
-            </button>
-          </div>
-          {slots.map((slot, idx) => (
-            <div key={idx} className="flex items-center gap-2 mb-1">
-              <span>
-                {slot.date}: {slot.startTime} - {slot.endTime}
-              </span>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+                <input
+                  type="time"
+                  value={newSlot.startTime}
+                  onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+                  className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">End Time</label>
+                <input
+                  type="time"
+                  value={newSlot.endTime}
+                  onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+                  className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                />
+              </div>
               <button
-                onClick={() => handleRemoveSlot(slot)}
-                className="text-red-600 font-bold hover:text-red-800"
-                style={{ background: "none", border: "none", cursor: "pointer" }}
+                onClick={handleAddSlot}
+                className="bg-purple-600 hover:bg-purple-700 transition-colors text-white px-5 py-2 rounded-lg font-medium h-[42px]"
               >
-                x
+                Add Slot
               </button>
             </div>
-          ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {slots.map((slot, idx) => (
+              <div key={idx} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                {editingSlotId === slot._id ? (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="date"
+                      value={editSlotData.date}
+                      onChange={(e) => setEditSlotData({ ...editSlotData, date: e.target.value })}
+                      className="p-1.5 border border-gray-300 rounded-md text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="time"
+                        value={editSlotData.startTime}
+                        onChange={(e) => setEditSlotData({ ...editSlotData, startTime: e.target.value })}
+                        className="p-1.5 border border-gray-300 rounded-md text-sm w-full"
+                      />
+                      <input
+                        type="time"
+                        value={editSlotData.endTime}
+                        onChange={(e) => setEditSlotData({ ...editSlotData, endTime: e.target.value })}
+                        className="p-1.5 border border-gray-300 rounded-md text-sm w-full"
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={handleSaveEditSlot} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 rounded-md font-medium transition-colors">Save</button>
+                      <button onClick={handleCancelEditSlot} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1.5 rounded-md font-medium transition-colors">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold text-gray-800 text-sm">{slot.date}</div>
+                      <div className="text-purple-600 font-medium text-sm mt-0.5">
+                        {slot.startTime} - {slot.endTime}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditSlotClick(slot)}
+                        className="text-blue-600 hover:text-blue-800 border border-blue-200 bg-blue-50 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleRemoveSlot(slot)}
+                        className="text-red-600 hover:text-red-800 border border-red-200 bg-red-50 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {slots.length === 0 && (
+              <div className="col-span-1 md:col-span-2 text-center text-gray-500 py-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-sm">
+                No slots available. Add your first slot above.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
