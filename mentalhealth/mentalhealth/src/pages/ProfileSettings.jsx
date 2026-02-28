@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // Get current logged-in user
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if (!user) {
@@ -64,6 +65,16 @@ const ProfileSettings = () => {
   const handleSave = async () => {
     setError("");
 
+    if (
+      !name.trim() || !email.trim() || !birthday || !age || !gender || !phone.trim() ||
+      !address.trim() || !zipcode.trim() || !country.trim() || !city.trim() ||
+      !guardianName.trim() || !guardianPhone.trim() || !guardianEmail.trim() || !illnesses.trim()
+    ) {
+      setError("Please fill all sections before saving changes.");
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to see the error
+      return;
+    }
+
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
@@ -89,6 +100,10 @@ const ProfileSettings = () => {
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       alert("Profile updated successfully!");
+
+      if (location.state?.from) {
+        navigate(location.state.from);
+      }
     } catch (err) {
       console.error(err);
       setError("Profile update failed.");

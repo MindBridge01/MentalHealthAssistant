@@ -196,7 +196,14 @@ const Questions = () => {
         if (newAnswers.length === activeSeverityData.questions.length) {
             const result = activeSeverityData.calculateScore(newAnswers);
             setFinalResult(result);
-            setStep(3);
+
+            const highLevels = ['Moderately Severe', 'Severe', 'High'];
+            // If the user scores high or triggers the critical needsHelp flag
+            if (highLevels.includes(result.level) || result.needsHelp) {
+                navigate('/counseling');
+            } else {
+                setStep(3);
+            }
         }
     };
 
@@ -301,36 +308,23 @@ const Questions = () => {
                         </div>
                     )}
 
-                    {/* ====== RESULT ====== */}
+                    {/* ====== RESULT (Only shows for Low/Moderate) ====== */}
                     {step === 3 && finalResult && (
                         <div className="animate-fadeIn text-center py-8">
-                            <div className="w-24 h-24 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                                <span className="material-icons text-white text-5xl">inventory</span>
+                            <div className="w-24 h-24 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                <span className="material-icons text-white text-5xl">health_and_safety</span>
                             </div>
                             <h2 className="text-3xl font-bold text-dark-blue900 mb-4">Assessment Complete</h2>
                             <p className="text-xl text-gray-600 mb-6 max-w-lg mx-auto leading-relaxed">
-                                Based on your responses, your result indicates <span className="font-bold text-purple-700">{finalResult.level} {primaryIssue}</span>.
+                                Great news! Based on your responses, <span className="font-bold text-teal-700">Based on this screening, there are no concerns identified right now.</span>.
                             </p>
 
-                            {finalResult.needsHelp && (
-                                <div className="bg-red-50 border border-red-200 p-6 rounded-2xl mb-8 text-left">
-                                    <h3 className="font-bold text-red-800 mb-2 flex items-center gap-2">
-                                        <span className="material-icons">warning</span> Immediate Attention Recommended
-                                    </h3>
-                                    <p className="text-red-700 font-medium">
-                                        Because of your response to the thoughts of self-harm question, we strongly encourage you to seek immediate professional help or contact an emergency hotline. You are not alone.
-                                    </p>
-                                </div>
-                            )}
-
-                            {!finalResult.needsHelp && (
-                                <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-8 text-left">
-                                    <h3 className="font-bold text-gray-800 mb-2">What does this mean?</h3>
-                                    <p className="text-gray-600">
-                                        This is a preliminary screening to help guide your path forward. An AI agent is ready to speak with you about these specific feelings in the chat, or you can speak directly with our community or a licensed professional.
-                                    </p>
-                                </div>
-                            )}
+                            <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-8 text-left">
+                                <h3 className="font-bold text-gray-800 mb-2">What does this mean?</h3>
+                                <p className="text-gray-600">
+                                    Your mental wellbeing appears to be in a healthy state. Maintaining good habits like regular sleep, diet, and exercise will help you stay this way. If you ever want to talk, our AI agent is always ready to chat.
+                                </p>
+                            </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button
@@ -340,10 +334,10 @@ const Questions = () => {
                                     Go to AI Chat
                                 </button>
                                 <button
-                                    onClick={resetAssessment}
+                                    onClick={() => navigate('/')}
                                     className="px-8 py-3 bg-white text-dark-blue900 border border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition-colors shadow-sm"
                                 >
-                                    Retake Assessment
+                                    Return to Home
                                 </button>
                             </div>
                         </div>

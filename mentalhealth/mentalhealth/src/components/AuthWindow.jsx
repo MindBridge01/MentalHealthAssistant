@@ -1,20 +1,23 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 
-const AuthWindow = ({ mode = "login", role = "user" }) => {
+const AuthWindow = ({ mode = "login" }) => {
+  const { role: urlRole } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [currentRole, setCurrentRole] = useState(urlRole || "user");
 
   // ---------- Google Sign-In ----------
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const idToken = credentialResponse.credential;
-      const response = await axios.post('/api/auth/google-login', { idToken, role });
+      const response = await axios.post('/api/auth/google-login', { idToken, role: currentRole });
 
       // Save user info + JWT
       localStorage.setItem('user', JSON.stringify(response.data));
@@ -22,9 +25,9 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
       console.log("JWT Token:", response.data.token);// <-- store JWT
 
       // Redirect based on role
-      if (response.data.role === 'doctor') navigate('/doctor-dashboard');
+      if (response.data.role === 'doctor') navigate(location.state?.from || '/doctor-dashboard');
       else if (response.data.role === 'admin') navigate('/admin-dashboard');
-      else navigate('/');
+      else navigate(location.state?.from || '/');
     } catch (err) {
       setError('Google login failed');
     }
@@ -43,9 +46,9 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
     try {
       let response;
       if (mode === "login") {
-        response = await axios.post('/api/auth/login', { email, password, role });
+        response = await axios.post('/api/auth/login', { email, password, role: currentRole });
       } else {
-        response = await axios.post('/api/auth/signup', { name, email, password, role });
+        response = await axios.post('/api/auth/signup', { name, email, password, role: currentRole });
       }
 
       // Save user info + JWT
@@ -53,9 +56,9 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
       localStorage.setItem('token', response.data.token);
 
       // Redirect based on role
-      if (response.data.role === 'doctor') navigate('/doctor-only-dashboard');
+      if (response.data.role === 'doctor') navigate(location.state?.from || '/doctor-only-dashboard');
       else if (response.data.role === 'admin') navigate('/admin-dashboard');
-      else navigate('/'); // redirects standard users to home page
+      else navigate(location.state?.from || '/'); // redirects standard users to home page
     } catch (err) {
       setError(err.response?.data?.error || 'Authentication failed');
     }
@@ -65,9 +68,36 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
     <div className="w-full max-w-md mx-auto bg-white rounded-3xl shadow-md p-8 mt-12">
       <h2 className="font-['General_Sans'] font-semibold text-dark-blue900 text-2xl md:text-4xl mb-6 text-center">
         {mode === "login"
-          ? `Login as ${role === "doctor" ? "Doctor" : role === "admin" ? "Admin" : "User"}`
-          : `Signup as ${role === "doctor" ? "Doctor" : role === "admin" ? "Admin" : "User"}`}
+          ? `Login as ${currentRole === "doctor" ? "Doctor" : currentRole === "admin" ? "Admin" : "User"}`
+          : `Signup as ${currentRole === "doctor" ? "Doctor" : currentRole === "admin" ? "Admin" : "User"}`}
       </h2>
+
+      <div className="flex bg-gray-100 p-1 rounded-lg mb-6 justify-center">
+        <button
+          type="button"
+          onClick={() => setCurrentRole('user')}
+          className={`flex-1 py-1.5 rounded-md transition-colors ${currentRole === 'user' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'}`}
+        >
+          User
+        </button>
+        <button
+          type="button"
+          onClick={() => setCurrentRole('doctor')}
+          className={`flex-1 py-1.5 rounded-md transition-colors ${currentRole === 'doctor' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'}`}
+        >
+          Doctor
+        </button>
+        {mode === "login" && (
+          <button
+            type="button"
+            onClick={() => setCurrentRole('admin')}
+            className={`flex-1 py-1.5 rounded-md transition-colors ${currentRole === 'admin' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'}`}
+          >
+            Admin
+          </button>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {mode === "signup" && (
           <input
@@ -96,7 +126,7 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
           <button
             type="button"
             className="text-blue-600 hover:underline text-sm text-left"
-            onClick={() => navigate(`/forgot-password/${role}`)}
+            onClick={() => navigate(`/forgot-password/${currentRole}`)}
           >
             Forgot password?
           </button>
@@ -122,7 +152,7 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
               <button
                 className="text-blue-600 hover:underline"
                 type="button"
-                onClick={() => navigate(`/signup/${role}`)}
+                onClick={() => navigate(`/signup/${currentRole}`)}
               >Sign Up</button>
             </span>
           ) : (
@@ -131,7 +161,7 @@ const AuthWindow = ({ mode = "login", role = "user" }) => {
               <button
                 className="text-blue-600 hover:underline"
                 type="button"
-                onClick={() => navigate(`/login/${role}`)}
+                onClick={() => navigate(`/login/${currentRole}`)}
               >Login</button>
             </span>
           )}

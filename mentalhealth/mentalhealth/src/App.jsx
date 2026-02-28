@@ -15,6 +15,7 @@ import PlayGames from './pages/PlayGames';
 import StressCatch from './games/StressCatch';
 import FruitMatch from './games/FruitMatch';
 import PatientProfile from './pages/PatientProfile';
+import Counseling from './pages/Counseling';
 
 function App() {
   const location = useLocation();
@@ -22,13 +23,14 @@ function App() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   return (
     <div className="flex flex-col min-h-screen">
-      {!['/ai-chat', '/questions', '/play-games', '/stress-catch', '/fruit-match'].includes(location.pathname) && <Navbar user={user} />}
+      {!['/ai-chat', '/questions', '/play-games', '/stress-catch', '/fruit-match', '/counseling'].includes(location.pathname) && <Navbar user={user} />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/ai-chat" element={<Aichat />} />
           <Route path="/community" element={<Community />} />
           <Route path="/questions" element={<Questions />} />
+          <Route path="/counseling" element={<Counseling />} />
           <Route path="/play-games" element={<PlayGames />} />
           <Route path="/stress-catch" element={<StressCatch />} />
           <Route path="/fruit-match" element={<FruitMatch />} />
@@ -39,14 +41,12 @@ function App() {
           <Route path="/patient-profile/:id" element={<PatientProfile />} />
 
           {/* Login */}
-          <Route path="/login/user" element={<AuthWindow mode="login" role="user" onSwitch={() => { }} />} />
-          <Route path="/login/doctor" element={<AuthWindow mode="login" role="doctor" onSwitch={() => { }} />} />
-          <Route path="/login/admin" element={<AuthWindow mode="login" role="admin" onSwitch={() => { }} />} />
+          <Route path="/login" element={<AuthWindow mode="login" />} />
+          <Route path="/login/:role" element={<AuthWindow mode="login" />} />
 
           {/* Signup */}
-          <Route path="/signup/user" element={<AuthWindow mode="signup" role="user" onSwitch={() => { }} />} />
-          <Route path="/signup/doctor" element={<AuthWindow mode="signup" role="doctor" onSwitch={() => { }} />} />
-          <Route path="/signup/admin" element={<AuthWindow mode="signup" role="admin" onSwitch={() => { }} />} />
+          <Route path="/signup" element={<AuthWindow mode="signup" />} />
+          <Route path="/signup/:role" element={<AuthWindow mode="signup" />} />
         </Routes>
       </main>
     </div>

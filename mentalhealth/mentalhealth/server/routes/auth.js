@@ -61,6 +61,10 @@ router.post('/google-login', async (req, res) => {
 
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
 
+    if (profileData) {
+      delete profileData._id; // prevent overwriting user._id
+    }
+
     res.json({
       _id: user._id,
       email: user.email,
@@ -167,6 +171,10 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     console.log('Login: Success', { email, role });
+
+    if (profileData) {
+      delete profileData._id; // prevent overwriting user._id
+    }
 
     res.json({
       _id: user._id,

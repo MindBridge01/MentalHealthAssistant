@@ -3,63 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logolight from "../../assets/logo/logolight.png";
 import { ButtonPrimary } from "../Buttons/ButtonPrimary/ButtonPrimary";
 
-/* ================= DROPDOWN COMPONENT ================= */
-const Dropdown = ({ label, options }) => {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
-  return (
-    <div
-      className="relative inline-block text-left z-50"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-        className="inline-flex items-center justify-center gap-2.5 p-2.5 text-xl font-medium text-dark-blue900"
-        type="button"
-      >
-        {label}
-        <svg
-          className={`w-4 h-4 ml-1 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute z-[999] pt-2 w-48">
-          <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-            {options.map((opt) => (
-              <button
-                key={opt.label}
-                className="block w-full text-left px-4 py-2 text-dark-blue900 hover:bg-purple-50 cursor-pointer"
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  navigate(opt.to);
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 /* ================= NAVBAR ================= */
 const NavBar = ({ user }) => {
@@ -81,7 +25,7 @@ const NavBar = ({ user }) => {
   }, []);
 
   return (
-    <div className="flex w-full max-w-[1435px] items-center justify-between relative px-4 py-4">
+    <div className="flex w-full max-w-[1435px] mx-auto items-center justify-between relative px-4 py-4">
       {/* Logo */}
       <img src={logolight} alt="Logo" className="w-[72px] h-auto" />
 
@@ -109,128 +53,124 @@ const NavBar = ({ user }) => {
       {/* Navigation */}
       <div
         className={`${isMenuOpen ? "flex" : "hidden"
-          } md:flex flex-col md:flex-row gap-[34px] items-center absolute md:static top-16 left-0 w-full md:w-auto bg-white md:bg-transparent p-4 md:p-0 z-50`}
+          } md:flex flex-col md:flex-row items-center justify-between absolute md:static top-16 left-0 w-full bg-white md:bg-transparent p-4 md:p-0 z-50 md:flex-1`}
       >
-        {/* Links */}
-        <Link to="/" className="p-2.5 text-xl font-medium text-dark-blue900">
-          Home
-        </Link>
+        {/* Links - Centered on Desktop */}
+        <div className="flex flex-col md:flex-row gap-[34px] items-center md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto w-full border-b border-gray-100 md:border-none pb-6 md:pb-0">
+          <Link to="/" className="p-2.5 text-xl font-medium text-dark-blue900">
+            Home
+          </Link>
 
-        <Link
-          to="/community"
-          className="p-2.5 text-xl font-medium text-dark-blue900"
-        >
-          Community
-        </Link>
-
-        <Link to="/about" className="p-2.5 text-xl font-medium text-dark-blue900">
-          About
-        </Link>
-
-        {/* Login Dropdown */}
-        <Dropdown
-          label="Login"
-          options={[
-            { label: "Login as User", to: "/login/user" },
-            { label: "Login as Doctor", to: "/login/doctor" },
-            { label: "Login as Admin", to: "/login/admin" },
-          ]}
-        />
-
-        {/* Signup Dropdown */}
-        <Dropdown
-          label="Signup"
-          options={[
-            { label: "Signup as User", to: "/signup/user" },
-            { label: "Signup as Doctor", to: "/signup/doctor" },
-          ]}
-        />
-
-        {/* Buttons */}
-        <div className="flex gap-2 mt-4 md:mt-0">
-          <button
-            className="px-4 py-2 bg-red-600 rounded-2xl flex items-center gap-2.5 hover:bg-red-700"
-            onClick={async () => {
-              if (!user) {
-                alert("Please login first to trigger SOS.");
-                return;
-              }
-              if (!window.confirm("Are you sure you want to trigger an SOS alert to your Guardian?")) return;
-
-              try {
-                const res = await fetch("/api/profile/sos", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "x-user-id": user._id,
-                  },
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                  alert("SOS Alert Sent! Your guardian has been notified.");
-                } else {
-                  alert(`SOS Failed: ${data.error}`);
-                }
-              } catch (err) {
-                console.error(err);
-                alert("An error occurred while trying to send SOS.");
-              }
-            }}
+          <Link
+            to="/community"
+            className="p-2.5 text-xl font-medium text-dark-blue900"
           >
-            <span className="material-icons text-white text-lg">report</span>
-            <div className="text-white text-lg font-bold">SOS Help</div>
-          </button>
+            Community
+          </Link>
 
-          <ButtonPrimary />
+          <Link to="/about" className="p-2.5 text-xl font-medium text-dark-blue900">
+            About
+          </Link>
+
+          {/* Login Link */}
+          <Link to="/login" className="p-2.5 text-xl font-medium text-dark-blue900">
+            Login
+          </Link>
+
+          {/* Signup Link */}
+          <Link to="/signup" className="p-2.5 text-xl font-medium text-dark-blue900">
+            Signup
+          </Link>
         </div>
 
-        {/* User Profile */}
-        {user && (
-          <div className="relative ml-4" ref={userDropdownRef}>
+        {/* Buttons and Profile */}
+        <div className="flex flex-col md:flex-row gap-4 mt-6 md:mt-0 items-center md:ml-auto w-full md:w-auto justify-center">
+          {/* Buttons */}
+          <div className="flex gap-2">
             <button
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 border border-purple-200"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsUserDropdownOpen((prev) => !prev);
+              className="px-4 py-2 bg-red-600 rounded-2xl flex items-center gap-2.5 hover:bg-red-700"
+              onClick={async () => {
+                if (!user) {
+                  alert("Please login first to trigger SOS.");
+                  return;
+                }
+                if (!window.confirm("Are you sure you want to trigger an SOS alert to your Guardian?")) return;
+
+                try {
+                  const res = await fetch("/api/profile/sos", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-user-id": user._id,
+                    },
+                  });
+                  const data = await res.json();
+
+                  if (res.ok) {
+                    alert("SOS Alert Sent! Your guardian has been notified.");
+                  } else {
+                    alert(`SOS Failed: ${data.error}`);
+                  }
+                } catch (err) {
+                  console.error(err);
+                  alert("An error occurred while trying to send SOS.");
+                }
               }}
             >
-              <img
-                src={user.profilePic || "/assets/images/default-user.png"}
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <span className="material-icons text-white text-lg">report</span>
+              <div className="text-white text-lg font-bold">SOS Help</div>
             </button>
 
-            {isUserDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
-                {user.role !== "doctor" && (
-                  <div
-                    className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+            <ButtonPrimary />
+          </div>
+
+          {/* User Profile */}
+          {user && (
+            <div className="relative md:ml-4" ref={userDropdownRef}>
+              <button
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 border border-purple-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsUserDropdownOpen((prev) => !prev);
+                }}
+              >
+                <img
+                  src={user.profilePic || "/assets/images/default-user.png"}
+                  alt="User"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </button>
+
+              {isUserDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
+                  {user.role !== "doctor" && (
+                    <div
+                      className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+                      onClick={() => {
+                        setIsUserDropdownOpen(false);
+                        window.location.href = "/profile-settings";
+                      }}
+                    >
+                      Edit Profile
+                    </div>
+                  )}
+
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
                     onClick={() => {
                       setIsUserDropdownOpen(false);
-                      window.location.href = "/profile-settings";
+                      localStorage.removeItem("user");
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
                     }}
                   >
-                    Edit Profile
-                  </div>
-                )}
-
-                <button
-                  className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
-                  onClick={() => {
-                    setIsUserDropdownOpen(false);
-                    localStorage.removeItem("user");
-                    localStorage.removeItem("token");
-                    window.location.href = "/";
-                  }}
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

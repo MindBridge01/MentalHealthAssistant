@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
 
@@ -10,6 +11,7 @@ const DoctorDashboard = () => {
   const [myAppointments, setMyAppointments] = useState([]);
   const [booking, setBooking] = useState(false);
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     // When selected doctor changes, reset slot and message
@@ -49,6 +51,13 @@ const DoctorDashboard = () => {
   const handleBookAppointment = async () => {
     if (!user) {
       alert("Please login as a user to book an appointment.");
+      navigate("/login", { state: { from: "/doctor-dashboard" } });
+      return;
+    }
+
+    if (!user.phone || !user.age || !user.gender || !user.guardianEmail) {
+      alert("Please complete your profile before booking an appointment.");
+      navigate("/profile-settings", { state: { from: "/doctor-dashboard" } });
       return;
     }
     if (!selectedSlot) return;
