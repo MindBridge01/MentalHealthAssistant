@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
+import { apiUrl } from "../config/api";
 
 const DoctorDashboard = () => {
   const [doctorsList, setDoctorsList] = useState([]);
@@ -22,7 +23,7 @@ const DoctorDashboard = () => {
   React.useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/doctor/all");
+        const res = await axios.get(apiUrl("/api/doctor/all"), { withCredentials: true });
         // Filter out doctors that haven't at least provided a name
         const activeDoctors = res.data.filter(doc => doc.name);
         setDoctorsList(activeDoctors);
@@ -34,7 +35,10 @@ const DoctorDashboard = () => {
     const fetchMyAppointments = async () => {
       if (user?._id) {
         try {
-          const res = await axios.get(`http://localhost:3000/api/doctor/patient-appointments/${user._id}`);
+          const res = await axios.get(
+            apiUrl(`/api/doctor/patient-appointments/${user._id}`),
+            { withCredentials: true }
+          );
           if (res.data.appointments) {
             setMyAppointments(res.data.appointments);
           }
@@ -73,15 +77,19 @@ const DoctorDashboard = () => {
       const selectedSlotObj = selectedDoctor.slots.find(s => `${s.date} ${s.startTime} - ${s.endTime}` === selectedSlot);
       const slotId = selectedSlotObj ? selectedSlotObj._id : null;
 
-      const res = await axios.post(`http://localhost:3000/api/doctor/appointments/${selectedDoctor.userId}`, {
-        patientId: user._id,
-        patientName: user.name,
-        patientEmail: user.email,
-        slotDate,
-        slotTime,
-        notes: message,
-        slotId
-      });
+      const res = await axios.post(
+        apiUrl(`/api/doctor/appointments/${selectedDoctor.userId}`),
+        {
+          patientId: user._id,
+          patientName: user.name,
+          patientEmail: user.email,
+          slotDate,
+          slotTime,
+          notes: message,
+          slotId
+        },
+        { withCredentials: true }
+      );
 
       if (res.data.success) {
         alert("Appointment booked successfully!");
@@ -123,7 +131,10 @@ const DoctorDashboard = () => {
                 <div key={doc._id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={async () => {
                   setSelectedDoctor(doc);
                   try {
-                    const res = await axios.get(`http://localhost:3000/api/doctor/profile/${doc.userId}`);
+                    const res = await axios.get(
+                      apiUrl(`/api/doctor/profile/${doc.userId}`),
+                      { withCredentials: true }
+                    );
                     setSelectedDoctor(res.data);
                   } catch (e) { }
                 }}>

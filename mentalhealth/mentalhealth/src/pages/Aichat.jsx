@@ -4,6 +4,7 @@ import ChatArea from '../components/ChatArea/ChatArea';
 import ChatInput from '../components/ChatInput/ChatInput';
 import MoodCard from '../components/MoodCard/MoodCard';
 import "./Aichat.css"; 
+import { apiUrl } from "../config/api";
 
 function Aichat() {
   const [messages, setMessages] = useState([
@@ -15,9 +16,10 @@ function Aichat() {
   const handleNewConversation = async () => {
     if (messages.length > 1) {
       try {
-        const response = await fetch("http://localhost:3000/save-conversation", {
+        const response = await fetch(apiUrl("/api/save-conversation"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ messages }),
         });
         const result = await response.json();

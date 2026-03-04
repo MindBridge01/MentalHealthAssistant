@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ChatBubble from "../ChatBubble/ChatBubble.jsx";
 import ChatInput from "../ChatInput/ChatInput.jsx";
 import "./ChatArea.css";
+import { apiUrl } from "../../config/api";
 
 const keywordSuggestions = [
   "I feel overwhelmed",
@@ -83,9 +84,10 @@ const ChatArea = ({ messages: initialMessages, className }) => {
     }, 2500);
 
     try {
-      const res = await fetch("http://localhost:3000/api/chat", {
+      const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ message: messageToSend }),
       });
 

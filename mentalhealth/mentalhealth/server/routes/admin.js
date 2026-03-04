@@ -22,7 +22,7 @@ router.get('/pending-doctors', async (req, res) => {
 
     res.json(pendingDoctors);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch pending doctors', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch pending doctors' });
   }
 });
 
@@ -42,7 +42,7 @@ router.post('/approve-doctor', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to approve doctor', details: err.message });
+    res.status(500).json({ error: 'Failed to approve doctor' });
   }
 });
 
@@ -59,7 +59,7 @@ router.post('/reject-doctor', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to reject doctor', details: err.message });
+    res.status(500).json({ error: 'Failed to reject doctor' });
   }
 });
 

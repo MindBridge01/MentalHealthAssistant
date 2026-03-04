@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CommunityChat from "./CommunityChat";
+import { apiUrl } from "../config/api";
 
 
 const UploadSec = ({ onPostUpload }) => {
@@ -100,9 +101,10 @@ const UploadSec = ({ onPostUpload }) => {
         ...(isAnonymous ? {} : { name: name.trim(), location: location.trim() }),
         ...(imageUrl ? { image: imageUrl } : {}),
       };
-      const postResponse = await fetch("http://localhost:3000/api/posts", {
+      const postResponse = await fetch(apiUrl("/api/posts"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(postData),
       });
       if (!postResponse.ok) throw new Error("Failed to create post");

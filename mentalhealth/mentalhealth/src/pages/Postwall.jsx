@@ -6,6 +6,7 @@ import post3 from "../assets/images/post3.jpg";
 import post4 from "../assets/images/post4.jpg";
 import post5 from "../assets/images/post5.jpg";
 import post6 from "../assets/images/post6.jpg";
+import { apiUrl } from "../config/api";
 
 const PostWall = () => {
     const [posts, setPosts] = useState([]);
@@ -17,7 +18,9 @@ const PostWall = () => {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                const response = await fetch("http://localhost:3000/api/posts");
+                const response = await fetch(apiUrl("/api/posts"), {
+                    credentials: "include",
+                });
                 if (!response.ok) {
                     throw new Error("Failed to fetch posts");
                 }

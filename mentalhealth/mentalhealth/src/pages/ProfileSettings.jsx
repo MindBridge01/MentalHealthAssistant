@@ -80,8 +80,8 @@ const ProfileSettings = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user._id, // ensure only this user updates
         },
+        credentials: "include",
         body: JSON.stringify({
           name, email, profilePic,
           birthday, age, gender, phone, address, zipcode, country, city,

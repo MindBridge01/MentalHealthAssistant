@@ -7,28 +7,61 @@ const path = require("path");
 const axios = require("axios");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config({ debug: true });
+const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
+const { authenticateJWT } = require("./middleware/authMiddleware");
+const { piiFilterMessage } = require("./middleware/piiFilter");
+const { crisisDetectionMiddleware } = require("./middleware/crisisDetection");
+const { promptGuardrailMiddleware } = require("./middleware/promptGuardrail");
+const { disclaimerMiddleware } = require("./middleware/disclaimerMiddleware");
+const { encryptClassifiedFields } = require("./services/encryptionService");
+const { moderateModelResponse } = require("./services/responseModerationService");
+const { logSafetyEvent } = require("./services/safetyEventLogger");
 
 const app = express();
 const server = http.createServer(app);
+app.set("trust proxy", 1);
+
+const isProduction = process.env.NODE_ENV === "production";
+const clientOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is required");
+}
+if (process.env.JWT_SECRET.length < 32) {
+  throw new Error("JWT_SECRET must be at least 32 characters");
+}
 
 // ========== SOCKET.IO SETUP ==========
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: clientOrigins.length > 0 ? clientOrigins : true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   },
 });
 
 // ========== MIDDLEWARE ==========
+app.use(helmet());
+app.use(cookieParser());
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: clientOrigins.length > 0 ? clientOrigins : true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
 }));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use((req, res, next) => {
+  if (!isProduction) return next();
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  if (req.secure || forwardedProto === "https") return next();
+  return res.status(403).json({ error: "HTTPS required" });
+});
 
 // ========== ROUTES ==========
 const authRoutes = require('./routes/auth');
@@ -49,7 +82,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ========== MONGODB SETUP ==========
-console.log("Loading MONGODB_URI from .env:", process.env.MONGODB_URI);
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
@@ -81,7 +113,6 @@ app.get("/health", (req, res) => res.json({ status: "Server is running" }));
 app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No image uploaded" });
   const imagePath = `/uploads/${req.file.filename}`;
-  console.log("Uploaded image:", imagePath);
   res.status(200).json({ imagePath });
 });
 
@@ -148,11 +179,22 @@ app.patch("/api/posts/:id", async (req, res) => {
 });
 
 // ========== CHAT API ==========
-app.post("/api/chat", async (req, res) => {
-  const { message } = req.body;
+app.post(
+  "/api/chat",
+  authenticateJWT(),
+  disclaimerMiddleware,
+  piiFilterMessage,
+  crisisDetectionMiddleware,
+  promptGuardrailMiddleware,
+  async (req, res, next) => {
+  const message = req.piiSafeMessage || "";
+  const ollamaBaseUrl = process.env.OLLAMA_BASE_URL;
+  if (!ollamaBaseUrl) {
+    return res.status(500).json({ error: "AI backend is not configured" });
+  }
   try {
     const response = await axios.post(
-      "http://localhost:11434/api/generate",
+      `${ollamaBaseUrl}/api/generate`,
       {
         model: "llama2:7b",
         prompt: message,
@@ -164,20 +206,70 @@ app.post("/api/chat", async (req, res) => {
         },
       }
     );
-    res.json({ content: response.data.response });
+    const moderated = moderateModelResponse(response.data.response);
+    if (moderated.moderated) {
+      logSafetyEvent({
+        eventType: "response_moderated",
+        userRole: req.user?.role,
+        metadata: { severity: "medium", reason: moderated.reason },
+      });
+    }
+    res.json({ content: moderated.content });
   } catch (error) {
-    console.error("Chat API error:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get AI response" });
+    next(error);
+  }
+});
+
+app.post("/api/save-conversation", authenticateJWT(), async (req, res, next) => {
+  const { messages } = req.body;
+  if (!messages || !Array.isArray(messages) || messages.length <= 1) {
+    return res.status(200).json({ success: false, message: "No conversation to save" });
+  }
+
+  try {
+    const messagesDb = client.db("Messages");
+    const collection = messagesDb.collection("conversations");
+    const encryptedConversation = encryptClassifiedFields({ messages });
+    const conversation = {
+      id: Date.now(),
+      userId: req.user._id,
+      ...encryptedConversation,
+      createdAt: new Date(),
+    };
+
+    await collection.insertOne(conversation);
+    return res.status(200).json({ success: true, conversationId: conversation.id });
+  } catch (error) {
+    return next(error);
   }
 });
 
 // ========== SOCKET.IO REAL-TIME CHAT ==========
-const onlineUsers = new Map();
-
 io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
-
   // Add your socket events here...
+});
+
+// ========== GLOBAL ERROR HANDLER ==========
+app.use((err, req, res, _next) => {
+  const statusCode = err.statusCode || 500;
+  const message = statusCode >= 500 ? "Internal server error" : err.message;
+
+  if (!isProduction) {
+    console.error("[error]", {
+      path: req.path,
+      method: req.method,
+      statusCode,
+      message: err.message,
+    });
+  } else {
+    console.error("[error]", {
+      path: req.path,
+      method: req.method,
+      statusCode,
+    });
+  }
+
+  res.status(statusCode).json({ error: message });
 });
 
 // ========== START SERVER ==========
@@ -185,8 +277,7 @@ async function startServer() {
   await connectToMongo();
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Socket.IO running on ws://localhost:${PORT}`);
+    console.log(`[startup] server listening on port ${PORT}`);
   });
 }
 

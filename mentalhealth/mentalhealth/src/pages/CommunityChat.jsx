@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import { wsUrl } from "../config/api";
 
-const SOCKET_URL = "http://localhost:3000";
+const SOCKET_URL = wsUrl();
 
 const CommunityChat = ({ userId, username, room }) => {
   const [messages, setMessages] = useState([]);
@@ -13,7 +14,7 @@ const CommunityChat = ({ userId, username, room }) => {
   const inputRef = useRef();
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL);
+    socketRef.current = io(SOCKET_URL, { withCredentials: true });
     socketRef.current.emit("joinRoom", { room, userId, username });
     socketRef.current.on("newMessage", (msg) => setMessages((prev) => [...prev, msg]));
     socketRef.current.on("roomUsers", setUsers);

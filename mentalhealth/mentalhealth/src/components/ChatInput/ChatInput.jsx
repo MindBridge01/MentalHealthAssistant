@@ -7,6 +7,7 @@ import Mood2 from "../../assets/images/Moods/Mood2.png";
 import Mood3 from "../../assets/images/Moods/Mood3.png";
 import Mood4 from "../../assets/images/Moods/Mood4.png";
 import Mood5 from "../../assets/images/Moods/Mood5.png";
+import { apiUrl } from "../../config/api";
 
 // Positive messages for thinking state
 const positiveMessages = [
@@ -73,9 +74,10 @@ const ChatInput = ({ setMessages, className }) => {
   }, 2500);
 
   try {
-    const res = await fetch("http://localhost:3000/api/chat", {
+    const res = await fetch(apiUrl("/api/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ message: inputText }),
     });
 

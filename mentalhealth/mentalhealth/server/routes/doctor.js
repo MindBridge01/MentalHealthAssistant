@@ -2,9 +2,47 @@ const express = require('express');
 const router = express.Router();
 const { getMongoClient } = require('../../api/lib/mongodb');
 const { ObjectId } = require('mongodb');
+const { authenticateJWT, authorizeRoles } = require('../middleware/authMiddleware');
+const { encryptClassifiedFields, decryptClassifiedFields } = require('../services/encryptionService');
+
+router.use(authenticateJWT());
+
+function isAdmin(req) {
+  return req.user?.role === 'admin';
+}
+
+function requireDoctorOwnership(paramKey = 'userId') {
+  return (req, res, next) => {
+    if (isAdmin(req)) return next();
+    if (req.user?.role !== 'doctor') {
+      return res.status(403).json({ error: 'Doctor access required' });
+    }
+
+    const resourceUserId = req.params[paramKey];
+    if (String(resourceUserId) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Forbidden: cannot access another doctor resource' });
+    }
+    return next();
+  };
+}
+
+function requirePatientOwnership(paramKey = 'patientId') {
+  return (req, res, next) => {
+    if (isAdmin(req) || req.user?.role === 'doctor') return next();
+    if (req.user?.role !== 'user') {
+      return res.status(403).json({ error: 'User access required' });
+    }
+
+    const resourcePatientId = req.params[paramKey];
+    if (String(resourcePatientId) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Forbidden: cannot access another patient resource' });
+    }
+    return next();
+  };
+}
 
 // ---------- Get all doctors ----------
-router.get('/all', async (req, res) => {
+router.get('/all', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
   try {
     const client = await getMongoClient();
     const db = client.db();
@@ -12,12 +50,12 @@ router.get('/all', async (req, res) => {
     const doctors = await db.collection('doctors').find({}).toArray();
     res.json(doctors);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Get doctor profile ----------
-router.get('/profile/:userId', async (req, res) => {
+router.get('/profile/:userId', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
@@ -47,13 +85,17 @@ router.get('/profile/:userId', async (req, res) => {
 
     res.json(doctor);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Update doctor profile ----------
 // ---------- Update doctor profile (with upsert) ----------
-router.put('/profile/:userId', async (req, res) => {
+router.put(
+  '/profile/:userId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const client = await getMongoClient();
     const db = client.db();
@@ -86,12 +128,16 @@ router.put('/profile/:userId', async (req, res) => {
 
     res.json({ success: true, message: 'Doctor profile updated' });
   } catch (err) {
-    console.error("Profile update error:", err);
-    res.status(500).json({ error: err.message });
+    console.error('[doctor] profile update failed');
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 // ---------- Add a new free slot ----------
-router.post('/slots/:userId', async (req, res) => {
+router.post(
+  '/slots/:userId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const userId = req.params.userId;
     const { date, startTime, endTime } = req.body;
@@ -159,12 +205,16 @@ router.post('/slots/:userId', async (req, res) => {
 
     res.json({ success: true, availabilities });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Get doctor slots ----------
-router.get('/slots/:userId', async (req, res) => {
+router.get(
+  '/slots/:userId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
@@ -182,11 +232,15 @@ router.get('/slots/:userId', async (req, res) => {
     res.json({ slots: doctor.slots || [] });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 // ---------- Remove a slot ----------
-router.delete('/slots/:userId/:slotId', async (req, res) => {
+router.delete(
+  '/slots/:userId/:slotId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const { userId, slotId } = req.params;
 
@@ -212,12 +266,16 @@ router.delete('/slots/:userId/:slotId', async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Edit a slot ----------
-router.put('/slots/:userId/:slotId', async (req, res) => {
+router.put(
+  '/slots/:userId/:slotId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const { userId, slotId } = req.params;
     const { date, startTime, endTime } = req.body;
@@ -264,12 +322,12 @@ router.put('/slots/:userId/:slotId', async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Get all availability records (New Entity endpoint) ----------
-router.get('/availabilities', async (req, res) => {
+router.get('/availabilities', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
   try {
     const client = await getMongoClient();
     const db = client.db();
@@ -278,16 +336,21 @@ router.get('/availabilities', async (req, res) => {
     const availabilities = await db.collection('doctor_availability').find({}).toArray();
     res.json(availabilities);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 // ---------- Create an appointment ----------
-router.post('/appointments/:doctorId', async (req, res) => {
+router.post('/appointments/:doctorId', authorizeRoles('user', 'admin'), async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { patientId, patientName, patientEmail, slotDate, slotTime, notes, slotId } = req.body;
+    const normalizedPatientId = req.user.role === 'user' ? String(req.user._id) : patientId;
 
-    if (!patientId || !slotDate || !slotTime) {
+    if (req.user.role === 'user' && patientId && String(patientId) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Forbidden: cannot create appointment for another patient' });
+    }
+
+    if (!normalizedPatientId || !slotDate || !slotTime) {
       return res.status(400).json({ error: 'Missing required appointment fields' });
     }
 
@@ -295,15 +358,21 @@ router.post('/appointments/:doctorId', async (req, res) => {
     const db = client.db();
 
     // Create a robust appointment object including the patient email
+    const protectedAppointmentData = encryptClassifiedFields({
+      patient: patientName || "Unknown Patient",
+      patientEmail: patientEmail || "",
+      notes: notes || "",
+    });
+
     const newAppointment = {
       _id: new ObjectId(),
       doctorId: doctorId,
-      patientId,
-      patient: patientName || "Unknown Patient",
-      patientEmail: patientEmail || "",
+      patientId: normalizedPatientId,
+      patient: protectedAppointmentData.patient,
+      patientEmail: protectedAppointmentData.patientEmail,
       date: slotDate,
       time: slotTime,
-      notes: notes || "",
+      notes: protectedAppointmentData.notes,
       status: "Upcoming",
       createdAt: new Date()
     };
@@ -348,15 +417,23 @@ router.post('/appointments/:doctorId', async (req, res) => {
       }
     }
 
-    res.json({ success: true, message: 'Appointment booked successfully', appointment: doctorAppointmentCopy });
+    res.json({
+      success: true,
+      message: 'Appointment booked successfully',
+      appointment: decryptClassifiedFields(doctorAppointmentCopy),
+    });
   } catch (err) {
-    console.error("Booking error:", err);
-    res.status(500).json({ error: err.message });
+    console.error('[doctor] appointment booking failed');
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Fetch patient's appointments ----------
-router.get('/patient-appointments/:patientId', async (req, res) => {
+router.get(
+  '/patient-appointments/:patientId',
+  authorizeRoles('user', 'admin'),
+  requirePatientOwnership('patientId'),
+  async (req, res) => {
   try {
     const { patientId } = req.params;
     const client = await getMongoClient();
@@ -369,20 +446,24 @@ router.get('/patient-appointments/:patientId', async (req, res) => {
     const populated = await Promise.all(appointments.map(async (appt) => {
       const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(appt.doctorId) });
       return {
-        ...appt,
+        ...decryptClassifiedFields(appt),
         doctorName: doctor ? doctor.name : 'Unknown Doctor'
       };
     }));
 
     res.json({ appointments: populated });
   } catch (err) {
-    console.error("Fetch patient appointments error:", err);
-    res.status(500).json({ error: err.message });
+    console.error('[doctor] patient appointment fetch failed');
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Fetch appointments ----------
-router.get('/appointments/:userId', async (req, res) => {
+router.get(
+  '/appointments/:userId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
@@ -395,14 +476,21 @@ router.get('/appointments/:userId', async (req, res) => {
 
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
 
-    res.json({ appointments: doctor.appointments || [] });
+    const decryptedAppointments = (doctor.appointments || []).map((appointment) =>
+      decryptClassifiedFields(appointment)
+    );
+    res.json({ appointments: decryptedAppointments });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 
 // ---------- Fetch messages ----------
-router.get('/messages/:userId', async (req, res) => {
+router.get(
+  '/messages/:userId',
+  authorizeRoles('doctor', 'admin'),
+  requireDoctorOwnership('userId'),
+  async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
@@ -417,7 +505,7 @@ router.get('/messages/:userId', async (req, res) => {
 
     res.json({ messages: doctor.messages || [] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Request failed' });
   }
 });
 

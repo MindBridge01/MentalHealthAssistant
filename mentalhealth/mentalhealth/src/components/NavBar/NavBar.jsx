@@ -101,8 +101,8 @@ const NavBar = ({ user }) => {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      "x-user-id": user._id,
                     },
+                    credentials: "include",
                   });
                   const data = await res.json();
 
@@ -157,10 +157,13 @@ const NavBar = ({ user }) => {
 
                   <button
                     className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
-                    onClick={() => {
+                    onClick={async () => {
                       setIsUserDropdownOpen(false);
+                      await fetch("/api/auth/logout", {
+                        method: "POST",
+                        credentials: "include",
+                      });
                       localStorage.removeItem("user");
-                      localStorage.removeItem("token");
                       window.location.href = "/";
                     }}
                   >

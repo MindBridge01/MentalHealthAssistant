@@ -2,7 +2,16 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const SECRET = process.env.JWT_SECRET || 'supersecretkey'; // store in .env
+const SECRET = process.env.JWT_SECRET;
+const MIN_SECRET_LENGTH = 32;
+
+if (!SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
+
+if (SECRET.length < MIN_SECRET_LENGTH) {
+  throw new Error(`JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters`);
+}
 
 function generateToken(user) {
   // user = { _id, email, role }

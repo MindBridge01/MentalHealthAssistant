@@ -1,26 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { apiUrl } from "../config/api";
 
 const AdminDashboard = () => {
   const [pendingDoctors, setPendingDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ✅ Get token correctly
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
-    if (!token) {
-      setError("Not authorized. Please login again.");
-      setLoading(false);
-      return;
-    }
-
-    axios.get("http://localhost:3000/api/admin/pending-doctors", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
+    axios.get(apiUrl("/api/admin/pending-doctors"), { withCredentials: true })
       .then(res => {
         setPendingDoctors(res.data);
         setLoading(false);
@@ -30,17 +18,13 @@ const AdminDashboard = () => {
         setError("Failed to load applications.");
         setLoading(false);
       });
-  }, [token]);
+  }, []);
 
   const handleApprove = (doctorId) => {
     axios.post(
-      "http://localhost:3000/api/admin/approve-doctor",
+      apiUrl("/api/admin/approve-doctor"),
       { doctorId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      { withCredentials: true }
     )
       .then(() => {
         setPendingDoctors(prev =>
@@ -54,13 +38,9 @@ const AdminDashboard = () => {
 
   const handleReject = (doctorId) => {
     axios.post(
-      "http://localhost:3000/api/admin/reject-doctor",
+      apiUrl("/api/admin/reject-doctor"),
       { doctorId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      { withCredentials: true }
     )
       .then(() => {
         setPendingDoctors(prev =>

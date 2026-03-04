@@ -1,4 +1,5 @@
 import { OpenAI } from "openai";
+import { requireAuth } from "./lib/requireAuth";
 
 // System prompt
 const systemPrompt = {
@@ -28,7 +29,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
-    "HTTP-Referer": process.env.VERCEL_URL || "http://localhost:5173",
+    "HTTP-Referer": process.env.VERCEL_URL || "",
     "X-Title": "My Chat App",
   },
 });
@@ -36,6 +37,11 @@ const openai = new OpenAI({
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ content: "Method not allowed" });
+  }
+
+  const user = requireAuth(req);
+  if (!user) {
+    return res.status(401).json({ content: "Authentication required" });
   }
 
   try {
@@ -83,12 +89,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ content: reply });
   } catch (error) {
-    console.error("Error in /api/chat:", {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      response: error.response ? error.response.data : null,
-    });
+    console.error("[api/chat] request failed");
     res.status(500).json({ content: "Sorry, something went wrong on our end!" });
   }
 }

@@ -4,12 +4,16 @@ const { verifyToken } = require('../lib/jwt');
 function authenticateJWT(requiredRole = null) {
   return (req, res, next) => {
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.auth_token;
+    const tokenFromHeader =
+      authHeader && authHeader.startsWith('Bearer ')
+        ? authHeader.split(' ')[1]
+        : null;
+    const token = tokenFromHeader || cookieToken;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authorization token missing' });
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
       const decoded = verifyToken(token);
@@ -27,4 +31,14 @@ function authenticateJWT(requiredRole = null) {
   };
 }
 
-module.exports = { authenticateJWT };
+function authorizeRoles(...allowedRoles) {
+  return (req, res, next) => {
+    const role = req.user?.role;
+    if (!role || !allowedRoles.includes(role)) {
+      return res.status(403).json({ error: 'Access denied. Role not authorized.' });
+    }
+    return next();
+  };
+}
+
+module.exports = { authenticateJWT, authorizeRoles };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { apiUrl } from "../config/api";
 
 const DoctorOnlyDashboard = () => {
   const [profile, setProfile] = useState({
@@ -35,7 +36,9 @@ const DoctorOnlyDashboard = () => {
 
   const fetchDoctorProfile = async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/api/doctor/profile/${user._id}`);
+      const res = await axios.get(apiUrl(`/api/doctor/profile/${user._id}`), {
+        withCredentials: true,
+      });
       setProfile({
         name: res.data.name || "",
         specialty: res.data.specialty || "",
@@ -84,10 +87,14 @@ const DoctorOnlyDashboard = () => {
 
   const handleProfileSave = async () => {
     try {
-      await axios.put(`http://localhost:3000/api/doctor/profile/${user._id}`, {
-        ...profile,
-        statusMessage
-      });
+      await axios.put(
+        apiUrl(`/api/doctor/profile/${user._id}`),
+        {
+          ...profile,
+          statusMessage
+        },
+        { withCredentials: true }
+      );
       setEditProfile(false);
       fetchDoctorProfile();
       alert("Profile updated!");
@@ -102,7 +109,9 @@ const DoctorOnlyDashboard = () => {
     if (!date || !startTime || !endTime) return;
 
     try {
-      await axios.post(`http://localhost:3000/api/doctor/slots/${user._id}`, newSlot);
+      await axios.post(apiUrl(`/api/doctor/slots/${user._id}`), newSlot, {
+        withCredentials: true,
+      });
       setNewSlot({ date: "", startTime: "", endTime: "" });
       fetchDoctorProfile();
     } catch (err) {
@@ -122,7 +131,11 @@ const DoctorOnlyDashboard = () => {
   const handleSaveEditSlot = async () => {
     try {
       if (!editSlotData.date || !editSlotData.startTime || !editSlotData.endTime) return;
-      await axios.put(`http://localhost:3000/api/doctor/slots/${user._id}/${editingSlotId}`, editSlotData);
+      await axios.put(
+        apiUrl(`/api/doctor/slots/${user._id}/${editingSlotId}`),
+        editSlotData,
+        { withCredentials: true }
+      );
       setEditingSlotId(null);
       fetchDoctorProfile();
     } catch (err) {
@@ -143,7 +156,8 @@ const DoctorOnlyDashboard = () => {
       }
 
       await axios.delete(
-        `http://localhost:3000/api/doctor/slots/${user._id}/${slot._id}`
+        apiUrl(`/api/doctor/slots/${user._id}/${slot._id}`),
+        { withCredentials: true }
       );
 
       // Update UI after successful delete

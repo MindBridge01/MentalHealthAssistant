@@ -17,12 +17,14 @@ const AuthWindow = ({ mode = "login" }) => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const idToken = credentialResponse.credential;
-      const response = await axios.post('/api/auth/google-login', { idToken, role: currentRole });
+      const response = await axios.post(
+        '/api/auth/google-login',
+        { idToken, role: currentRole },
+        { withCredentials: true }
+      );
 
-      // Save user info + JWT
+      // Save user info
       localStorage.setItem('user', JSON.stringify(response.data));
-      localStorage.setItem('token', response.data.token);
-      console.log("JWT Token:", response.data.token);// <-- store JWT
 
       // Redirect based on role
       if (response.data.role === 'doctor') navigate(location.state?.from || '/doctor-dashboard');
@@ -46,14 +48,21 @@ const AuthWindow = ({ mode = "login" }) => {
     try {
       let response;
       if (mode === "login") {
-        response = await axios.post('/api/auth/login', { email, password, role: currentRole });
+        response = await axios.post(
+          '/api/auth/login',
+          { email, password, role: currentRole },
+          { withCredentials: true }
+        );
       } else {
-        response = await axios.post('/api/auth/signup', { name, email, password, role: currentRole });
+        response = await axios.post(
+          '/api/auth/signup',
+          { name, email, password, role: currentRole },
+          { withCredentials: true }
+        );
       }
 
-      // Save user info + JWT
+      // Save user info
       localStorage.setItem('user', JSON.stringify(response.data));
-      localStorage.setItem('token', response.data.token);
 
       // Redirect based on role
       if (response.data.role === 'doctor') navigate(location.state?.from || '/doctor-only-dashboard');

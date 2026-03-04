@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiUrl } from "../config/api";
 
 const ProfileSettings = () => {
   // Load user from localStorage
@@ -79,9 +80,10 @@ const ProfileSettings = () => {
       };
 
       // Update doctor profile (with upsert backend)
-      const res = await fetch(`http://localhost:3000/api/doctor/profile/${user._id}`, {
+      const res = await fetch(apiUrl(`/api/doctor/profile/${user._id}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 

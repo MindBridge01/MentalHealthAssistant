@@ -1,11 +1,13 @@
 import React from "react";
+import { apiUrl } from "../config/api";
 
 const Posts = ({ post, image }) => {
     const handleAction = async (action) => {
         try {
-            await fetch(`http://localhost:3000/api/posts/${post._id}`, {
+            await fetch(apiUrl(`/api/posts/${post._id}`), {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ action }),
             });
             // Optimistically update UI (re-fetch posts in PostWall for consistency)
