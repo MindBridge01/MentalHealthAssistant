@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getMongoClient } = require('../../api/lib/mongodb');
+const { getMongoClient } = require('../config/database');
 const { ObjectId } = require('mongodb');
+const DB_NAME = process.env.MONGODB_DB_NAME || 'Mind_Bridge';
 const { authenticateJWT, authorizeRoles } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 const { encryptClassifiedFields, decryptClassifiedFields } = require('../services/encryptionService');
 
 router.use(authenticateJWT());
@@ -13,7 +15,6 @@ function isAdmin(req) {
 
 function requireDoctorOwnership(paramKey = 'userId') {
   return (req, res, next) => {
-    if (isAdmin(req)) return next();
     if (req.user?.role !== 'doctor') {
       return res.status(403).json({ error: 'Doctor access required' });
     }
@@ -29,8 +30,8 @@ function requireDoctorOwnership(paramKey = 'userId') {
 function requirePatientOwnership(paramKey = 'patientId') {
   return (req, res, next) => {
     if (isAdmin(req) || req.user?.role === 'doctor') return next();
-    if (req.user?.role !== 'user') {
-      return res.status(403).json({ error: 'User access required' });
+    if (req.user?.role !== 'patient') {
+      return res.status(403).json({ error: 'Patient access required' });
     }
 
     const resourcePatientId = req.params[paramKey];
@@ -42,10 +43,10 @@ function requirePatientOwnership(paramKey = 'patientId') {
 }
 
 // ---------- Get all doctors ----------
-router.get('/all', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
+router.get('/all', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     const doctors = await db.collection('doctors').find({}).toArray();
     res.json(doctors);
@@ -55,11 +56,11 @@ router.get('/all', authorizeRoles('user', 'doctor', 'admin'), async (req, res) =
 });
 
 // ---------- Get doctor profile ----------
-router.get('/profile/:userId', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
+router.get('/profile/:userId', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
     if (!doctor) {
@@ -93,12 +94,12 @@ router.get('/profile/:userId', authorizeRoles('user', 'doctor', 'admin'), async 
 // ---------- Update doctor profile (with upsert) ----------
 router.put(
   '/profile/:userId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
     const userId = req.params.userId;
 
     const updates = {
@@ -135,7 +136,8 @@ router.put(
 // ---------- Add a new free slot ----------
 router.post(
   '/slots/:userId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('update_slots'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
@@ -144,7 +146,7 @@ router.post(
     if (!date || !startTime || !endTime) return res.status(400).json({ error: 'Date, startTime, and endTime required' });
 
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // Fetch doctor to get name
     const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
@@ -212,13 +214,14 @@ router.post(
 // ---------- Get doctor slots ----------
 router.get(
   '/slots/:userId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('update_slots'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     const doctor = await db.collection('doctors').findOne(
       { userId: new ObjectId(userId) },
@@ -238,7 +241,8 @@ router.get(
 // ---------- Remove a slot ----------
 router.delete(
   '/slots/:userId/:slotId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('update_slots'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
@@ -249,7 +253,7 @@ router.delete(
     }
 
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // 1. Remove from separate doctor_availability collection
     await db.collection('doctor_availability').deleteOne({ _id: new ObjectId(slotId) });
@@ -273,7 +277,8 @@ router.delete(
 // ---------- Edit a slot ----------
 router.put(
   '/slots/:userId/:slotId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('update_slots'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
@@ -287,7 +292,7 @@ router.put(
     }
 
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // 1. Update separate doctor_availability collection
     await db.collection('doctor_availability').updateOne(
@@ -327,10 +332,10 @@ router.put(
 });
 
 // ---------- Get all availability records (New Entity endpoint) ----------
-router.get('/availabilities', authorizeRoles('user', 'doctor', 'admin'), async (req, res) => {
+router.get('/availabilities', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // Fetch all available slots from the standalone collection
     const availabilities = await db.collection('doctor_availability').find({}).toArray();
@@ -340,13 +345,13 @@ router.get('/availabilities', authorizeRoles('user', 'doctor', 'admin'), async (
   }
 });
 // ---------- Create an appointment ----------
-router.post('/appointments/:doctorId', authorizeRoles('user', 'admin'), async (req, res) => {
+router.post('/appointments/:doctorId', authorizeRoles('patient'), requirePermission('create_appointment'), async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { patientId, patientName, patientEmail, slotDate, slotTime, notes, slotId } = req.body;
-    const normalizedPatientId = req.user.role === 'user' ? String(req.user._id) : patientId;
+    const normalizedPatientId = req.user.role === 'patient' ? String(req.user._id) : patientId;
 
-    if (req.user.role === 'user' && patientId && String(patientId) !== String(req.user._id)) {
+    if (req.user.role === 'patient' && patientId && String(patientId) !== String(req.user._id)) {
       return res.status(403).json({ error: 'Forbidden: cannot create appointment for another patient' });
     }
 
@@ -355,7 +360,7 @@ router.post('/appointments/:doctorId', authorizeRoles('user', 'admin'), async (r
     }
 
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // Create a robust appointment object including the patient email
     const protectedAppointmentData = encryptClassifiedFields({
@@ -431,13 +436,14 @@ router.post('/appointments/:doctorId', authorizeRoles('user', 'admin'), async (r
 // ---------- Fetch patient's appointments ----------
 router.get(
   '/patient-appointments/:patientId',
-  authorizeRoles('user', 'admin'),
+  authorizeRoles('patient'),
+  requirePermission('view_own_appointments'),
   requirePatientOwnership('patientId'),
   async (req, res) => {
   try {
     const { patientId } = req.params;
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     // Find all appointments that belong to this patient
     const appointments = await db.collection('appointments').find({ patientId }).toArray();
@@ -461,13 +467,14 @@ router.get(
 // ---------- Fetch appointments ----------
 router.get(
   '/appointments/:userId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('manage_appointments'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     const doctor = await db.collection('doctors').findOne(
       { userId: new ObjectId(userId) },
@@ -488,13 +495,14 @@ router.get(
 // ---------- Fetch messages ----------
 router.get(
   '/messages/:userId',
-  authorizeRoles('doctor', 'admin'),
+  authorizeRoles('doctor'),
+  requirePermission('manage_appointments'),
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
     const userId = req.params.userId;
     const client = await getMongoClient();
-    const db = client.db();
+    const db = client.db(DB_NAME);
 
     const doctor = await db.collection('doctors').findOne(
       { userId: new ObjectId(userId) },

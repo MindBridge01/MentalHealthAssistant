@@ -3,15 +3,16 @@ import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
 import { apiUrl } from "../config/api";
+import { useAuth } from "../context/AuthContext";
 
-const DoctorDashboard = () => {
+const PatientBooking = () => {
   const [doctorsList, setDoctorsList] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [message, setMessage] = useState("");
   const [myAppointments, setMyAppointments] = useState([]);
   const [booking, setBooking] = useState(false);
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -54,7 +55,7 @@ const DoctorDashboard = () => {
 
   const handleBookAppointment = async () => {
     if (!user) {
-      alert("Please login as a user to book an appointment.");
+      alert("Please login as a patient to book an appointment.");
       navigate("/login", { state: { from: "/doctor-dashboard" } });
       return;
     }
@@ -243,4 +244,4 @@ const DoctorDashboard = () => {
   );
 };
 
-export default DoctorDashboard;
+export default PatientBooking;

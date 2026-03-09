@@ -2,14 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logolight from "../../assets/logo/logolight.png";
 import { ButtonPrimary } from "../Buttons/ButtonPrimary/ButtonPrimary";
+import { apiUrl } from "../../config/api";
+import { useAuth } from "../../context/AuthContext";
 
 
 
 /* ================= NAVBAR ================= */
 const NavBar = ({ user }) => {
+  const { isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false); // mobile menu
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false); // profile dropdown
   const userDropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -23,6 +27,27 @@ const NavBar = ({ user }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const patientMenu = [
+    { label: "Patient Dashboard", to: "/patient/dashboard" },
+    { label: "Profile", to: "/profile-settings" },
+    { label: "Chat Assistant", to: "/ai-chat" },
+    { label: "Appointments", to: "/doctor-dashboard" },
+  ];
+
+  const doctorMenu = [
+    { label: "Doctor Dashboard", to: "/doctor/dashboard" },
+    { label: "Manage Appointments", to: "/doctor/dashboard" },
+    { label: "Manage Slots", to: "/doctor/dashboard" },
+  ];
+
+  const adminMenu = [
+    { label: "Admin Dashboard", to: "/admin/dashboard" },
+    { label: "Approve Doctors", to: "/admin/dashboard" },
+    { label: "Manage Users", to: "/admin/dashboard" },
+  ];
+
+  const roleLinks = user?.role === "admin" ? adminMenu : user?.role === "doctor" ? doctorMenu : patientMenu;
 
   return (
     <div className="flex w-full max-w-[1435px] mx-auto items-center justify-between relative px-4 py-4">
@@ -72,15 +97,23 @@ const NavBar = ({ user }) => {
             About
           </Link>
 
-          {/* Login Link */}
-          <Link to="/login" className="p-2.5 text-xl font-medium text-dark-blue900">
-            Login
-          </Link>
+          {!isAuthenticated && (
+            <Link to="/login" className="p-2.5 text-xl font-medium text-dark-blue900">
+              Login
+            </Link>
+          )}
 
-          {/* Signup Link */}
-          <Link to="/signup" className="p-2.5 text-xl font-medium text-dark-blue900">
-            Signup
-          </Link>
+          {!isAuthenticated && (
+            <Link to="/signup" className="p-2.5 text-xl font-medium text-dark-blue900">
+              Signup
+            </Link>
+          )}
+
+          {isAuthenticated && roleLinks.map((item) => (
+            <Link key={item.label} to={item.to} className="p-2.5 text-xl font-medium text-dark-blue900">
+              {item.label}
+            </Link>
+          ))}
         </div>
 
         {/* Buttons and Profile */}
@@ -97,7 +130,7 @@ const NavBar = ({ user }) => {
                 if (!window.confirm("Are you sure you want to trigger an SOS alert to your Guardian?")) return;
 
                 try {
-                  const res = await fetch("/api/profile/sos", {
+                  const res = await fetch(apiUrl("/api/profile/sos"), {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -159,12 +192,8 @@ const NavBar = ({ user }) => {
                     className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
                     onClick={async () => {
                       setIsUserDropdownOpen(false);
-                      await fetch("/api/auth/logout", {
-                        method: "POST",
-                        credentials: "include",
-                      });
-                      localStorage.removeItem("user");
-                      window.location.href = "/";
+                      await logout();
+                      navigate("/login", { replace: true });
                     }}
                   >
                     Logout

@@ -1,5 +1,15 @@
 // middleware/authMiddleware.js
 const { verifyToken } = require('../lib/jwt');
+const { normalizeRole } = require('./permissionMiddleware');
+
+function logAuthorizationFailure(req, reason) {
+  console.warn("[authz-deny]", {
+    timestamp: new Date().toISOString(),
+    userId: req.user?._id ? String(req.user._id) : "anonymous",
+    route: req.originalUrl || req.path || "unknown",
+    reason,
+  });
+}
 
 function authenticateJWT(requiredRole = null) {
   return (req, res, next) => {
@@ -17,10 +27,11 @@ function authenticateJWT(requiredRole = null) {
 
     try {
       const decoded = verifyToken(token);
-      req.user = decoded; // attach decoded user info to request
+      req.user = { ...decoded, role: normalizeRole(decoded.role) }; // attach normalized role from verified token
 
       // If requiredRole is specified, check role
-      if (requiredRole && decoded.role !== requiredRole) {
+      if (requiredRole && req.user.role !== normalizeRole(requiredRole)) {
+        logAuthorizationFailure(req, `role_required:${requiredRole}`);
         return res.status(403).json({ error: 'Access denied. Role not authorized.' });
       }
 
@@ -33,8 +44,10 @@ function authenticateJWT(requiredRole = null) {
 
 function authorizeRoles(...allowedRoles) {
   return (req, res, next) => {
-    const role = req.user?.role;
-    if (!role || !allowedRoles.includes(role)) {
+    const role = normalizeRole(req.user?.role);
+    const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+    if (!role || !normalizedAllowedRoles.includes(role)) {
+      logAuthorizationFailure(req, `role_not_allowed:${role || "unknown"}`);
       return res.status(403).json({ error: 'Access denied. Role not authorized.' });
     }
     return next();

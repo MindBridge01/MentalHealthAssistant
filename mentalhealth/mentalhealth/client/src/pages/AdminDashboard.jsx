@@ -4,18 +4,22 @@ import { apiUrl } from "../config/api";
 
 const AdminDashboard = () => {
   const [pendingDoctors, setPendingDoctors] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    axios.get(apiUrl("/api/admin/pending-doctors"), { withCredentials: true })
-      .then(res => {
-        setPendingDoctors(res.data);
+    Promise.all([
+      axios.get(apiUrl("/api/admin/pending-doctors"), { withCredentials: true }),
+      axios.get(apiUrl("/api/admin/users"), { withCredentials: true }),
+    ])
+      .then(([pendingRes, usersRes]) => {
+        setPendingDoctors(pendingRes.data);
+        setUsers(usersRes.data);
         setLoading(false);
       })
-      .catch(err => {
-        console.log(err);
-        setError("Failed to load applications.");
+      .catch(() => {
+        setError("Failed to load admin data.");
         setLoading(false);
       });
   }, []);
@@ -27,9 +31,10 @@ const AdminDashboard = () => {
       { withCredentials: true }
     )
       .then(() => {
-        setPendingDoctors(prev =>
-          prev.filter(d => d._id !== doctorId)
-        );
+        setPendingDoctors(prev => prev.filter(d => d._id !== doctorId));
+        setUsers(prev => prev.map((user) => (
+          user._id === doctorId ? { ...user, role: "doctor" } : user
+        )));
       })
       .catch(() => {
         setError("Failed to approve doctor.");
@@ -43,9 +48,8 @@ const AdminDashboard = () => {
       { withCredentials: true }
     )
       .then(() => {
-        setPendingDoctors(prev =>
-          prev.filter(d => d._id !== doctorId)
-        );
+        setPendingDoctors(prev => prev.filter(d => d._id !== doctorId));
+        setUsers(prev => prev.filter((user) => user._id !== doctorId));
       })
       .catch(() => {
         setError("Failed to reject doctor.");
@@ -95,6 +99,31 @@ const AdminDashboard = () => {
                       Reject
                     </button>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-md p-6 mt-6">
+        <h3 className="font-semibold text-xl mb-4">System Users</h3>
+        {users.length === 0 ? (
+          <div>No users found.</div>
+        ) : (
+          <table className="w-full mb-4">
+            <thead>
+              <tr className="text-left">
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user._id} className="border-b">
+                  <td>{user.name || "-"}</td>
+                  <td>{user.email}</td>
+                  <td>{user.role}</td>
                 </tr>
               ))}
             </tbody>
