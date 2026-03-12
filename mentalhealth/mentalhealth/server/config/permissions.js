@@ -22,6 +22,7 @@ const permissions = {
     "approve_doctor",
     "reject_doctor",
     "view_all_records",
+    "view_audit_logs",
   ],
 };
 

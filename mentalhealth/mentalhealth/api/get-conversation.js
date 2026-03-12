@@ -1,9 +1,11 @@
-import { getMongoClient } from "./lib/mongodb";
+import { ensurePostgres } from "./lib/postgres";
 import { requireAuth } from "./lib/requireAuth";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const { decryptClassifiedFields } = require("../server/services/encryptionService");
+const { findConversationsByUserId } = require("../server/models/messageModel");
+const { logAuditEventSafely } = require("../server/services/auditLogService");
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -16,20 +18,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Connect to MongoDB
-    const client = await getMongoClient();
-    const db = client.db("Messages");
-    const collection = db.collection("conversations");
-
-    // Retrieve all conversations, sorted by creation date (newest first)
-    const conversations = await collection
-      .find({ userId: user._id })
-      .sort({ createdAt: -1 })
-      .toArray();
+    await ensurePostgres();
+    const conversations = await findConversationsByUserId(user._id);
 
     const decryptedConversations = conversations.map((conversation) =>
       decryptClassifiedFields(conversation)
     );
+
+    await logAuditEventSafely({
+      userId: user._id,
+      role: user.role,
+      action: "view_chat_history",
+      resourceType: "chat_conversation",
+      resourceId: user._id,
+      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null,
+      metadata: {
+        route: req.url,
+        method: req.method,
+        conversationCount: decryptedConversations.length,
+      },
+    });
 
     res.status(200).json(decryptedConversations);
   } catch (error) {

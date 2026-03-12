@@ -1,5 +1,4 @@
 const express = require("express");
-const { ObjectId } = require("mongodb");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -9,9 +8,12 @@ const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
 const { loadEnvironment, getCorsOrigins, isProduction } = require("./config/environment");
-const { getMongoClient } = require("./config/database");
+const { testConnection } = require("./config/database");
 const { createDefaultAdmin } = require("./utils/createDefaultAdmin");
 const { errorHandler } = require("./middleware/errorHandler");
+const { auditLogger } = require("./middleware/auditLogger");
+const { listPosts, createPost, incrementPostMetric } = require("./models/postModel");
+const { createObjectId } = require("./lib/objectId");
 
 loadEnvironment();
 
@@ -46,6 +48,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(auditLogger);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use((req, res, next) => {
@@ -73,18 +76,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-let db;
-
-async function connectToMongo() {
+async function connectToDatabase() {
   try {
-    const mongoClient = await getMongoClient();
-    db = mongoClient.db("Mind_Bridge");
-    app.locals.db = db;
-    app.locals.mongoClient = mongoClient;
-    await db.command({ ping: 1 });
-    console.log("Pinged your deployment. Successfully connected to MongoDB!");
+    await testConnection();
+    console.log("Successfully connected to PostgreSQL");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    console.error("PostgreSQL connection error:", error);
     process.exit(1);
   }
 }
@@ -98,9 +95,8 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
 });
 
 app.get("/api/posts", async (_req, res) => {
-  if (!db) return res.status(500).json({ error: "Database not connected" });
   try {
-    const posts = await db.collection("posts").find().toArray();
+    const posts = await listPosts();
     return res.status(200).json(posts);
   } catch (error) {
     console.error("Error fetching posts:", error);
@@ -109,11 +105,11 @@ app.get("/api/posts", async (_req, res) => {
 });
 
 app.post("/api/posts", async (req, res) => {
-  if (!db) return res.status(500).json({ error: "Database not connected" });
   const { caption, name, location, image } = req.body;
   if (!caption) return res.status(400).json({ error: "Caption is required" });
 
   const newPost = {
+    _id: createObjectId(),
     caption,
     ...(name ? { name } : {}),
     ...(location ? { location } : {}),
@@ -125,8 +121,8 @@ app.post("/api/posts", async (req, res) => {
   };
 
   try {
-    const result = await db.collection("posts").insertOne(newPost);
-    return res.status(201).json({ id: result.insertedId, ...newPost });
+    const post = await createPost(newPost);
+    return res.status(201).json({ id: post._id, ...post });
   } catch (error) {
     console.error("Error creating post:", error);
     return res.status(500).json({ error: "Failed to create post" });
@@ -134,7 +130,6 @@ app.post("/api/posts", async (req, res) => {
 });
 
 app.patch("/api/posts/:id", async (req, res) => {
-  if (!db) return res.status(500).json({ error: "Database not connected" });
   const { id } = req.params;
   const { action } = req.body;
 
@@ -148,11 +143,8 @@ app.patch("/api/posts/:id", async (req, res) => {
   if (action === "save") update.saved = 1;
 
   try {
-    const result = await db
-      .collection("posts")
-      .updateOne({ _id: new ObjectId(id) }, { $inc: update });
-
-    if (result.modifiedCount === 0) {
+    const post = await incrementPostMetric(id, action);
+    if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
 
@@ -170,8 +162,8 @@ io.on("connection", (_socket) => {
 app.use(errorHandler);
 
 async function startServer() {
-  await connectToMongo();
-  await createDefaultAdmin(db);
+  await connectToDatabase();
+  await createDefaultAdmin();
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
     console.log(`[startup] server listening on port ${PORT}`);

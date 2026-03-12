@@ -1,9 +1,11 @@
-import { getMongoClient } from "./lib/mongodb";
+import { ensurePostgres } from "./lib/postgres";
 import { requireAuth } from "./lib/requireAuth";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const { encryptClassifiedFields } = require("../server/services/encryptionService");
+const { saveConversation } = require("../server/models/messageModel");
+const { logAuditEventSafely } = require("../server/services/auditLogService");
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -21,22 +23,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Connect to MongoDB
-    const client = await getMongoClient();
-    const db = client.db("Messages"); // Database name from your connection string
-    const collection = db.collection("conversations"); // Collection name
-
+    await ensurePostgres();
     const conversationId = Date.now();
     const protectedConversation = encryptClassifiedFields({ messages });
-    const conversation = {
+    await saveConversation({
       id: conversationId,
       userId: user._id,
-      ...protectedConversation,
+      messages: protectedConversation.messages,
       createdAt: new Date()
-    };
+    });
 
-    // Insert the conversation into MongoDB
-    await collection.insertOne(conversation);
+    await logAuditEventSafely({
+      userId: user._id,
+      role: user.role,
+      action: "save_chat_history",
+      resourceType: "chat_conversation",
+      resourceId: String(conversationId),
+      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null,
+      metadata: {
+        route: req.url,
+        method: req.method,
+        conversationMessageCount: messages.length,
+      },
+    });
 
     res.status(200).json({ success: true, conversationId });
   } catch (error) {

@@ -1,21 +1,27 @@
 // routes/auth.js
 const express = require('express');
 const router = express.Router();
-const { ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 10;
-const { getMongoClient } = require('../config/database'); // adjust path
-const { generateToken } = require('../lib/jwt'); // JWT helper
+const { generateToken, verifyToken } = require('../lib/jwt'); // JWT helper
 const { authenticateJWT } = require('../middleware/authMiddleware');
 const { requirePermission, normalizeRole } = require('../middleware/permissionMiddleware');
 const axios = require('axios');
+const {
+  findUserByEmail,
+  findUserByEmailOrFacebookId,
+  createUser,
+  updateUser,
+  findUserById,
+} = require('../models/userModel');
+const { findProfileByUserId } = require('../models/profileModel');
+const { createObjectId } = require('../lib/objectId');
 
 // Google Auth
 const { OAuth2Client } = require('google-auth-library');
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 const isProduction = process.env.NODE_ENV === 'production';
-const DB_NAME = process.env.MONGODB_DB_NAME || 'Mind_Bridge';
 const ROLE_PATIENT = 'patient';
 const ROLE_PENDING_DOCTOR = 'pending-doctor';
 const ROLE_ADMIN = 'admin';
@@ -31,10 +37,7 @@ function normalizeStoredRole(role) {
 async function normalizeUserRoleInDb(db, user) {
   const normalizedRole = normalizeStoredRole(user.role);
   if (normalizedRole !== user.role) {
-    await db.collection('users').updateOne(
-      { _id: user._id },
-      { $set: { role: normalizedRole, updatedAt: new Date() } }
-    );
+    await updateUser(user._id, { role: normalizedRole, updatedAt: new Date() });
     user.role = normalizedRole;
   }
   return user;
@@ -66,13 +69,11 @@ router.post('/google-login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Google token' });
     }
 
-    const dbClient = await getMongoClient();
-    const db = dbClient.db(DB_NAME);
-
     // Check if user exists
-    let user = await db.collection('users').findOne({ email });
+    let user = await findUserByEmail(email);
     if (!user) {
-      user = {
+      user = await createUser({
+        _id: createObjectId(),
         email,
         name,
         googleId,
@@ -80,30 +81,36 @@ router.post('/google-login', async (req, res) => {
         role: ROLE_PATIENT,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
-      const result = await db.collection('users').insertOne(user);
-      user._id = result.insertedId;
+      });
     } else {
       const profilePic = picture || user.profilePic || null;
-      await db.collection('users').updateOne(
-        { _id: user._id },
-        { $set: { googleId: googleId || user.googleId, profilePic, name: name || user.name, updatedAt: new Date() } }
-      );
-      user.googleId = googleId || user.googleId;
-      user.profilePic = profilePic;
-      user.name = name || user.name;
+      user = await updateUser(user._id, {
+        googleId: googleId || user.googleId,
+        profilePic,
+        name: name || user.name,
+        updatedAt: new Date(),
+      });
     }
 
-    user = await normalizeUserRoleInDb(db, user);
+    user = await normalizeUserRoleInDb(null, user);
 
     // Fetch extended profile data if it exists in the new separate entity
-    const profileData = await db.collection('profiles').findOne({ userId: user._id });
+    const profileData = await findProfileByUserId(user._id);
 
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'user_login',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        authProvider: 'google',
+        outcome: 'success',
+      },
+    });
 
     if (profileData) {
-      delete profileData._id; // prevent overwriting user._id
+      delete profileData._id;
     }
 
     res.json({
@@ -117,6 +124,15 @@ router.post('/google-login', async (req, res) => {
 
   } catch (err) {
     console.error('[auth] google-login failed');
+    await req.logAuditEvent?.({
+      action: 'user_login_failed',
+      resourceType: 'auth',
+      resourceId: req.body?.email || 'google-login',
+      metadata: {
+        authProvider: 'google',
+        outcome: 'failure',
+      },
+    });
     res.status(500).json({ error: 'Google login failed' });
   }
 });
@@ -146,15 +162,11 @@ router.post('/facebook-login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Facebook token' });
     }
 
-    const dbClient = await getMongoClient();
-    const db = dbClient.db(DB_NAME);
-
-    let user = await db.collection('users').findOne({
-      $or: [{ facebookId }, { email }],
-    });
+    let user = await findUserByEmailOrFacebookId({ email, facebookId });
 
     if (!user) {
-      user = {
+      user = await createUser({
+        _id: createObjectId(),
         email,
         name,
         facebookId,
@@ -162,31 +174,30 @@ router.post('/facebook-login', async (req, res) => {
         role: ROLE_PATIENT,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
-      const result = await db.collection('users').insertOne(user);
-      user._id = result.insertedId;
+      });
     } else if (!user.facebookId || user.profilePic !== picture || user.name !== name) {
-      await db.collection('users').updateOne(
-        { _id: user._id },
-        {
-          $set: {
-            facebookId,
-            profilePic: picture || user.profilePic || null,
-            name: name || user.name,
-            updatedAt: new Date(),
-          },
-        }
-      );
-      user.facebookId = facebookId;
-      user.profilePic = picture || user.profilePic || null;
-      user.name = name || user.name;
+      user = await updateUser(user._id, {
+        facebookId,
+        profilePic: picture || user.profilePic || null,
+        name: name || user.name,
+        updatedAt: new Date(),
+      });
     }
 
-    user = await normalizeUserRoleInDb(db, user);
+    user = await normalizeUserRoleInDb(null, user);
 
-    const profileData = await db.collection('profiles').findOne({ userId: user._id });
+    const profileData = await findProfileByUserId(user._id);
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'user_login',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        authProvider: 'facebook',
+        outcome: 'success',
+      },
+    });
 
     if (profileData) {
       delete profileData._id;
@@ -201,6 +212,15 @@ router.post('/facebook-login', async (req, res) => {
       ...(profileData || {}),
     });
   } catch (_err) {
+    await req.logAuditEvent?.({
+      action: 'user_login_failed',
+      resourceType: 'auth',
+      resourceId: req.body?.email || 'facebook-login',
+      metadata: {
+        authProvider: 'facebook',
+        outcome: 'failure',
+      },
+    });
     return res.status(401).json({ error: 'Facebook login failed' });
   }
 });
@@ -213,32 +233,37 @@ router.post('/signup', async (req, res) => {
   }
 
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const existing = await db.collection('users').findOne({ email });
+    const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ error: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const user = {
+    const user = await createUser({
+      _id: createObjectId(),
       email,
       name,
       password: hashedPassword,
       role: ROLE_PATIENT,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    });
 
-    const result = await db.collection('users').insertOne(user);
-
-    const token = generateToken({ _id: result.insertedId, email: user.email, role: user.role });
+    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'user_login',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        authProvider: 'password',
+        outcome: 'signup',
+      },
+    });
 
     res.status(201).json({
-      _id: result.insertedId,
+      _id: user._id,
       email: user.email,
       name: user.name,
       role: user.role,
@@ -258,30 +283,35 @@ router.post('/signup-doctor', async (req, res) => {
   }
 
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const existing = await db.collection('users').findOne({ email });
+    const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ error: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = {
+    const user = await createUser({
+      _id: createObjectId(),
       email,
       name,
       password: hashedPassword,
       role: ROLE_PENDING_DOCTOR,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
-
-    const result = await db.collection('users').insertOne(user);
-    const token = generateToken({ _id: result.insertedId, email: user.email, role: user.role });
+    });
+    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'user_login',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        authProvider: 'password',
+        outcome: 'doctor-signup',
+      },
+    });
 
     res.status(201).json({
-      _id: result.insertedId,
+      _id: user._id,
       email: user.email,
       name: user.name,
       role: user.role,
@@ -299,11 +329,8 @@ router.post(
   requirePermission('request_doctor_access'),
   async (req, res) => {
     try {
-      const client = await getMongoClient();
-      const db = client.db(DB_NAME);
-      const userId = new ObjectId(req.user._id);
-
-      const user = await db.collection('users').findOne({ _id: userId });
+      const userId = req.user._id;
+      const user = await findUserById(userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
       if (normalizeStoredRole(user.role) === 'doctor') {
         return res.status(400).json({ error: 'User is already an approved doctor' });
@@ -312,14 +339,19 @@ router.post(
         return res.status(400).json({ error: 'Doctor application is already pending review' });
       }
 
-      await db.collection('users').updateOne(
-        { _id: userId },
-        { $set: { role: ROLE_PENDING_DOCTOR, updatedAt: new Date() } }
-      );
-
-      const updatedUser = { ...user, role: ROLE_PENDING_DOCTOR };
+      const updatedUser = await updateUser(userId, { role: ROLE_PENDING_DOCTOR, updatedAt: new Date() });
       const token = generateToken({ _id: updatedUser._id, email: updatedUser.email, role: updatedUser.role });
       res.cookie('auth_token', token, getCookieOptions());
+      await req.logAuditEvent?.({
+        action: 'change_user_role',
+        resourceType: 'user',
+        resourceId: updatedUser._id,
+        metadata: {
+          previousRole: user.role,
+          newRole: updatedUser.role,
+          initiatedBy: userId,
+        },
+      });
 
       return res.json({ success: true, role: ROLE_PENDING_DOCTOR });
     } catch (_err) {
@@ -337,25 +369,49 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    let user = await db.collection('users').findOne({ email });
+    let user = await findUserByEmail(email);
     if (!user) {
+      await req.logAuditEvent?.({
+        action: 'user_login_failed',
+        resourceType: 'auth',
+        resourceId: email,
+        metadata: {
+          authProvider: 'password',
+          outcome: 'user_not_found',
+        },
+      });
       return res.status(404).json({ error: 'User not found' });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await req.logAuditEvent?.({
+        action: 'user_login_failed',
+        resourceType: 'auth',
+        resourceId: user._id,
+        metadata: {
+          authProvider: 'password',
+          outcome: 'invalid_password',
+        },
+      });
       return res.status(401).json({ error: 'Invalid password' });
     }
 
-    user = await normalizeUserRoleInDb(db, user);
+    user = await normalizeUserRoleInDb(null, user);
 
     // Fetch extended profile data if it exists in the new separate entity
-    const profileData = await db.collection('profiles').findOne({ userId: user._id });
+    const profileData = await findProfileByUserId(user._id);
 
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'user_login',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        authProvider: 'password',
+        outcome: 'success',
+      },
+    });
 
     if (profileData) {
       delete profileData._id; // prevent overwriting user._id
@@ -376,7 +432,32 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/logout', (_req, res) => {
+router.post('/logout', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies?.auth_token;
+  const bearerToken =
+    authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
+      : null;
+  const token = bearerToken || cookieToken;
+
+  if (token) {
+    try {
+      const user = verifyToken(token);
+      req.user = req.user || user;
+      await req.logAuditEvent?.({
+        action: 'user_logout',
+        resourceType: 'auth',
+        resourceId: user._id,
+        metadata: {
+          outcome: 'success',
+        },
+      });
+    } catch (_err) {
+      // Keep logout behavior unchanged if the token is already invalid.
+    }
+  }
+
   res.clearCookie('auth_token', {
     httpOnly: true,
     secure: isProduction,

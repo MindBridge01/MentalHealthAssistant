@@ -1,26 +1,21 @@
 // addProfilePic.js
-const { MongoClient, ObjectId } = require('mongodb');
-require('dotenv').config();
-
-const uri = process.env.MONGODB_URI;
+const { updateUser, findUserByEmail } = require("./models/userModel");
 
 async function addProfilePic() {
-  const client = new MongoClient(uri);
   try {
-    await client.connect();
-    const db = client.db();
-    
-    // Update your admin
-    const result = await db.collection('users').updateOne(
-      { email: "lakshikahiruni20@gmail.com" },
-      { $set: { profilePic: null } } // initial value null
-    );
+    const admin = await findUserByEmail("lakshikahiruni20@gmail.com");
+    if (!admin) {
+      console.log("Admin not found");
+      return;
+    }
 
-    console.log("Admin profilePic field updated:", result.modifiedCount);
+    const updated = await updateUser(admin._id, {
+      profilePic: null,
+      updatedAt: new Date(),
+    });
+    console.log("Admin profilePic field updated:", Boolean(updated));
   } catch (err) {
     console.error(err);
-  } finally {
-    await client.close();
   }
 }
 

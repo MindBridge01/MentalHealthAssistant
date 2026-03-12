@@ -1,11 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { getMongoClient } = require('../config/database');
-const { ObjectId } = require('mongodb');
-const DB_NAME = process.env.MONGODB_DB_NAME || 'Mind_Bridge';
 const { authenticateJWT, authorizeRoles } = require('../middleware/authMiddleware');
 const { requirePermission } = require('../middleware/permissionMiddleware');
 const { encryptClassifiedFields, decryptClassifiedFields } = require('../services/encryptionService');
+const {
+  listAllDoctors,
+  getDoctorByUserId,
+  upsertDoctorProfile,
+  addDoctorSlots,
+  getDoctorSlots,
+  deleteDoctorSlot,
+  updateDoctorSlot,
+  listAvailabilities,
+  findDoctorMessages,
+} = require('../models/doctorModel');
+const {
+  createAppointment,
+  findAppointmentsByPatientId,
+  findAppointmentsByDoctorId,
+} = require('../models/appointmentModel');
+const { createObjectId } = require('../lib/objectId');
 
 router.use(authenticateJWT());
 
@@ -45,10 +59,7 @@ function requirePatientOwnership(paramKey = 'patientId') {
 // ---------- Get all doctors ----------
 router.get('/all', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const doctors = await db.collection('doctors').find({}).toArray();
+    const doctors = await listAllDoctors();
     res.json(doctors);
   } catch (err) {
     res.status(500).json({ error: 'Request failed' });
@@ -59,29 +70,9 @@ router.get('/all', authorizeRoles('patient', 'doctor', 'admin'), async (req, res
 router.get('/profile/:userId', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
     const userId = req.params.userId;
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
+    const doctor = await getDoctorByUserId(userId);
     if (!doctor) {
       return res.json({ name: '', specialty: '', bio: '', contact: '', profilePic: '' });
-    }
-
-    // Backfill _id for any older slots that don't have one
-    let needsUpdate = false;
-    if (doctor.slots && Array.isArray(doctor.slots)) {
-      doctor.slots.forEach(slot => {
-        if (!slot._id) {
-          slot._id = new ObjectId();
-          needsUpdate = true;
-        }
-      });
-      if (needsUpdate) {
-        await db.collection('doctors').updateOne(
-          { userId: new ObjectId(userId) },
-          { $set: { slots: doctor.slots } }
-        );
-      }
     }
 
     res.json(doctor);
@@ -98,11 +89,8 @@ router.put(
   requireDoctorOwnership('userId'),
   async (req, res) => {
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
     const userId = req.params.userId;
-
-    const updates = {
+    const result = await upsertDoctorProfile(userId, {
       name: req.body.name,
       specialty: req.body.specialty,
       bio: req.body.bio,
@@ -113,17 +101,9 @@ router.put(
       licenseNumber: req.body.licenseNumber,
       statusMessage: req.body.statusMessage,
       updatedAt: new Date(),
-    };
+    });
 
-    // Use upsert: true to create the document if it doesn't exist
-    const result = await db.collection('doctors').updateOne(
-      { userId: new ObjectId(userId) },
-      { $set: updates },
-      { upsert: true }
-    );
-
-    if (result.matchedCount === 0 && result.upsertedCount === 1) {
-      // Doctor document created
+    if (result.created) {
       return res.json({ success: true, message: 'Doctor profile created' });
     }
 
@@ -145,65 +125,16 @@ router.post(
     const { date, startTime, endTime } = req.body;
     if (!date || !startTime || !endTime) return res.status(400).json({ error: 'Date, startTime, and endTime required' });
 
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    // Fetch doctor to get name
-    const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(userId) });
+    const { doctor, availabilities } = await addDoctorSlots(userId, {
+      date,
+      startTime,
+      endTime,
+      slotIdFactory: createObjectId,
+    });
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
-
-    // Helper to divide time into 30-min intervals
-    const generateIntervals = (startStr, endStr) => {
-      const intervals = [];
-      let [startH, startM] = startStr.split(':').map(Number);
-      let [endH, endM] = endStr.split(':').map(Number);
-
-      let currentMin = startH * 60 + startM;
-      let endMin = endH * 60 + endM;
-
-      while (currentMin + 30 <= endMin) {
-        const h1 = Math.floor(currentMin / 60).toString().padStart(2, '0');
-        const m1 = (currentMin % 60).toString().padStart(2, '0');
-        const nextMin = currentMin + 30;
-        const h2 = Math.floor(nextMin / 60).toString().padStart(2, '0');
-        const m2 = (nextMin % 60).toString().padStart(2, '0');
-        intervals.push({ startTime: `${h1}:${m1}`, endTime: `${h2}:${m2}` });
-        currentMin = nextMin;
-      }
-      return intervals;
-    };
-
-    const slotsToCreate = generateIntervals(startTime, endTime);
-    if (slotsToCreate.length === 0) {
+    if (availabilities.length === 0) {
       return res.status(400).json({ error: 'Time range must be at least 30 minutes' });
     }
-
-    const availabilities = [];
-    const internalSlots = [];
-
-    for (const slot of slotsToCreate) {
-      const slotId = new ObjectId();
-      const newAvailability = {
-        _id: slotId,
-        doctorId: userId,
-        doctorName: doctor.name || "Unknown Doctor",
-        date,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        createdAt: new Date()
-      };
-      availabilities.push(newAvailability);
-      internalSlots.push({ _id: slotId, date, startTime: slot.startTime, endTime: slot.endTime });
-    }
-
-    // 1. Add to separate doctor_availability entity
-    await db.collection('doctor_availability').insertMany(availabilities);
-
-    // 2. Add to doctor's internal array (for backwards compat)
-    await db.collection('doctors').updateOne(
-      { userId: new ObjectId(userId) },
-      { $push: { slots: { $each: internalSlots } } }
-    );
 
     res.json({ success: true, availabilities });
   } catch (err) {
@@ -220,13 +151,7 @@ router.get(
   async (req, res) => {
   try {
     const userId = req.params.userId;
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const doctor = await db.collection('doctors').findOne(
-      { userId: new ObjectId(userId) },
-      { projection: { slots: 1 } }
-    );
+    const doctor = await getDoctorByUserId(userId);
 
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
@@ -252,19 +177,8 @@ router.delete(
       return res.status(400).json({ error: 'Invalid slot ID. Please refresh your browser.' });
     }
 
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    // 1. Remove from separate doctor_availability collection
-    await db.collection('doctor_availability').deleteOne({ _id: new ObjectId(slotId) });
-
-    // 2. Remove from doctor internal array
-    const result = await db.collection('doctors').updateOne(
-      { userId: new ObjectId(userId) },
-      { $pull: { slots: { _id: new ObjectId(slotId) } } }
-    );
-
-    if (result.matchedCount === 0)
+    const removed = await deleteDoctorSlot(userId, slotId);
+    if (!removed)
       return res.status(404).json({ error: 'Doctor not found' });
 
     res.json({ success: true });
@@ -291,37 +205,8 @@ router.put(
       return res.status(400).json({ error: 'Invalid slot ID. Please refresh your browser.' });
     }
 
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    // 1. Update separate doctor_availability collection
-    await db.collection('doctor_availability').updateOne(
-      { _id: new ObjectId(slotId) },
-      {
-        $set: {
-          date: date,
-          startTime: startTime,
-          endTime: endTime
-        }
-      }
-    );
-
-    // 2. Update doctor internal array
-    const result = await db.collection('doctors').updateOne(
-      {
-        userId: new ObjectId(userId),
-        "slots._id": new ObjectId(slotId)
-      },
-      {
-        $set: {
-          "slots.$.date": date,
-          "slots.$.startTime": startTime,
-          "slots.$.endTime": endTime
-        }
-      }
-    );
-
-    if (result.matchedCount === 0)
+    const updatedSlot = await updateDoctorSlot(userId, slotId, { date, startTime, endTime });
+    if (!updatedSlot)
       return res.status(404).json({ error: 'Doctor or slot not found' });
 
     res.json({ success: true });
@@ -334,11 +219,7 @@ router.put(
 // ---------- Get all availability records (New Entity endpoint) ----------
 router.get('/availabilities', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    // Fetch all available slots from the standalone collection
-    const availabilities = await db.collection('doctor_availability').find({}).toArray();
+    const availabilities = await listAvailabilities();
     res.json(availabilities);
   } catch (err) {
     res.status(500).json({ error: 'Request failed' });
@@ -359,9 +240,6 @@ router.post('/appointments/:doctorId', authorizeRoles('patient'), requirePermiss
       return res.status(400).json({ error: 'Missing required appointment fields' });
     }
 
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
     // Create a robust appointment object including the patient email
     const protectedAppointmentData = encryptClassifiedFields({
       patient: patientName || "Unknown Patient",
@@ -370,7 +248,7 @@ router.post('/appointments/:doctorId', authorizeRoles('patient'), requirePermiss
     });
 
     const newAppointment = {
-      _id: new ObjectId(),
+      _id: createObjectId(),
       doctorId: doctorId,
       patientId: normalizedPatientId,
       patient: protectedAppointmentData.patient,
@@ -382,45 +260,28 @@ router.post('/appointments/:doctorId', authorizeRoles('patient'), requirePermiss
       createdAt: new Date()
     };
 
-    // 1. Add appointment to a separate "appointments" database collection (creating a distinct entity)
-    await db.collection('appointments').insertOne(newAppointment);
-
-    // 2. Add a sub-copy of the appointment to the doctor's document array (using string id for backwards compat)
-    const doctorAppointmentCopy = { ...newAppointment, id: newAppointment._id.toString() };
-
-    const result = await db.collection('doctors').updateOne(
-      { userId: new ObjectId(doctorId) },
-      { $push: { appointments: doctorAppointmentCopy } }
-    );
-
-    if (result.matchedCount === 0) {
+    const doctor = await getDoctorByUserId(doctorId);
+    if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
-    // 3. Remove the booked slot so no other patient can book it
-    if (slotId) {
-      await db.collection('doctor_availability').deleteOne({ _id: new ObjectId(slotId) });
-      await db.collection('doctors').updateOne(
-        { userId: new ObjectId(doctorId) },
-        { $pull: { slots: { _id: new ObjectId(slotId) } } }
-      );
-    } else {
-      // Fallback: split the slotTime string and pull by values
-      const parts = slotTime.split(' - ');
-      if (parts.length === 2) {
-        const [st, et] = parts;
-        await db.collection('doctor_availability').deleteOne({
-          doctorId: doctorId,
-          date: slotDate,
-          startTime: st,
-          endTime: et
-        });
-        await db.collection('doctors').updateOne(
-          { userId: new ObjectId(doctorId) },
-          { $pull: { slots: { date: slotDate, startTime: st, endTime: et } } }
-        );
-      }
-    }
+    const doctorAppointmentCopy = await createAppointment(newAppointment, {
+      slotId,
+      slotDate,
+      slotTimeParts: slotTime.split(' - '),
+    });
+
+    await req.logAuditEvent?.({
+      action: 'create_appointment',
+      resourceType: 'appointment',
+      resourceId: doctorAppointmentCopy?._id || newAppointment._id,
+      metadata: {
+        doctorId,
+        patientId: normalizedPatientId,
+        slotDate,
+        slotTime,
+      },
+    });
 
     res.json({
       success: true,
@@ -442,20 +303,27 @@ router.get(
   async (req, res) => {
   try {
     const { patientId } = req.params;
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    // Find all appointments that belong to this patient
-    const appointments = await db.collection('appointments').find({ patientId }).toArray();
+    const appointments = await findAppointmentsByPatientId(patientId);
 
     // Join doctor names dynamically
     const populated = await Promise.all(appointments.map(async (appt) => {
-      const doctor = await db.collection('doctors').findOne({ userId: new ObjectId(appt.doctorId) });
+      const doctor = await getDoctorByUserId(appt.doctorId);
       return {
         ...decryptClassifiedFields(appt),
         doctorName: doctor ? doctor.name : 'Unknown Doctor'
       };
     }));
+
+    await req.logAuditEvent?.({
+      action: 'view_patient_record',
+      resourceType: 'appointment',
+      resourceId: patientId,
+      metadata: {
+        accessedPatientId: patientId,
+        appointmentCount: populated.length,
+        accessorType: 'patient',
+      },
+    });
 
     res.json({ appointments: populated });
   } catch (err) {
@@ -473,19 +341,24 @@ router.get(
   async (req, res) => {
   try {
     const userId = req.params.userId;
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const doctor = await db.collection('doctors').findOne(
-      { userId: new ObjectId(userId) },
-      { projection: { appointments: 1 } }
-    );
+    const doctor = await getDoctorByUserId(userId);
 
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
 
-    const decryptedAppointments = (doctor.appointments || []).map((appointment) =>
+    const appointments = await findAppointmentsByDoctorId(userId);
+    const decryptedAppointments = appointments.map((appointment) =>
       decryptClassifiedFields(appointment)
     );
+    await req.logAuditEvent?.({
+      action: 'view_patient_record',
+      resourceType: 'appointment',
+      resourceId: userId,
+      metadata: {
+        doctorId: userId,
+        appointmentCount: decryptedAppointments.length,
+        accessorType: 'doctor',
+      },
+    });
     res.json({ appointments: decryptedAppointments });
   } catch (err) {
     res.status(500).json({ error: 'Request failed' });
@@ -501,17 +374,22 @@ router.get(
   async (req, res) => {
   try {
     const userId = req.params.userId;
-    const client = await getMongoClient();
-    const db = client.db(DB_NAME);
-
-    const doctor = await db.collection('doctors').findOne(
-      { userId: new ObjectId(userId) },
-      { projection: { messages: 1 } }
-    );
+    const doctor = await getDoctorByUserId(userId);
 
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
 
-    res.json({ messages: doctor.messages || [] });
+    const messages = await findDoctorMessages(userId);
+    await req.logAuditEvent?.({
+      action: 'view_chat_history',
+      resourceType: 'doctor_messages',
+      resourceId: userId,
+      metadata: {
+        doctorId: userId,
+        messageCount: messages.length,
+        accessorType: 'doctor',
+      },
+    });
+    res.json({ messages });
   } catch (err) {
     res.status(500).json({ error: 'Request failed' });
   }

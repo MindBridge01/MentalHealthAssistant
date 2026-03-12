@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { ObjectId } = require('mongodb');
 const { authenticateJWT, authorizeRoles } = require('../middleware/authMiddleware');
 const { requirePermission } = require('../middleware/permissionMiddleware');
 const { encryptClassifiedFields, decryptClassifiedFields } = require('../services/encryptionService');
+const { findProfileByUserId, upsertProfile } = require('../models/profileModel');
+const { findUserById, updateUser } = require('../models/userModel');
 
 router.use(authenticateJWT());
 router.use(authorizeRoles('patient', 'doctor', 'admin', 'pending-doctor'));
@@ -14,17 +15,20 @@ router.get('/', requirePermission('view_own_profile'), async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
   try {
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: 'Database not connected' });
-
-    const profile = await db.collection('profiles').findOne({ userId: new ObjectId(userId) });
+    const profile = await findProfileByUserId(userId);
     const decryptedProfile = decryptClassifiedFields(profile || {});
-    const user = await db.collection('users').findOne(
-      { _id: new ObjectId(userId) },
-      { projection: { password: 0 } }
-    );
+    const user = await findUserById(userId);
 
     if (!user) return res.status(404).json({ error: 'User not found' });
+    await req.logAuditEvent?.({
+      action: 'view_patient_record',
+      resourceType: 'profile',
+      resourceId: userId,
+      metadata: {
+        accessedUserId: userId,
+        accessScope: 'self',
+      },
+    });
     return res.json({
       _id: user._id,
       email: user.email,
@@ -50,9 +54,6 @@ router.put('/', requirePermission('edit_own_profile'), async (req, res) => {
   } = req.body;
 
   try {
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: 'Database not connected' });
-
     const encryptedProfile = encryptClassifiedFields({
       name,
       email,
@@ -70,23 +71,23 @@ router.put('/', requirePermission('edit_own_profile'), async (req, res) => {
       illnesses,
     });
 
-    // Update main users collection
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { name, email, profilePic, updatedAt: new Date() } }
-    );
+    await updateUser(userId, { name, email, profilePic, updatedAt: new Date() });
 
-    // Update profile details collection
-    await db.collection('profiles').updateOne(
-      { userId: new ObjectId(userId) },
-      {
-        $set: {
-          ...encryptedProfile,
-          updatedAt: new Date()
-        }
+    await upsertProfile(userId, {
+      ...encryptedProfile,
+      updatedAt: new Date(),
+    });
+
+    await req.logAuditEvent?.({
+      action: 'update_patient_record',
+      resourceType: 'profile',
+      resourceId: userId,
+      metadata: {
+        updatedUserId: userId,
+        accessScope: 'self',
+        updatedFields: Object.keys(req.body || {}).filter((key) => req.body[key] !== undefined),
       },
-      { upsert: true }  // create profile document if not exist
-    );
+    });
 
     res.json({ success: true, message: 'Profile updated successfully' });
 
@@ -102,13 +103,10 @@ router.post('/sos', requirePermission('edit_own_profile'), async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
   try {
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: 'Database not connected' });
-
     // Fetch user profile to get guardian email
-    const profile = await db.collection('profiles').findOne({ userId: new ObjectId(userId) });
+    const profile = await findProfileByUserId(userId);
     const decryptedProfile = decryptClassifiedFields(profile || {});
-    const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+    const user = await findUserById(userId);
 
     if (!profile || !decryptedProfile.guardianEmail) {
       return res.status(400).json({ error: 'No guardian email found in profile. Please update your profile settings with a Guardian Email.' });

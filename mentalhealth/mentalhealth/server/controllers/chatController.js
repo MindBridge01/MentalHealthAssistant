@@ -2,6 +2,7 @@ const { moderateModelResponse } = require("../services/responseModerationService
 const { logSafetyEvent } = require("../services/safetyEventLogger");
 const { encryptClassifiedFields } = require("../services/encryptionService");
 const { generateAiResponse } = require("../services/aiService");
+const { saveConversation } = require("../models/messageModel");
 
 async function chatController(req, res, next) {
   const message = req.piiSafeMessage || "";
@@ -30,22 +31,24 @@ async function saveConversationController(req, res, next) {
   }
 
   try {
-    const mongoClient = req.app.locals.mongoClient;
-    if (!mongoClient) {
-      return res.status(500).json({ error: "Database not connected" });
-    }
-
-    const messagesDb = mongoClient.db("Messages");
-    const collection = messagesDb.collection("conversations");
     const encryptedConversation = encryptClassifiedFields({ messages });
     const conversation = {
       id: Date.now(),
       userId: req.user._id,
-      ...encryptedConversation,
+      messages: encryptedConversation.messages,
       createdAt: new Date(),
     };
 
-    await collection.insertOne(conversation);
+    await saveConversation(conversation);
+    await req.logAuditEvent?.({
+      action: "save_chat_history",
+      resourceType: "chat_conversation",
+      resourceId: String(conversation.id),
+      metadata: {
+        conversationMessageCount: messages.length,
+        userId: req.user?._id,
+      },
+    });
     return res.status(200).json({ success: true, conversationId: conversation.id });
   } catch (error) {
     return next(error);
