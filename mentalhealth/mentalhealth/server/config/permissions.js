@@ -23,6 +23,7 @@ const permissions = {
     "reject_doctor",
     "view_all_records",
     "view_audit_logs",
+    "chat_ai",
   ],
 };
 

@@ -2,14 +2,21 @@ const { moderateModelResponse } = require("../services/responseModerationService
 const { logSafetyEvent } = require("../services/safetyEventLogger");
 const { encryptClassifiedFields } = require("../services/encryptionService");
 const { generateAiResponse } = require("../services/aiService");
+const { retrieveKnowledgeContext } = require("../services/knowledgeRetrievalService");
 const { saveConversation } = require("../models/messageModel");
 
 async function chatController(req, res, next) {
   const message = req.piiSafeMessage || "";
 
   try {
-    const responseText = await generateAiResponse(message);
+    const { contextText, matches } = await retrieveKnowledgeContext(message);
+    const responseText = await generateAiResponse({
+      userMessage: message,
+      knowledgeContext: contextText,
+    });
+
     const moderated = moderateModelResponse(responseText);
+
     if (moderated.moderated) {
       logSafetyEvent({
         eventType: "response_moderated",
@@ -18,7 +25,24 @@ async function chatController(req, res, next) {
       });
     }
 
-    return res.json({ content: moderated.content });
+    await req.logAuditEvent?.({
+      action: "rag_chat_query",
+      resourceType: "knowledge_chunks",
+      metadata: {
+        retrievedChunkCount: matches.length,
+        sources: matches.map((item) => item.document_key),
+        topSimilarity: matches[0]?.similarity || null,
+      },
+    });
+
+    return res.json({
+      content: moderated.content,
+      sources: matches.map((item) => ({
+        title: item.title,
+        documentKey: item.document_key,
+        similarity: item.similarity,
+      })),
+    });
   } catch (error) {
     return next(error);
   }

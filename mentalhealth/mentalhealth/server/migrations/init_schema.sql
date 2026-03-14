@@ -98,6 +98,15 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE profiles
+DROP COLUMN IF EXISTS encryption_key_version;
+
+ALTER TABLE appointments
+DROP COLUMN IF EXISTS encryption_key_version;
+
+ALTER TABLE chat_conversations
+DROP COLUMN IF EXISTS encryption_key_version;
+
 CREATE INDEX IF NOT EXISTS idx_chat_conversations_user ON chat_conversations (user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -149,3 +158,27 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS knowledge_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  document_key TEXT NOT NULL,
+  title TEXT NOT NULL,
+  source_path TEXT NOT NULL,
+  chunk_index INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  embedding vector(768) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (document_key, chunk_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_document_key
+ON knowledge_chunks (document_key);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding
+ON knowledge_chunks
+USING ivfflat (embedding vector_cosine_ops)
+WITH (lists = 100);
