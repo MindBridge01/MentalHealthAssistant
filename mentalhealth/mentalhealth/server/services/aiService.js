@@ -12,7 +12,7 @@ async function generateAiResponse({ userMessage, knowledgeContext, messages = []
   const response = await axios.post(
     `${ollamaBaseUrl}/api/chat`,
     {
-      model: process.env.OLLAMA_CHAT_MODEL || "llama3",
+      model: process.env.OLLAMA_CHAT_MODEL || "llama3.2:1b",
       messages: buildStructuredPrompt({
         userMessage,
         knowledgeContext,
