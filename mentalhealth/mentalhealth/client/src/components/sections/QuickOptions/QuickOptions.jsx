@@ -38,7 +38,7 @@ const QuickOptions = () => {
             title="Talk to a Doctor"
             description="Connect with a licensed professional for a private consultation—available through video or voice, booked right from the platform."
             buttonText="Meet Doctor"
-            onClick={() => navigate("/doctor-dashboard")}
+            onClick={() => navigate("/patient/doctors")}
           />
         </div>
         <div
@@ -52,7 +52,7 @@ const QuickOptions = () => {
             title="Join Our Community"
             description="Share your thoughts or find strength in others’ stories—an anonymous, moderated space to connect on the Community page."
             buttonText="Join Community"
-            onClick={() => navigate("/community")}
+            onClick={() => navigate("/patient/community")}
           />
         </div>
         <div
@@ -66,7 +66,7 @@ const QuickOptions = () => {
             title="Call Help Now"
             description="Immediate support, 24/7—reach out anytime"
             buttonText="Get a Call"
-            onClick={() => navigate("/doctor-dashboard")}
+            onClick={() => navigate("/patient/doctors")}
           />
         </div>
       </div>

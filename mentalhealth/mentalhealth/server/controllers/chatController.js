@@ -7,12 +7,20 @@ const { saveConversation } = require("../models/messageModel");
 
 async function chatController(req, res, next) {
   const message = req.piiSafeMessage || "";
+  const rawMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  const sanitizedMessages = rawMessages
+    .filter((entry) => entry && typeof entry.content === "string")
+    .map((entry) => ({
+      role: entry.role === "assistant" ? "assistant" : "user",
+      content: entry.role === "user" ? (entry.content === req.body?.message ? message : entry.content) : entry.content,
+    }));
 
   try {
     const { contextText, matches } = await retrieveKnowledgeContext(message);
     const responseText = await generateAiResponse({
       userMessage: message,
       knowledgeContext: contextText,
+      messages: sanitizedMessages,
     });
 
     const moderated = moderateModelResponse(responseText);

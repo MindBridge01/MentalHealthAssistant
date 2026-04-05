@@ -30,9 +30,20 @@ CREATE TABLE IF NOT EXISTS profiles (
   guardian_phone JSONB,
   guardian_email JSONB,
   illnesses JSONB,
+  mental_health_context JSONB,
+  consent_accepted BOOLEAN NOT NULL DEFAULT FALSE,
+  consent_accepted_at TIMESTAMPTZ,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  onboarding_completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS mental_health_context JSONB;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS consent_accepted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS consent_accepted_at TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS doctors (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -158,6 +169,39 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS assessment_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  responses JSONB NOT NULL DEFAULT '[]'::jsonb,
+  score INTEGER NOT NULL,
+  classification TEXT NOT NULL,
+  recommendation TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessment_sessions_user ON assessment_sessions (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  author_name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_comments_post ON post_comments (post_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS post_engagements (
+  post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reaction_type TEXT NOT NULL CHECK (reaction_type IN ('like', 'save')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (post_id, user_id, reaction_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_engagements_user ON post_engagements (user_id, created_at DESC);
 
 CREATE EXTENSION IF NOT EXISTS vector;
 

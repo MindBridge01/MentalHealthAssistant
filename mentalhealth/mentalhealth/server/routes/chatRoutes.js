@@ -19,6 +19,15 @@ router.post(
   chatController
 );
 
+router.post(
+  "/public-chat",
+  piiFilterMessage,
+  crisisDetectionMiddleware,
+  promptGuardrailMiddleware,
+  disclaimerMiddleware,
+  chatController
+);
+
 router.post("/save-conversation", authenticateJWT(), saveConversationController);
 
 module.exports = router;

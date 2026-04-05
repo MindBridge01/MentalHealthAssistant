@@ -1,9 +1,16 @@
 import { apiRequest } from "./apiClient";
 
-export function sendChatMessage(message) {
+export function sendChatMessage(message, messages = []) {
   return apiRequest("/api/chat", {
     method: "POST",
-    body: { message },
+    body: { message, messages },
+  });
+}
+
+export function sendPublicChatMessage(message, messages = []) {
+  return apiRequest("/api/public-chat", {
+    method: "POST",
+    body: { message, messages },
   });
 }
 

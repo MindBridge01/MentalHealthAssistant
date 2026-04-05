@@ -17,6 +17,11 @@ function mapProfile(row) {
     guardianPhone: row.guardian_phone,
     guardianEmail: row.guardian_email,
     illnesses: row.illnesses,
+    mentalHealthContext: row.mental_health_context,
+    consentAccepted: row.consent_accepted,
+    consentAcceptedAt: row.consent_accepted_at,
+    onboardingCompleted: row.onboarding_completed,
+    onboardingCompletedAt: row.onboarding_completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -35,8 +40,10 @@ async function upsertProfile(userId, profile) {
   const result = await query(
     `INSERT INTO profiles (
       user_id, birthday, age, gender, phone, address, zipcode, country, city,
-      guardian_name, guardian_phone, guardian_email, illnesses, created_at, updated_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      guardian_name, guardian_phone, guardian_email, illnesses, mental_health_context,
+      consent_accepted, consent_accepted_at, onboarding_completed, onboarding_completed_at,
+      created_at, updated_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
     ON CONFLICT (user_id) DO UPDATE SET
       birthday = EXCLUDED.birthday,
       age = EXCLUDED.age,
@@ -50,6 +57,11 @@ async function upsertProfile(userId, profile) {
       guardian_phone = EXCLUDED.guardian_phone,
       guardian_email = EXCLUDED.guardian_email,
       illnesses = EXCLUDED.illnesses,
+      mental_health_context = EXCLUDED.mental_health_context,
+      consent_accepted = EXCLUDED.consent_accepted,
+      consent_accepted_at = EXCLUDED.consent_accepted_at,
+      onboarding_completed = EXCLUDED.onboarding_completed,
+      onboarding_completed_at = EXCLUDED.onboarding_completed_at,
       updated_at = EXCLUDED.updated_at
     RETURNING *`,
     [
@@ -66,6 +78,11 @@ async function upsertProfile(userId, profile) {
       serializeJson(profile.guardianPhone),
       serializeJson(profile.guardianEmail),
       serializeJson(profile.illnesses),
+      serializeJson(profile.mentalHealthContext),
+      profile.consentAccepted ?? false,
+      profile.consentAcceptedAt || null,
+      profile.onboardingCompleted ?? false,
+      profile.onboardingCompletedAt || null,
       createdAt,
       now,
     ]

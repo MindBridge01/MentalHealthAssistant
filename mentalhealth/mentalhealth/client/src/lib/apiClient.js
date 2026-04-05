@@ -12,13 +12,21 @@ function parseErrorMessage(status, payload) {
 }
 
 export async function apiRequest(path, options = {}) {
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const preparedBody =
+    options.body && !isFormData && typeof options.body === "object"
+      ? JSON.stringify(options.body)
+      : options.body;
+  const headers = {
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(options.headers || {}),
+  };
+
   const response = await fetch(apiUrl(path), {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
+    body: preparedBody,
   });
 
   let payload = null;

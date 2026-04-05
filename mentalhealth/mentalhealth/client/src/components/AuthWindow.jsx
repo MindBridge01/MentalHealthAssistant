@@ -73,8 +73,8 @@ const AuthWindow = ({ mode = "login" }) => {
     }
 
     if (!hasCompletePatientProfile(user)) {
-      navigate("/profile-settings", {
-        state: { onboarding: true, from: location.state?.from || "/" },
+      navigate("/patient/onboarding", {
+        state: { onboarding: true, from: location.state?.from || "/patient/dashboard" },
       });
       return;
     }

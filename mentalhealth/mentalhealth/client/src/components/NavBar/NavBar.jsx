@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logolight from "../../assets/logo/logolight.png";
 import { ButtonPrimary } from "../Buttons/ButtonPrimary/ButtonPrimary";
 import { apiUrl } from "../../config/api";
@@ -14,6 +14,7 @@ const NavBar = ({ user }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false); // profile dropdown
   const userDropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -30,9 +31,9 @@ const NavBar = ({ user }) => {
 
   const patientMenu = [
     { label: "Patient Dashboard", to: "/patient/dashboard" },
-    { label: "Profile", to: "/profile-settings" },
-    { label: "Chat Assistant", to: "/ai-chat" },
-    { label: "Appointments", to: "/doctor-dashboard" },
+    { label: "Onboarding", to: "/patient/onboarding" },
+    { label: "Chat Assistant", to: "/patient/chat" },
+    { label: "Appointments", to: "/patient/appointments" },
   ];
 
   const doctorMenu = [
@@ -86,8 +87,12 @@ const NavBar = ({ user }) => {
             Home
           </Link>
 
+          <Link to="/ai-chat" className="p-2.5 text-xl font-medium text-dark-blue900">
+            AI Chat
+          </Link>
+
           <Link
-            to="/community"
+            to={isAuthenticated ? "/patient/community" : "/login/patient"}
             className="p-2.5 text-xl font-medium text-dark-blue900"
           >
             Community
@@ -98,13 +103,13 @@ const NavBar = ({ user }) => {
           </Link>
 
           {!isAuthenticated && (
-            <Link to="/login" className="p-2.5 text-xl font-medium text-dark-blue900">
+            <Link to="/login/patient" className="p-2.5 text-xl font-medium text-dark-blue900">
               Login
             </Link>
           )}
 
           {!isAuthenticated && (
-            <Link to="/signup" className="p-2.5 text-xl font-medium text-dark-blue900">
+            <Link to="/signup/patient" className="p-2.5 text-xl font-medium text-dark-blue900">
               Signup
             </Link>
           )}
@@ -124,7 +129,7 @@ const NavBar = ({ user }) => {
               className="px-4 py-2 bg-red-600 rounded-2xl flex items-center gap-2.5 hover:bg-red-700"
               onClick={async () => {
                 if (!user) {
-                  alert("Please login first to trigger SOS.");
+                  navigate("/login/patient", { state: { from: location.pathname } });
                   return;
                 }
                 if (!window.confirm("Are you sure you want to trigger an SOS alert to your Guardian?")) return;
@@ -154,7 +159,9 @@ const NavBar = ({ user }) => {
               <div className="text-white text-lg font-bold">SOS Help</div>
             </button>
 
-            <ButtonPrimary />
+            <Link to="/ai-chat">
+              <ButtonPrimary />
+            </Link>
           </div>
 
           {/* User Profile */}

@@ -63,12 +63,14 @@ const adminRoutes = require("./routes/adminRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const patientRoutes = require("./routes/patientRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api", chatRoutes);
+app.use("/api/patient", patientRoutes);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, "uploads/"),
