@@ -6,6 +6,7 @@ const SALT_ROUNDS = 10;
 const { generateToken, verifyToken } = require('../lib/jwt'); // JWT helper
 const { authenticateJWT } = require('../middleware/authMiddleware');
 const { requirePermission, normalizeRole } = require('../middleware/permissionMiddleware');
+const { authRateLimiter } = require('../middleware/rateLimitMiddleware');
 const axios = require('axios');
 const {
   findUserByEmail,
@@ -54,7 +55,7 @@ function getCookieOptions() {
 }
 
 // ------------------- Google Login -------------------
-router.post('/google-login', async (req, res) => {
+router.post('/google-login', authRateLimiter, async (req, res) => {
   const { idToken } = req.body;
   if (!idToken) {
     return res.status(400).json({ error: 'Missing Google ID token' });
@@ -122,7 +123,7 @@ router.post('/google-login', async (req, res) => {
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
-  } catch (err) {
+  } catch {
     console.error('[auth] google-login failed');
     await req.logAuditEvent?.({
       action: 'user_login_failed',
@@ -138,7 +139,7 @@ router.post('/google-login', async (req, res) => {
 });
 
 // ------------------- Facebook Login -------------------
-router.post('/facebook-login', async (req, res) => {
+router.post('/facebook-login', authRateLimiter, async (req, res) => {
   const { accessToken } = req.body;
   if (!accessToken) {
     return res.status(400).json({ error: 'Missing Facebook access token' });
@@ -211,7 +212,7 @@ router.post('/facebook-login', async (req, res) => {
       profilePic: user.profilePic,
       ...(profileData || {}),
     });
-  } catch (_err) {
+  } catch {
     await req.logAuditEvent?.({
       action: 'user_login_failed',
       resourceType: 'auth',
@@ -226,7 +227,7 @@ router.post('/facebook-login', async (req, res) => {
 });
 
 // ------------------- Signup -------------------
-router.post('/signup', async (req, res) => {
+router.post('/signup', authRateLimiter, async (req, res) => {
   const { email, name, password } = req.body;
   if (!email || !name || !password) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -269,14 +270,14 @@ router.post('/signup', async (req, res) => {
       role: user.role,
     });
 
-  } catch (err) {
+  } catch {
     console.error('[auth] signup failed');
     res.status(500).json({ error: 'Signup failed' });
   }
 });
 
 // ------------------- Doctor Signup (Pending Approval) -------------------
-router.post('/signup-doctor', async (req, res) => {
+router.post('/signup-doctor', authRateLimiter, async (req, res) => {
   const { email, name, password } = req.body;
   if (!email || !name || !password) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -317,7 +318,7 @@ router.post('/signup-doctor', async (req, res) => {
       role: user.role,
       message: 'Doctor application submitted and pending admin approval.',
     });
-  } catch (_err) {
+  } catch {
     res.status(500).json({ error: 'Doctor signup failed' });
   }
 });
@@ -354,14 +355,14 @@ router.post(
       });
 
       return res.json({ success: true, role: ROLE_PENDING_DOCTOR });
-    } catch (_err) {
+    } catch {
       return res.status(500).json({ error: 'Failed to submit doctor application' });
     }
   }
 );
 
 // ------------------- Login -------------------
-router.post('/login', async (req, res) => {
+router.post('/login', authRateLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -426,7 +427,7 @@ router.post('/login', async (req, res) => {
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
-  } catch (err) {
+  } catch {
     console.error('[auth] login failed');
     res.status(500).json({ error: 'Login failed' });
   }
@@ -453,7 +454,7 @@ router.post('/logout', async (req, res) => {
           outcome: 'success',
         },
       });
-    } catch (_err) {
+    } catch {
       // Keep logout behavior unchanged if the token is already invalid.
     }
   }

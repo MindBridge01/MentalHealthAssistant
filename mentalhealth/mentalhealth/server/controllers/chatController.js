@@ -1,29 +1,24 @@
-const { moderateModelResponse } = require("../services/responseModerationService");
 const { logSafetyEvent } = require("../services/safetyEventLogger");
 const { encryptClassifiedFields } = require("../services/encryptionService");
-const { generateAiResponse } = require("../services/aiService");
-const { retrieveKnowledgeContext } = require("../services/knowledgeRetrievalService");
 const { saveConversation } = require("../models/messageModel");
+const { runChatPipeline } = require("../services/chatPipelineService");
 
 async function chatController(req, res, next) {
-  const message = req.piiSafeMessage || "";
+  const message = req.body?.message || "";
   const rawMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
-  const sanitizedMessages = rawMessages
-    .filter((entry) => entry && typeof entry.content === "string")
-    .map((entry) => ({
-      role: entry.role === "assistant" ? "assistant" : "user",
-      content: entry.role === "user" ? (entry.content === req.body?.message ? message : entry.content) : entry.content,
-    }));
 
   try {
-    const { contextText, matches } = await retrieveKnowledgeContext(message);
-    const responseText = await generateAiResponse({
-      userMessage: message,
-      knowledgeContext: contextText,
-      messages: sanitizedMessages,
+    const pipelineResult = await runChatPipeline({
+      message,
+      rawMessages,
     });
-
-    const moderated = moderateModelResponse(responseText);
+    const moderated = pipelineResult.blocked
+      ? {
+          moderated: false,
+          reason: null,
+          content: pipelineResult.responseText,
+        }
+      : pipelineResult.moderation;
 
     if (moderated.moderated) {
       logSafetyEvent({
@@ -33,23 +28,34 @@ async function chatController(req, res, next) {
       });
     }
 
+    if (pipelineResult.blocked) {
+      logSafetyEvent({
+        eventType: "blocked_prompt",
+        userRole: req.user?.role,
+        metadata: { severity: "medium", reason: pipelineResult.safety?.reason },
+      });
+    }
+
     await req.logAuditEvent?.({
       action: "rag_chat_query",
       resourceType: "knowledge_chunks",
       metadata: {
-        retrievedChunkCount: matches.length,
-        sources: matches.map((item) => item.document_key),
-        topSimilarity: matches[0]?.similarity || null,
+        retrievedChunkCount: pipelineResult.knowledgeMatches.length,
+        sources: pipelineResult.knowledgeMatches.map((item) => item.document_key),
+        topSimilarity: pipelineResult.knowledgeMatches[0]?.similarity || null,
+        sanitizedHistoryCount: pipelineResult.sanitizedHistory.length,
+        blocked: pipelineResult.blocked,
       },
     });
 
     return res.json({
       content: moderated.content,
-      sources: matches.map((item) => ({
+      sources: pipelineResult.knowledgeMatches.map((item) => ({
         title: item.title,
         documentKey: item.document_key,
         similarity: item.similarity,
       })),
+      ...(pipelineResult.safety ? { safety: pipelineResult.safety } : {}),
     });
   } catch (error) {
     return next(error);

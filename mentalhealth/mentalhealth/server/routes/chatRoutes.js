@@ -7,10 +7,15 @@ const { piiFilterMessage } = require("../middleware/piiFilterMiddleware");
 const { crisisDetectionMiddleware } = require("../middleware/crisisDetectionMiddleware");
 const { promptGuardrailMiddleware } = require("../middleware/promptGuardrail");
 const { chatController, saveConversationController } = require("../controllers/chatController");
+const {
+  publicChatRateLimiter,
+  authenticatedChatRateLimiter,
+} = require("../middleware/rateLimitMiddleware");
 
 router.post(
   "/chat",
   authenticateJWT(),
+  authenticatedChatRateLimiter,
   requirePermission("chat_ai"),
   disclaimerMiddleware,
   piiFilterMessage,
@@ -21,6 +26,7 @@ router.post(
 
 router.post(
   "/public-chat",
+  publicChatRateLimiter,
   piiFilterMessage,
   crisisDetectionMiddleware,
   promptGuardrailMiddleware,
@@ -28,6 +34,11 @@ router.post(
   chatController
 );
 
-router.post("/save-conversation", authenticateJWT(), saveConversationController);
+router.post(
+  "/save-conversation",
+  authenticateJWT(),
+  authenticatedChatRateLimiter,
+  saveConversationController
+);
 
 module.exports = router;

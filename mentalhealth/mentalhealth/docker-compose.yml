@@ -51,8 +51,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-mindbridge}
-    ports:
-      - "${POSTGRES_EXPOSE_PORT:-5432}:5432"
+    # Keep PostgreSQL on the internal Docker network only.
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -64,8 +65,9 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - "${OLLAMA_EXPOSE_PORT:-11434}:11434"
+    # Keep Ollama reachable only by internal services such as the backend.
+    expose:
+      - "11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
