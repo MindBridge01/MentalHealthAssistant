@@ -12,10 +12,10 @@ function getOllamaBaseUrl() {
 
 async function generateEmbedding(input) {
   const response = await axios.post(
-    `${getOllamaBaseUrl()}/api/embed`,
+    `${getOllamaBaseUrl()}/api/embeddings`,
     {
       model: process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text",
-      input,
+      prompt: input,
     },
     {
       headers: {
@@ -24,7 +24,7 @@ async function generateEmbedding(input) {
     }
   );
 
-  const embedding = response.data?.embeddings?.[0];
+  const embedding = response.data?.embedding;
 
   if (!Array.isArray(embedding) || embedding.length === 0) {
     throw new Error("Ollama did not return a valid embedding");
@@ -36,3 +36,4 @@ async function generateEmbedding(input) {
 module.exports = {
   generateEmbedding,
 };
+
