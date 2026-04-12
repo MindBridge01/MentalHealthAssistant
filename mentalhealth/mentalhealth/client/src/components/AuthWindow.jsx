@@ -3,6 +3,11 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { apiRequest } from "../lib/apiClient";
 import { hasCompletePatientProfile } from "../lib/authStorage";
 import { useAuth } from "../context/AuthContext";
+import loginSideImage from "../assets/images/login-hero-figma.jpg";
+import LoginContainer from "./auth/LoginContainer";
+import LoginForm from "./auth/LoginForm";
+import SupportBanner from "./auth/SupportBanner";
+import "./auth/auth.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
@@ -50,6 +55,7 @@ const AuthWindow = ({ mode = "login" }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const roleLabel = useMemo(() => {
     if (currentRole === ROLE_DOCTOR) return "Doctor";
@@ -134,6 +140,33 @@ const AuthWindow = ({ mode = "login" }) => {
       setIsSubmitting(false);
     }
   };
+
+  const handleForgotPassword = () => {};
+
+  if (mode === "login") {
+    return (
+      <LoginContainer
+        imageAlt="MindBridge calming wellness illustration"
+        imageSrc={loginSideImage}
+      >
+        <SupportBanner />
+        <LoginForm
+          currentRole={currentRole}
+          email={email}
+          error={error}
+          isSubmitting={isSubmitting}
+          onEmailChange={(event) => setEmail(event.target.value)}
+          onForgotPassword={handleForgotPassword}
+          onPasswordChange={(event) => setPassword(event.target.value)}
+          onRememberChange={(event) => setRememberMe(event.target.checked)}
+          onSubmit={handleSubmit}
+          password={password}
+          rememberMe={rememberMe}
+          success={success}
+        />
+      </LoginContainer>
+    );
+  }
 
   return (
     <section className="w-full max-w-xl mx-auto mt-10 mb-10 px-6 py-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
