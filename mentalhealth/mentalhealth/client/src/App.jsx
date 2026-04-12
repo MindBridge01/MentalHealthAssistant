@@ -85,6 +85,7 @@ function PatientShellLayout() {
 function App() {
   const location = useLocation();
   const hidePublicNavbar =
+    location.pathname === "/" ||
     location.pathname.startsWith("/patient") ||
     location.pathname.startsWith("/doctor/dashboard") ||
     location.pathname.startsWith("/admin/dashboard");

@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Editor's Note";
+  src: url("/mentalhealth/mentalhealth/client/src/fonts/EditorsNote-Extralight-iF664322be43be3.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+}
+
+.heading-beauty {
+  font-family: "Editor's Note", Georgia, "Times New Roman", serif;
+  font-weight: 100;
+  font-size: 156px;
+  line-height: 161px;
+  letter-spacing: -6.24px;
+  color: #ffffff;
+}
