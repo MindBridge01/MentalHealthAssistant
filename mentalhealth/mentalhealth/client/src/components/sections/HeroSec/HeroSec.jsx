@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiUrl } from "../../../config/api";
 import ChatBubble from "../../ChatBubble/ChatBubble";
+import WelcomeScreen from "./WelcomeScreen";
 
 import closeIcon from "../../../assets/hero/close-x.svg";
 import heroLogo from "../../../assets/hero/hero-logo.svg";
@@ -187,7 +188,7 @@ function HeroChatCard() {
       <style>{popInAnimation}</style>
       <aside
         style={{ animation: 'chatPopIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)', transformOrigin: 'bottom right' }}
-        className="relative flex h-[500px] w-full max-w-[412px] 2xl:max-w-[500px] flex-col justify-between overflow-hidden rounded-[24px] bg-[#f2f6fc] px-3 py-2 shadow-[0_24px_56px_rgba(0,0,0,0.28)] transition-all duration-500 ease-in-out sm:h-[560px] lg:h-[668px] 2xl:h-[760px]"
+        className={`relative flex h-[500px] w-full max-w-[412px] 2xl:max-w-[500px] flex-col justify-between overflow-hidden rounded-[24px] ${messages.length > 0 ? 'bg-white' : 'bg-[#f2f6fc]'} px-3 py-2 shadow-[0_24px_56px_rgba(0,0,0,0.28)] transition-all duration-500 ease-in-out sm:h-[560px] lg:h-[668px] 2xl:h-[760px]`}
         aria-label="MindBridge chat preview"
       >
         <div className="relative z-10 flex items-center justify-between">
@@ -257,19 +258,34 @@ function HeroChatCard() {
 
           {/* Chat Input Form: Captures user input and fetches response */}
           <form onSubmit={handleChatSubmit} className="relative flex w-full items-center">
-            <div className="pointer-events-none absolute left-4 z-10 flex items-center justify-center">
+            <div className="pointer-events-none absolute left-4 z-20 flex items-center justify-center">
               <img src={starIcon} alt="" className="h-6 w-6" style={{ animation: 'magicStarFloat 3s ease-in-out infinite' }} aria-hidden="true" />
             </div>
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Ask me anything..."
-              className="w-full min-h-[52px] rounded-full bg-[#f3f3f3] py-[14px] pl-[44px] pr-[90px] text-[16px] text-[#2e2f3e] placeholder-[rgba(46,47,62,0.6)] transition duration-200 outline-none hover:bg-white focus:bg-white focus:ring-2 focus:ring-[#2e2f6b] focus:ring-offset-2"
-            />
+
+            <div className="relative w-full h-[52px] group">
+              {/* Outer Blurred Aura that bleeds outside the container */}
+              <div className="absolute inset-0 rounded-full overflow-hidden blur-[8px] opacity-0 transition-opacity duration-300 group-focus-within:opacity-75">
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,#4f46e5_0%,#c026d3_25%,#0ea5e9_50%,#c026d3_75%,#4f46e5_100%)]" />
+              </div>
+
+              {/* Inner Sharp Border & Input Field */}
+              <div className="relative w-full h-full rounded-full p-[2px] overflow-hidden bg-[#f3f3f3] focus-within:bg-white transition-colors duration-200">
+                {/* Spinning gradient border layer (perfect square to prevent rotation clipping) */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,#4f46e5_0%,#c026d3_25%,#0ea5e9_50%,#c026d3_75%,#4f46e5_100%)] opacity-0 transition-opacity duration-300 group-focus-within:opacity-100" />
+                
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Ask me anything..."
+                  className="relative z-10 w-full h-full rounded-full bg-[#f3f3f3] group-focus-within:bg-white py-[14px] pl-[42px] pr-[90px] text-[16px] text-[#2e2f3e] placeholder-[rgba(46,47,62,0.6)] outline-none transition-colors duration-200"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
-              className="absolute right-2 flex min-h-[36px] items-center justify-center rounded-full bg-[#2e2f6b] px-[18px] text-[14px] font-medium text-white transition duration-200 hover:bg-[#252659] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#2e2f6b]"
+              className="absolute right-2 z-20 flex min-h-[36px] items-center justify-center rounded-full bg-[#2e2f6b] px-[18px] text-[14px] font-medium text-white transition duration-200 hover:bg-[#252659] focus:outline-none"
             >
               Send
             </button>
@@ -283,23 +299,23 @@ function HeroChatCard() {
 // The main landing section of the page. Sets up the full-screen cinematic video background, 
 // gradient overlays, and the responsive grid layout holding the large text and the HeroChatCard.
 const HeroSec = () => {
-  const pageLoadAnimation = `
-    @keyframes fadeSlideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [isRevealing, setIsRevealing] = useState(false);
+
+  // Fallback reveal mechanism if the welcome screen is removed/absent later
+  useEffect(() => {
+    if (!showWelcome && !isRevealing) {
+      setIsRevealing(true);
     }
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  `;
+  }, [showWelcome, isRevealing]);
 
   return (
-    <section className="w-full overflow-hidden bg-white p-0" aria-labelledby="hero-heading">
-      <style>{pageLoadAnimation}</style>
-      <div
-        className="relative min-h-screen md:min-h-screen overflow-hidden text-white"
-        style={{ animation: 'fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+    <>
+      {showWelcome && <WelcomeScreen onFadeStart={() => setIsRevealing(true)} onComplete={() => setShowWelcome(false)} />}
+      <section className="w-full overflow-hidden bg-white p-0" aria-labelledby="hero-heading">
+        {/* The main container scales up smoothly from 0.95 to 1.0 (Zoom in) as the welcome screen vanishes */}
+        <div
+        className={`relative min-h-screen md:min-h-screen overflow-hidden text-white transition-all duration-[1.2s] ease-[cubic-bezier(0.16,1,0.3,1)] ${isRevealing ? 'scale-100 opacity-100' : 'scale-[0.95] opacity-0'}`}
       >
 
         {/* Main section background video */}
@@ -320,14 +336,13 @@ const HeroSec = () => {
         />
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1593px] 2xl:max-w-[1800px] flex-col px-4 sm:px-6 lg:px-[25px]">
-          <div style={{ opacity: 0, animation: 'fadeSlideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards' }}>
+          <div className={`transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-300 ${isRevealing ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
             <HeroNavbar />
           </div>
 
           <div className="grid flex-1 gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,412px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(412px,500px)] lg:items-center lg:gap-8 lg:pt-9 lg:pb-4 xl:gap-[72px]">
             <div
-              className="max-w-[792px] xl:max-w-[900px] 2xl:max-w-[1100px] self-center md:self-end md:pb-8 lg:pb-[12px]"
-              style={{ opacity: 0, animation: 'fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards' }}
+              className={`max-w-[792px] xl:max-w-[900px] 2xl:max-w-[1100px] self-center md:self-end md:pb-8 lg:pb-[12px] transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-500 ${isRevealing ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
             >
               <p className="mb-2 text-2xl font-normal leading-tight tracking-[-0.015em] text-white sm:text-3xl md:text-[32px]">
                 You are not alone
@@ -342,8 +357,7 @@ const HeroSec = () => {
             </div>
 
             <div
-              className="justify-self-center lg:justify-self-end self-center lg:self-end w-full max-w-[412px] 2xl:max-w-[500px]"
-              style={{ opacity: 0, animation: 'fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards' }}
+              className={`justify-self-center lg:justify-self-end self-center lg:self-end w-full max-w-[412px] 2xl:max-w-[500px] transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-[700ms] ${isRevealing ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
             >
               <HeroChatCard />
             </div>
@@ -351,6 +365,7 @@ const HeroSec = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 

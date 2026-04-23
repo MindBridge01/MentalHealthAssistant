@@ -1,0 +1,123 @@
+/* WelcomeScreen.css */
+
+.welcome-screen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: #2e2f6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.welcome-screen-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.welcome-frame {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Percentage Loader */
+.welcome-frame .welcome-heading-percentage {
+  color: #ffffff;
+  font-family: "Outfit", "Outfit-Regular", Helvetica, sans-serif;
+  font-size: clamp(20px, 2vw, 32px);
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  
+  /* Anchored directly above the top border of the wrapper */
+  position: absolute;
+  bottom: calc(100% + 10px);
+  
+  /* Applying opposite animation */
+  animation: slide-percent 4s cubic-bezier(0.15, 0.9, 0.85, 0.1) infinite;
+}
+
+@keyframes slide-percent {
+  0% { transform: translateX(-100vw); }
+  100% { transform: translateX(100vw); }
+}
+
+/* 
+  Responsive scaling using clamp() and vw limits to ensure the text 
+  shrinks on laptops/mobile rather than remaining locked at 1900px.
+*/
+.welcome-frame .welcome-heading-beauty-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.6);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.6);
+  gap: 10px;
+  padding: 2% 0;
+  width: 120vw; /* Stretch slightly past screen bounds due to rotation */
+  position: relative;
+  transform: rotate(6deg);
+  animation: pulse-borders 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-borders {
+  0% {
+    border-top-color: rgba(255, 255, 255, 0);
+    border-bottom-color: rgba(255, 255, 255, 0);
+  }
+  100% {
+    border-top-color: rgba(255, 255, 255, 0.8);
+    border-bottom-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.welcome-frame .welcome-div {
+  color: #ffffff;
+  font-family: "Editor's Note", "Editor's Note-Thin", Helvetica, serif;
+  font-size: clamp(40px, 9vw, 156px);
+  font-weight: 400;
+  line-height: 1.05;
+  margin: 0;
+  text-align: center;
+  width: fit-content;
+  white-space: nowrap;
+  animation: slide-typo 4s cubic-bezier(0.15, 0.9, 0.85, 0.1) infinite;
+}
+
+@keyframes slide-typo {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100vw); }
+}
+
+.welcome-frame .welcome-text-wrapper {
+  font-weight: 100;
+  letter-spacing: -0.04em;
+}
+
+.welcome-frame .welcome-span {
+  font-size: clamp(32px, 7vw, 128px);
+  font-weight: 100;
+  letter-spacing: -0.06em;
+}
+
+.welcome-frame .welcome-text-wrapper-2 {
+  font-family: "Editor's Note-ThinItalic", "Editor's Note", Helvetica, serif;
+  font-size: clamp(60px, 12vw, 216px);
+  font-style: italic;
+  font-weight: 100;
+  letter-spacing: -0.06em;
+}
+
+.welcome-frame .welcome-text-wrapper-3 {
+  font-size: clamp(60px, 12vw, 216px);
+  font-weight: 100;
+  letter-spacing: -0.06em;
+}
