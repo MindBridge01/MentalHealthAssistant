@@ -1,30 +1,74 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../../components/patient/PageHeader";
-import { assessmentOptions, assessmentQuestions } from "../../data/patientContent";
+import { screeningQuestionsData, screeningOptions, severityData } from "../../data/patientContent";
 import { submitAssessment } from "../../services/assessmentService";
+
+function shuffleArray(array) {
+  let newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 
 export default function AssessmentPage() {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [responses, setResponses] = useState([]);
+  const [screeningResponses, setScreeningResponses] = useState([]);
+  const [severityResponses, setSeverityResponses] = useState([]);
+  const [primaryIssue, setPrimaryIssue] = useState('');
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const question = assessmentQuestions[currentIndex];
-  const selectedValue = responses.find((entry) => entry.questionId === question.id)?.score;
+  const shuffledScreeningQuestions = useMemo(() => {
+    return shuffleArray(screeningQuestionsData);
+  }, []);
+
+  const activeSeverityData = primaryIssue ? severityData[primaryIssue] : null;
+
+  const currentQuestions = step === 1 ? shuffledScreeningQuestions : activeSeverityData.questions;
+  const currentOptions = step === 1 ? screeningOptions : activeSeverityData.options;
+  const currentQuestion = currentQuestions[currentIndex];
+  
+  const currentResponses = step === 1 ? screeningResponses : severityResponses;
+  const selectedValue = currentResponses.find((entry) => entry.questionId === (step === 1 ? currentQuestion.id : currentQuestion.id))?.option.value;
 
   function saveResponse(option) {
-    setResponses((current) => {
-      const next = current.filter((entry) => entry.questionId !== question.id);
-      next.push({
-        questionId: question.id,
-        question: question.prompt,
-        score: option.value,
-        label: option.label,
+    const newEntry = { questionId: currentQuestion.id, question: step === 1 ? currentQuestion.text : currentQuestion.text, option };
+    if (step === 1) {
+      setScreeningResponses((current) => {
+        const next = current.filter((entry) => entry.questionId !== currentQuestion.id);
+        next.push(newEntry);
+        return next;
       });
-      return next;
+    } else {
+      setSeverityResponses((current) => {
+        const next = current.filter((entry) => entry.questionId !== currentQuestion.id);
+        next.push(newEntry);
+        return next;
+      });
+    }
+  }
+
+  function calculatePrimaryIssue(answers) {
+    let scores = { Anxiety: 0, Depression: 0, Stress: 0 };
+    answers.forEach(ans => {
+      const q = shuffledScreeningQuestions.find(sq => sq.id === ans.questionId);
+      if (q) scores[q.category] += ans.option.value;
     });
+
+    let maxScore = -1;
+    let pIssue = 'Anxiety';
+    for (const [category, score] of Object.entries(scores)) {
+      if (score > maxScore) {
+        maxScore = score;
+        pIssue = category;
+      }
+    }
+    setPrimaryIssue(pIssue);
   }
 
   async function handleNext() {
@@ -34,16 +78,36 @@ export default function AssessmentPage() {
     }
 
     setError("");
-    if (currentIndex < assessmentQuestions.length - 1) {
+    if (currentIndex < currentQuestions.length - 1) {
       setCurrentIndex((value) => value + 1);
       return;
     }
 
+    if (step === 1) {
+      calculatePrimaryIssue(screeningResponses);
+      setStep(2);
+      setCurrentIndex(0);
+      return;
+    }
+
+    // End of Step 2
     setSubmitting(true);
     try {
-      const result = await submitAssessment(responses);
-      navigate(`/patient/assessments/${result.assessment._id}`, {
-        state: { assessment: result.assessment },
+      const result = activeSeverityData.calculateScore(severityResponses);
+      
+      const backendResponses = severityResponses.map((res) => ({
+        questionId: res.questionId,
+        question: res.question,
+        score: res.option.value,
+        label: res.option.label,
+      }));
+
+      const res = await submitAssessment(backendResponses);
+      navigate(`/patient/assessments/${res.assessment._id}`, {
+        state: { 
+          assessment: res.assessment,
+          customResult: { primaryIssue, level: result.level, needsHelp: result.needsHelp, total: result.total }
+        },
       });
     } catch (submitError) {
       setError(submitError.message);
@@ -55,8 +119,8 @@ export default function AssessmentPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Assessment"
-        title="A short emotional check-in"
+        eyebrow={step === 1 ? "Assessment • Part 1" : `Assessment • Part 2 (${primaryIssue})`}
+        title={step === 1 ? "A short emotional check-in" : activeSeverityData.instruction}
         description="This is not a diagnosis. It is simply a guided reflection to help point you toward the next kind of support that may feel useful."
       />
 
@@ -66,11 +130,11 @@ export default function AssessmentPage() {
             Progress
           </p>
           <div className="mt-5 space-y-3">
-            {assessmentQuestions.map((item, index) => (
+            {currentQuestions.map((item, index) => (
               <div key={item.id} className="flex items-center gap-3">
                 <div
                   className={[
-                    "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
+                    "flex h-8 w-8 min-w-[32px] items-center justify-center rounded-full text-sm font-semibold",
                     index < currentIndex
                       ? "bg-[var(--color-primary)] text-white"
                       : index === currentIndex
@@ -80,7 +144,7 @@ export default function AssessmentPage() {
                 >
                   {index + 1}
                 </div>
-                <p className="text-sm text-[var(--color-text-muted)]">{item.prompt}</p>
+                <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">{item.text}</p>
               </div>
             ))}
           </div>
@@ -88,14 +152,14 @@ export default function AssessmentPage() {
 
         <section className="rounded-[36px] border border-white/70 bg-white/85 p-6 shadow-soft sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-subtle)]">
-            Question {currentIndex + 1} of {assessmentQuestions.length}
+            Question {currentIndex + 1} of {currentQuestions.length}
           </p>
           <h3 className="mt-4 font-display text-3xl font-semibold text-[var(--color-text)]">
-            {question.prompt}
+            {currentQuestion.text}
           </h3>
 
           <div className="mt-8 space-y-4">
-            {assessmentOptions.map((option) => {
+            {currentOptions.map((option) => {
               const isSelected = selectedValue === option.value;
               return (
                 <button
@@ -110,7 +174,7 @@ export default function AssessmentPage() {
                   ].join(" ")}
                 >
                   <p className="font-semibold text-[var(--color-text)]">{option.label}</p>
-                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">{option.description}</p>
+                  {option.description && <p className="mt-2 text-sm text-[var(--color-text-muted)]">{option.description}</p>}
                 </button>
               );
             })}
@@ -128,10 +192,12 @@ export default function AssessmentPage() {
               Previous
             </button>
             <button type="button" onClick={handleNext} disabled={isSubmitting} className="primary-button">
-              {currentIndex === assessmentQuestions.length - 1
-                ? isSubmitting
-                  ? "Finishing..."
-                  : "See result"
+              {currentIndex === currentQuestions.length - 1
+                ? step === 1
+                  ? "Continue to Part 2"
+                  : isSubmitting
+                    ? "Finishing..."
+                    : "See result"
                 : "Continue"}
             </button>
           </div>

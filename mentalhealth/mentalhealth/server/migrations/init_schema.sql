@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS post_engagements (
 
 CREATE INDEX IF NOT EXISTS idx_post_engagements_user ON post_engagements (user_id, created_at DESC);
 
-CREATE EXTENSION IF NOT EXISTS vector;
+-- CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS knowledge_chunks (
   id BIGSERIAL PRIMARY KEY,
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
   chunk_index INTEGER NOT NULL,
   content TEXT NOT NULL,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-  embedding vector(768) NOT NULL,
+  embedding TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (document_key, chunk_index)
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
 CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_document_key
 ON knowledge_chunks (document_key);
 
-CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding
-ON knowledge_chunks
-USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
+-- CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding
+-- ON knowledge_chunks
+-- USING ivfflat (embedding vector_cosine_ops)
+-- WITH (lists = 100);

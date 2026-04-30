@@ -1,36 +1,118 @@
-export const assessmentQuestions = [
-  {
-    id: "stress-frequency",
-    prompt: "Over the last two weeks, how often have you felt emotionally stretched or overwhelmed?",
-  },
-  {
-    id: "sleep-quality",
-    prompt: "How often has sleep felt difficult or less restorative than usual?",
-  },
-  {
-    id: "interest-level",
-    prompt: "How often have everyday activities felt harder to start or enjoy?",
-  },
-  {
-    id: "support-level",
-    prompt: "How often have you felt alone with what you're carrying?",
-  },
-  {
-    id: "focus-level",
-    prompt: "How often has it been hard to focus on study, work, or regular tasks?",
-  },
-  {
-    id: "calm-access",
-    prompt: "How often have you struggled to return to a calm baseline after stress?",
-  },
+export const screeningQuestionsData = [
+  { id: 1, category: 'Anxiety', text: 'I feel nervous, anxious, or on edge.' },
+  { id: 2, category: 'Anxiety', text: 'I cannot stop or control worrying.' },
+  { id: 3, category: 'Anxiety', text: 'I worry too much about different things.' },
+  { id: 5, category: 'Depression', text: 'I feel sad, empty, or hopeless.' },
+  { id: 6, category: 'Depression', text: 'I have little interest or pleasure in doing things.' },
+  { id: 7, category: 'Depression', text: 'I feel tired or have little energy.' },
+  { id: 9, category: 'Stress', text: 'I feel overwhelmed by responsibilities.' },
+  { id: 10, category: 'Stress', text: 'I feel unable to control important things in my life.' },
+  { id: 11, category: 'Stress', text: 'I feel irritated or easily angered.' },
 ];
 
-export const assessmentOptions = [
-  { label: "Not at all", value: 0, description: "This has felt mostly manageable." },
-  { label: "A few days", value: 1, description: "It shows up sometimes." },
-  { label: "More than half the days", value: 2, description: "It has been affecting me often." },
-  { label: "Nearly every day", value: 3, description: "It has felt constant lately." },
+export const screeningOptions = [
+  { value: 0, label: 'Not at all', description: 'This has felt mostly manageable.' },
+  { value: 1, label: 'Several days', description: 'It shows up sometimes.' },
+  { value: 2, label: 'More than half the days', description: 'It has been affecting me often.' },
+  { value: 3, label: 'Nearly every day', description: 'It has felt constant lately.' },
 ];
+
+export const severityData = {
+  Depression: {
+      instruction: 'Over the last 2 weeks, how often have you been bothered by the following problems?',
+      options: [
+          { value: 0, label: 'Not at all', description: 'Rarely happens' },
+          { value: 1, label: 'Several days', description: 'Occasional' },
+          { value: 2, label: 'More than half the days', description: 'Frequent' },
+          { value: 3, label: 'Nearly every day', description: 'Constant' }
+      ],
+      questions: [
+          { id: 'd1', text: 'Little interest or pleasure in doing things' },
+          { id: 'd2', text: 'Feeling down, depressed, or hopeless' },
+          { id: 'd3', text: 'Trouble falling or staying asleep, or sleeping too much' },
+          { id: 'd4', text: 'Feeling tired or having little energy' },
+          { id: 'd6', text: 'Feeling bad about yourself — or that you are a failure or have let yourself or your family down' },
+          { id: 'd9', text: 'Thoughts that you would be better off dead or of hurting yourself' }
+      ],
+      calculateScore: (answersArr) => {
+          let total = 0;
+          let needsHelp = false;
+          answersArr.forEach((ans, idx) => {
+              total += ans.score;
+              // Thoughts of hurting yourself is now at index 5
+              if (idx === 5 && ans.score > 0) needsHelp = true;
+          });
+          let level = '';
+          if (total <= 3) level = 'Minimal';
+          else if (total <= 6) level = 'Mild';
+          else if (total <= 10) level = 'Moderate';
+          else if (total <= 14) level = 'Moderately Severe';
+          else level = 'Severe';
+          return { total, level, needsHelp };
+      }
+  },
+  Anxiety: {
+      instruction: 'Over the last 2 weeks, how often have you been bothered by the following problems?',
+      options: [
+          { value: 0, label: 'Not at all', description: 'Rarely happens' },
+          { value: 1, label: 'Several days', description: 'Occasional' },
+          { value: 2, label: 'More than half the days', description: 'Frequent' },
+          { value: 3, label: 'Nearly every day', description: 'Constant' }
+      ],
+      questions: [
+          { id: 'a1', text: 'Feeling nervous, anxious, or on edge' },
+          { id: 'a2', text: 'Not being able to stop or control worrying' },
+          { id: 'a3', text: 'Worrying too much about different things' },
+          { id: 'a4', text: 'Trouble relaxing' },
+          { id: 'a5', text: 'Being so restless that it is hard to sit still' },
+          { id: 'a7', text: 'Feeling afraid as if something awful might happen' }
+      ],
+      calculateScore: (answersArr) => {
+          let total = answersArr.reduce((a, b) => a + b.score, 0);
+          let level = '';
+          if (total <= 3) level = 'Minimal';
+          else if (total <= 6) level = 'Mild';
+          else if (total <= 10) level = 'Moderate';
+          else level = 'Severe';
+          return { total, level, needsHelp: false };
+      }
+  },
+  Stress: {
+      instruction: 'In the last month, how often have you felt or thought the following?',
+      options: [
+          { value: 0, label: 'Never', description: 'Rarely happens' },
+          { value: 1, label: 'Almost Never', description: 'Occasional' },
+          { value: 2, label: 'Sometimes', description: 'Frequent' },
+          { value: 3, label: 'Fairly Often', description: 'Very frequent' },
+          { value: 4, label: 'Very Often', description: 'Constant' }
+      ],
+      questions: [
+          { id: 's1', text: 'Been upset because of something that happened unexpectedly' },
+          { id: 's2', text: 'Felt unable to control important things in your life' },
+          { id: 's3', text: 'Felt nervous and stressed' },
+          { id: 's4', text: 'Felt confident about your ability to handle personal problems' },
+          { id: 's6', text: 'Found that you could not cope with all the things you had to do' },
+          { id: 's10', text: 'Felt difficulties were piling up so high that you could not overcome them' }
+      ],
+      calculateScore: (answersArr) => {
+          let total = 0;
+          // s4 is the only reverse question left, which is at index 3
+          const reverseIndices = [3];
+          answersArr.forEach((ans, idx) => {
+              if (reverseIndices.includes(idx)) {
+                  total += (4 - ans.score);
+              } else {
+                  total += ans.score;
+              }
+          });
+          let level = '';
+          if (total <= 8) level = 'Low';
+          else if (total <= 16) level = 'Moderate';
+          else level = 'High';
+          return { total, level, needsHelp: false };
+      }
+  }
+};
 
 export const quickActions = [
   {

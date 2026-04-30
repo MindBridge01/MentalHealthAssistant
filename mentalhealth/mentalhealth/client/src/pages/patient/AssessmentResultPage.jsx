@@ -14,6 +14,8 @@ export default function AssessmentResultPage() {
   const location = useLocation();
   const [assessment, setAssessment] = useState(location.state?.assessment || null);
   const [error, setError] = useState("");
+  
+  const customResult = location.state?.customResult || null;
 
   useEffect(() => {
     if (assessment) return;
@@ -40,7 +42,25 @@ export default function AssessmentResultPage() {
   }, [assessment, assessmentId]);
 
   const classification = assessment?.classification || "medium";
-  const nextStep = nextStepLabels[classification];
+  
+  let nextStep = nextStepLabels[classification];
+  let displayLevel = classification;
+  let recommendationText = assessment?.recommendation || "";
+
+  if (customResult) {
+    displayLevel = customResult.level;
+    const highLevels = ['Moderately Severe', 'Severe', 'High'];
+    if (highLevels.includes(customResult.level) || customResult.needsHelp) {
+      nextStep = nextStepLabels.high;
+      recommendationText = "Your responses suggest you may need more direct human support. Please consider booking time with a qualified doctor or counselor.";
+    } else if (['Moderate'].includes(customResult.level)) {
+      nextStep = nextStepLabels.medium;
+      recommendationText = "Your responses suggest you may benefit from extra support. A guided conversation with MindBridge AI could help you reflect safely.";
+    } else {
+      nextStep = nextStepLabels.low;
+      recommendationText = "Based on this screening, your current well-being appears relatively stable. Gentle activities and regular check-ins may be enough right now.";
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -58,11 +78,13 @@ export default function AssessmentResultPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-subtle)]">
               Support level
             </p>
-            <h3 className="mt-4 font-display text-5xl font-semibold uppercase text-[var(--color-text)]">
-              {classification}
+            <h3 className="mt-4 font-display text-4xl sm:text-5xl font-semibold uppercase text-[var(--color-text)]">
+              {displayLevel}
             </h3>
             <p className="mt-4 text-sm leading-7 text-[var(--color-text-muted)]">
-              Score: {assessment.score}
+              {customResult 
+                ? `Primary concern: ${customResult.primaryIssue} (Score: ${customResult.total})` 
+                : `Score: ${assessment.score}`}
             </p>
           </div>
 
@@ -71,7 +93,7 @@ export default function AssessmentResultPage() {
               What this means
             </h3>
             <p className="mt-4 text-sm leading-8 text-[var(--color-text-muted)]">
-              {assessment.recommendation}
+              {recommendationText}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to={nextStep.href} className="primary-button">
