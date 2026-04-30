@@ -44,21 +44,19 @@ export default function AssessmentResultPage() {
   const classification = assessment?.classification || "medium";
   
   let nextStep = nextStepLabels[classification];
-  let displayLevel = classification;
   let recommendationText = assessment?.recommendation || "";
 
   if (customResult) {
-    displayLevel = customResult.level;
     const highLevels = ['Moderately Severe', 'Severe', 'High'];
     if (highLevels.includes(customResult.level) || customResult.needsHelp) {
       nextStep = nextStepLabels.high;
-      recommendationText = "Your responses suggest you may need more direct human support. Please consider booking time with a qualified doctor or counselor.";
+      recommendationText = "Your responses suggest you may be carrying a heavy weight right now. We highly recommend connecting with a qualified doctor or counselor who can offer direct, human support.";
     } else if (['Moderate'].includes(customResult.level)) {
       nextStep = nextStepLabels.medium;
-      recommendationText = "Your responses suggest you may benefit from extra support. A guided conversation with MindBridge AI could help you reflect safely.";
+      recommendationText = "It looks like you've been facing some challenges recently. A guided conversation with MindBridge AI could be a safe space to reflect on what you're experiencing.";
     } else {
       nextStep = nextStepLabels.low;
-      recommendationText = "Based on this screening, your current well-being appears relatively stable. Gentle activities and regular check-ins may be enough right now.";
+      recommendationText = "Your current well-being appears relatively stable. Gentle daily activities and occasional check-ins are great ways to maintain this balance.";
     }
   }
 
@@ -73,29 +71,19 @@ export default function AssessmentResultPage() {
       {error ? <div className="rounded-2xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger)]">{error}</div> : null}
 
       {assessment ? (
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,#def4ee_0%,#ffffff_100%)] p-8 shadow-soft">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-subtle)]">
-              Support level
-            </p>
-            <h3 className="mt-4 font-display text-4xl sm:text-5xl font-semibold uppercase text-[var(--color-text)]">
-              {displayLevel}
-            </h3>
-            <p className="mt-4 text-sm leading-7 text-[var(--color-text-muted)]">
-              {customResult 
-                ? `Primary concern: ${customResult.primaryIssue} (Score: ${customResult.total})` 
-                : `Score: ${assessment.score}`}
-            </p>
-          </div>
-
-          <div className="rounded-[36px] border border-white/70 bg-white/85 p-8 shadow-soft">
+        <div className="mx-auto max-w-3xl">
+          <div className="rounded-[36px] border border-white/70 bg-white/85 p-8 shadow-soft text-center sm:text-left">
             <h3 className="font-display text-3xl font-semibold text-[var(--color-text)]">
-              What this means
+              Thank you for checking in
             </h3>
-            <p className="mt-4 text-sm leading-8 text-[var(--color-text-muted)]">
+            <p className="mt-4 text-base leading-8 text-[var(--color-text-muted)] italic">
+              "Taking a moment to pause and reflect on how you're truly feeling is an act of courage and self-care. We are so glad you are here."
+            </p>
+            <div className="my-6 h-px w-full bg-black/5"></div>
+            <p className="text-base leading-8 text-[var(--color-text-muted)] font-medium">
               {recommendationText}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3 justify-center sm:justify-start">
               <Link to={nextStep.href} className="primary-button">
                 {nextStep.title}
               </Link>
