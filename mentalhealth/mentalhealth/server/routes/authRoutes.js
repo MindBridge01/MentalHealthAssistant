@@ -120,6 +120,7 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
+      token,
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
@@ -210,6 +211,7 @@ router.post('/facebook-login', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
+      token,
       ...(profileData || {}),
     });
   } catch {
@@ -268,6 +270,7 @@ router.post('/signup', authRateLimiter, async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      token,
     });
 
   } catch {
@@ -316,6 +319,7 @@ router.post('/signup-doctor', authRateLimiter, async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      token,
       message: 'Doctor application submitted and pending admin approval.',
     });
   } catch {
@@ -424,6 +428,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
+      token,
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
