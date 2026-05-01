@@ -30,9 +30,11 @@ if (process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET must be at least 32 characters");
 }
 
+const corsConfig = typeof clientOrigins === "function" ? clientOrigins : (Array.isArray(clientOrigins) && clientOrigins.length > 0 ? clientOrigins : true);
+
 const io = new Server(server, {
   cors: {
-    origin: clientOrigins.length > 0 ? clientOrigins : true,
+    origin: corsConfig,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   },
@@ -42,7 +44,7 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: clientOrigins.length > 0 ? clientOrigins : true,
+    origin: corsConfig,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
