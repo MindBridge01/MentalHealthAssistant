@@ -57,6 +57,24 @@ app.post('/api/generate', authenticate, async (req, res) => {
     }
 });
 
+// Proxy for the main backend's chat structure
+app.post('/api/chat', authenticate, async (req, res) => {
+    try {
+        const response = await axios.post(`${OLLAMA_URL}/api/chat`, req.body, {
+            responseType: req.body.stream ? 'stream' : 'json'
+        });
+        
+        if (req.body.stream) {
+            response.data.pipe(res);
+        } else {
+            res.json(response.data);
+        }
+    } catch (error) {
+        console.error('Ollama Chat Error:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
