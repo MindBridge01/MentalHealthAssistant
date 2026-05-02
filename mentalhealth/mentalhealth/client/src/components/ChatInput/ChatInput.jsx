@@ -20,8 +20,6 @@ const positiveMessages = [
   "Gathering some hope...",
 ];
 
-
-
 const ChatInput = ({ setMessages, className }) => {
   // --- State ---
   const [inputText, setInputText] = useState("");
@@ -116,18 +114,18 @@ const ChatInput = ({ setMessages, className }) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
-        setInputText(transcript);
+        onChange?.(transcript);
       };
       recognition.onend = () => setIsRecording(false);
       recognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
         setIsRecording(false);
-        setInputText("Sorry, I couldn’t hear you. Please try again.");
+        onChange?.("Sorry, I couldn’t hear you. Please try again.");
       };
 
       recognition.start();
     } else {
-      setInputText("Sorry, your browser doesn’t support voice input.");
+      onChange?.("Sorry, your browser doesn’t support voice input.");
     }
   };
 

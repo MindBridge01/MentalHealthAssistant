@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Sidebar from '../components/Sidebar/Sidebar';
 import ChatArea from '../components/ChatArea/ChatArea';
-import ChatInput from '../components/ChatInput/ChatInput';
 import MoodCard from '../components/MoodCard/MoodCard';
 import "./Aichat.css"; 
 import { apiUrl } from "../config/api";

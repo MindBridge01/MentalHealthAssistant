@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 
 
 
+
 /* ================= NAVBAR ================= */
 const NavBar = ({ user }) => {
   const { isAuthenticated, logout } = useAuth();
