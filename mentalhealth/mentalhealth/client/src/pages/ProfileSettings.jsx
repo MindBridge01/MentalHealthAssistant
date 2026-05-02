@@ -8,6 +8,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ProfileSettings = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
   const { user, setUser, logout } = useAuth();
 
   const [name, setName] = useState(user?.name || "");
