@@ -9,23 +9,28 @@ async function generateAiResponse({ userMessage, knowledgeContext, messages = []
     throw err;
   }
 
-  const response = await axios.post(
-    `${ollamaBaseUrl}/api/chat`,
-    {
-      model: process.env.OLLAMA_CHAT_MODEL || "llama3.2:1b",
-      messages: buildStructuredPrompt({
-        userMessage,
-        knowledgeContext,
-        conversationHistory: messages,
-      }),
-      stream: false,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    
+    // If connecting through the secure tunnel, attach the API key
+    if (process.env.OLLAMA_API_KEY) {
+        headers["x-api-key"] = process.env.OLLAMA_API_KEY;
     }
-  );
+
+    const response = await axios.post(
+      `${ollamaBaseUrl}/api/chat`,
+      {
+        model: process.env.OLLAMA_CHAT_MODEL || "llama3.2:1b",
+        messages: buildStructuredPrompt({
+          userMessage,
+          knowledgeContext,
+          conversationHistory: messages,
+        }),
+        stream: false,
+      },
+      { headers }
+    );
 
   return response.data?.message?.content || "";
 }

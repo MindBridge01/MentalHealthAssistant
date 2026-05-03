@@ -17,7 +17,7 @@ const QuickOptions = () => {
     <div className="flex flex-col items-center gap-8 sm:gap-16 py-8 sm:py-12 px-4">
       {/* Title and Subtitle */}
       <div className="w-full max-w-[1107px] flex flex-col items-center gap-2 sm:gap-4">
-        <h2 className="text-center font-['General_Sans'] font-semibold text-dark-blue900 text-3xl sm:text-5xl">
+        <h2 className="text-center text-dark-blue900 text-5xl sm:text-7xl font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
           Ways to Feel Better
         </h2>
         <p className="text-center font-[Satoshi] font-normal text-dark-blue900 text-lg sm:text-2xl">

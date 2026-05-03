@@ -48,7 +48,7 @@ const MotivateSec = () => {
   return (
     <div className="relative w-full max-w-[1200px] mx-auto py-12 gap-20 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center gap-2 md:gap-4 px-4">
-        <h2 className="font-['General_Sans'] font-semibold text-dark-blue900 text-3xl md:text-5xl text-center">
+        <h2 className="text-dark-blue900 text-5xl md:text-7xl text-center font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
           Take a Quick Breath Activity!
         </h2>
         <p className="font-[Satoshi] font-normal text-dark-blue900 text-lg md:text-2xl text-center">

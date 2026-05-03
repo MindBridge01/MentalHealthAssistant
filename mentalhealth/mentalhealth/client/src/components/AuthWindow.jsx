@@ -6,7 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import loginSideImage from "../assets/images/login-hero-figma.jpg";
 import LoginContainer from "./auth/LoginContainer";
 import LoginForm from "./auth/LoginForm";
-import SupportBanner from "./auth/SupportBanner";
+import InputField from "./auth/InputField";
+import AuthButton from "./auth/AuthButton";
 import "./auth/auth.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -149,7 +150,6 @@ const AuthWindow = ({ mode = "login" }) => {
         imageAlt="MindBridge calming wellness illustration"
         imageSrc={loginSideImage}
       >
-        <SupportBanner />
         <LoginForm
           currentRole={currentRole}
           email={email}
@@ -171,11 +171,11 @@ const AuthWindow = ({ mode = "login" }) => {
   return (
     <section className="w-full max-w-xl mx-auto mt-10 mb-10 px-6 py-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
       <header className="mb-6 text-center">
-        <p className="text-sm uppercase tracking-wide text-slate-500">MindBridge Secure Access</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+        <p className="text-sm uppercase tracking-wide text-slate-500 font-['Outfit']">MindBridge Secure Access</p>
+        <h1 className="login-ui__title mt-2 mb-2" style={{ textAlign: 'center', fontSize: '42px' }}>
           {mode === "login" ? `Sign In as ${roleLabel}` : `Create ${roleLabel} Account`}
         </h1>
-        <p className="mt-2 text-slate-600">
+        <p className="login-ui__subtitle" style={{ textAlign: 'center', fontSize: '18px' }}>
           {mode === "login"
             ? "Use your registered details to securely access your care dashboard."
             : "Start with your account details. You can complete your health profile next."}
@@ -210,73 +210,54 @@ const AuthWindow = ({ mode = "login" }) => {
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {mode === "signup" && (
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-              placeholder="Enter your full name"
-            />
-          </div>
+          <InputField
+            autoComplete="name"
+            id="name"
+            label="Full Name"
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Enter your full name"
+            type="text"
+            value={name}
+          />
         )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-            placeholder="name@example.com"
-            required
-          />
-        </div>
+        <InputField
+          autoComplete="email"
+          id="email"
+          label="Email Address"
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="name@example.com"
+          type="email"
+          value={email}
+        />
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-            placeholder="At least 8 characters"
-            required
-          />
-        </div>
+        <InputField
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          id="password"
+          label="Password"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="At least 8 characters"
+          type="password"
+          value={password}
+        />
 
         {error && (
-          <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div aria-live="assertive" className="login-ui__message login-ui__message--error" role="alert">
             {error}
           </div>
         )}
 
         {success && (
-          <div role="status" aria-live="polite" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+          <div aria-live="polite" className="login-ui__message login-ui__message--success" role="status">
             {success}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-3 rounded-xl text-white bg-sky-700 hover:bg-sky-800 disabled:bg-slate-400 font-semibold"
-        >
-          {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-        </button>
+        <div className="pt-2">
+          <AuthButton disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+          </AuthButton>
+        </div>
       </form>
 
       <div className="text-center mt-6 text-sm text-slate-600">
