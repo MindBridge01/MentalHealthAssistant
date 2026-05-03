@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation, Link } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteLoader from "./components/RouteLoader";
@@ -90,9 +90,19 @@ function App() {
     location.pathname.startsWith("/doctor/dashboard") ||
     location.pathname.startsWith("/admin/dashboard");
 
+  const isAuthPage = location.pathname.startsWith("/login") || location.pathname.startsWith("/signup");
+
   return (
     <>
-      {!hidePublicNavbar ? <Navbar /> : null}
+      {!hidePublicNavbar && !isAuthPage ? <Navbar /> : null}
+      {isAuthPage ? (
+        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 z-50">
+          <Link to="/" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Home
+          </Link>
+        </div>
+      ) : null}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/start" element={<RootRedirect />} />

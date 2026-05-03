@@ -22,82 +22,7 @@ function QuickReplyButton({ children, onClick }) {
   );
 }
 
-function AlertIcon({ className = "" }) {
-  return (
-    <svg
-      className={className}
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M12 9v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-// Layout component for the top navigation bar containing branding, dynamic links, and primary action buttons.
-function HeroNavbar() {
-  const navItems = [
-    { label: "Home", to: "/" },
-    { label: "AI Chat", to: "/ai-chat" },
-    { label: "Community", to: "/community" },
-    { label: "About", to: "/about" },
-  ];
-
-  return (
-    <header className="flex min-h-[101px] w-full items-center gap-6 border-y border-white/25 text-white lg:gap-[146px]">
-      <Link to="/" className="shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
-        <img src={heroLogo} alt="MindBridge" className="h-[42px] w-[125px] object-contain lg:h-[54px] lg:w-[161px]" />
-      </Link>
-
-      <div className="flex min-h-[101px] flex-1 flex-col gap-5 border-white/25 py-4 lg:flex-row lg:items-center lg:justify-between lg:border-l lg:py-0">
-        <nav
-          className="flex flex-1 items-center justify-start px-0 lg:h-[101px] lg:justify-end lg:p-[10px]"
-          aria-label="Primary navigation"
-        >
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                className="font-['Helvetica_Neue',Helvetica,sans-serif] text-sm font-light leading-[16.8px] tracking-[0.42px] text-white transition duration-200 hover:text-white/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
-        <div className="flex w-full flex-wrap items-center gap-3 lg:w-[344px] lg:flex-nowrap">
-          <Link
-            to="/login/patient"
-            className="flex min-h-[40px] flex-1 items-center justify-center rounded-[4px] bg-[#2e2f6b] px-8 py-2 text-center text-base font-medium text-white transition duration-200 hover:bg-[#252659] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            Log In
-          </Link>
-          <Link
-            to="/login/patient"
-            className="inline-flex min-h-[40px] items-center justify-center gap-[10px] rounded-[4px] bg-[#fdd5d3] px-8 py-2 text-base font-medium text-[#f72b25] transition duration-200 hover:bg-[#fac4c1] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <AlertIcon className="h-6 w-6 text-[#f72b25]" />
-            <span className="whitespace-nowrap">Immediate Support</span>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-
+import HeroNavbar from "../../HeroNavbar/HeroNavbar";
 // An interactive preview card that prompts users to engage with the AI Chat.
 // It includes a small looping video and an input form that triggers navigation to the chat application.
 function HeroChatCard() {
@@ -130,7 +55,7 @@ function HeroChatCard() {
     ]);
 
     try {
-      const res = await fetch(apiUrl("/api/chat"), {
+      const res = await fetch(apiUrl("/api/public-chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

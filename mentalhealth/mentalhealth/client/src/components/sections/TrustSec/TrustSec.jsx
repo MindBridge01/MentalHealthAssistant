@@ -10,7 +10,7 @@ const TrustSec = () => {
     <div className="w-full flex flex-col justify-start items-center gap-4 sm:gap-8 md:gap-16 px-4">
       {/* Header Section */}
       <div className="w-full max-w-[952px] flex flex-col justify-start items-center gap-2 sm:gap-3 md:gap-4">
-        <div className="text-center text-slate-800 text-xl sm:text-2xl md:text-4xl lg:text-5xl font-semibold font-['General_Sans']">
+        <div className="text-center text-slate-800 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
           You Can Trust Us
         </div>
         <div className="text-center text-slate-800 text-sm sm:text-base md:text-2xl font-normal font-['Satoshi']">

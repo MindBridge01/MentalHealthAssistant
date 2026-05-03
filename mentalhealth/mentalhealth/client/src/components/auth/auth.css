@@ -17,11 +17,10 @@
 }
 
 .login-ui__shell {
-  display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(360px, 488px);
-  align-items: stretch;
-  gap: 12px;
-  max-width: 1096px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 500px;
   min-height: 610px;
   margin: 0 auto;
 }
