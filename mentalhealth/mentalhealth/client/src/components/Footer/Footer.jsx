@@ -19,7 +19,7 @@ const Footer = () => {
         {/* Subscribe Section */}
 {/* Subscribe Section */}
 <div className="w-full bg-dark-blue900 rounded-[10px] p-6 md:p-10 shadow-md flex flex-col items-center gap-6 text-white">
-  <h2 className="text-2xl md:text-3xl font-semibold text-center">
+  <h2 className="text-4xl md:text-5xl text-center font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
     Subscribe Newsletters
   </h2>
 
