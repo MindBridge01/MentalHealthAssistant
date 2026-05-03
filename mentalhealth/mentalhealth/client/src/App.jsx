@@ -2,11 +2,13 @@ import { Navigate, Outlet, Route, Routes, useLocation, Link } from "react-router
 import { useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteLoader from "./components/RouteLoader";
-import Navbar from "./components/Navbar";
+import HeroNavbar from "./components/HeroNavbar/HeroNavbar";
 import PatientShell from "./components/patient/PatientShell";
 import AuthWindow from "./components/AuthWindow";
 import Home from "./pages/Home";
 import OnboardingPage from "./pages/patient/OnboardingPage";
+import DoctorOnboardingPage from "./pages/doctor/DoctorOnboardingPage";
+import AboutPage from "./pages/AboutPage";
 import DashboardPage from "./pages/patient/DashboardPage";
 import ChatPage from "./pages/patient/ChatPage";
 import AssessmentPage from "./pages/patient/AssessmentPage";
@@ -35,10 +37,19 @@ function RootRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  if (role === "patient" || role === "pending-doctor") {
+  if (role === "patient") {
     return (
       <Navigate
         to={user?.onboardingCompleted ? "/patient/dashboard" : "/patient/onboarding"}
+        replace
+      />
+    );
+  }
+
+  if (role === "pending-doctor") {
+    return (
+      <Navigate
+        to={user?.onboardingCompleted ? "/patient/dashboard" : "/doctor/onboarding"}
         replace
       />
     );
@@ -56,7 +67,7 @@ function RootRedirect() {
 }
 
 function PatientGate({ requireOnboardingComplete = true }) {
-  const { user, isHydrating } = useAuth();
+  const { user, isHydrating, role } = useAuth();
   const location = useLocation();
 
   if (isHydrating) {
@@ -64,7 +75,8 @@ function PatientGate({ requireOnboardingComplete = true }) {
   }
 
   if (requireOnboardingComplete && !user?.onboardingCompleted) {
-    return <Navigate to="/patient/onboarding" state={{ from: location.pathname }} replace />;
+    const onboardingPath = role === "pending-doctor" ? "/doctor/onboarding" : "/patient/onboarding";
+    return <Navigate to={onboardingPath} state={{ from: location.pathname }} replace />;
   }
 
   if (!requireOnboardingComplete && user?.onboardingCompleted) {
@@ -84,17 +96,31 @@ function PatientShellLayout() {
 
 function App() {
   const location = useLocation();
-  const hidePublicNavbar =
-    location.pathname === "/" ||
-    location.pathname.startsWith("/patient") ||
-    location.pathname.startsWith("/doctor/dashboard") ||
+  const isHomePage = location.pathname === "/";
+  const isAboutPage = location.pathname === "/about";
+  const isAuthPage = location.pathname.startsWith("/login") || location.pathname.startsWith("/signup");
+  
+  // Dashboard areas usually have their own sidebar/layout (PatientShell)
+  const isDashboardArea = 
+    location.pathname.startsWith("/patient") || 
+    location.pathname.startsWith("/doctor/dashboard") || 
     location.pathname.startsWith("/admin/dashboard");
 
-  const isAuthPage = location.pathname.startsWith("/login") || location.pathname.startsWith("/signup");
+  // Choose the navbar theme based on the page
+  let navTheme = "sticky"; // Default for white bg pages
+  if (isHomePage || isAboutPage) {
+    navTheme = "light"; // Transparent over video
+  }
 
   return (
     <>
-      {!hidePublicNavbar && !isAuthPage ? <Navbar /> : null}
+      {/* Show the unified HeroNavbar on all pages EXCEPT auth pages and dashboard areas (which have PatientShell) */}
+      {!isAuthPage && !isDashboardArea && (
+        <div className={isHomePage || isAboutPage ? "absolute top-0 left-0 w-full z-[100]" : ""}>
+          <HeroNavbar theme={navTheme} />
+        </div>
+      )}
+
       {isAuthPage ? (
         <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 z-50">
           <Link to="/" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
@@ -105,6 +131,7 @@ function App() {
       ) : null}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/start" element={<RootRedirect />} />
         <Route path="/login" element={<AuthWindow mode="login" />} />
         <Route path="/login/:role" element={<AuthWindow mode="login" />} />
@@ -146,12 +173,22 @@ function App() {
 
         <Route
           element={
-            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+            <ProtectedRoute allowedRoles={["patient"]}>
               <PatientGate requireOnboardingComplete={false} />
             </ProtectedRoute>
           }
         >
           <Route path="/patient/onboarding" element={<OnboardingPage />} />
+        </Route>
+
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["pending-doctor"]}>
+              <PatientGate requireOnboardingComplete={false} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/doctor/onboarding" element={<DoctorOnboardingPage />} />
         </Route>
 
         <Route

@@ -56,6 +56,63 @@ function requirePatientOwnership(paramKey = 'patientId') {
   };
 }
 
+// ---------- Doctor Onboarding ----------
+router.put(
+  '/onboarding',
+  authorizeRoles('doctor', 'pending-doctor'),
+  async (req, res) => {
+    const {
+      name,
+      specialty,
+      bio,
+      contact,
+      yearsOfExperience,
+      qualifications,
+      licenseNumber,
+      consentAccepted,
+    } = req.body || {};
+
+    if (!name || !specialty || !licenseNumber || !consentAccepted) {
+      return res.status(400).json({ error: 'Please complete the required onboarding details.' });
+    }
+
+    try {
+      const userId = req.user._id;
+      const { updateUser } = require('../models/userModel');
+      const { upsertProfile } = require('../models/profileModel');
+
+      // 1. Update user name
+      await updateUser(userId, { name, updatedAt: new Date() });
+
+      // 2. Update doctor profile
+      await upsertDoctorProfile(userId, {
+        name,
+        specialty,
+        bio,
+        contact,
+        yearsOfExperience,
+        qualifications,
+        licenseNumber,
+        updatedAt: new Date(),
+      });
+
+      // 3. Mark onboarding as complete in profiles table
+      await upsertProfile(userId, {
+        consentAccepted: true,
+        consentAcceptedAt: new Date(),
+        onboardingCompleted: true,
+        onboardingCompletedAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      res.json({ success: true, onboardingCompleted: true });
+    } catch (err) {
+      console.error('[doctor] onboarding failed', err);
+      res.status(500).json({ error: 'Failed to save doctor onboarding details' });
+    }
+  }
+);
+
 // ---------- Get all doctors ----------
 router.get('/all', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
   try {
@@ -67,7 +124,7 @@ router.get('/all', authorizeRoles('patient', 'doctor', 'admin'), async (req, res
 });
 
 // ---------- Get doctor profile ----------
-router.get('/profile/:userId', authorizeRoles('patient', 'doctor', 'admin'), async (req, res) => {
+router.get('/profile/:userId', authorizeRoles('patient', 'doctor', 'pending-doctor', 'admin'), async (req, res) => {
   try {
     const userId = req.params.userId;
     const doctor = await getDoctorByUserId(userId);
@@ -81,7 +138,6 @@ router.get('/profile/:userId', authorizeRoles('patient', 'doctor', 'admin'), asy
   }
 });
 
-// ---------- Update doctor profile ----------
 // ---------- Update doctor profile (with upsert) ----------
 router.put(
   '/profile/:userId',
@@ -113,6 +169,7 @@ router.put(
     res.status(500).json({ error: 'Request failed' });
   }
 });
+
 // ---------- Add a new free slot ----------
 router.post(
   '/slots/:userId',

@@ -261,11 +261,7 @@ const HeroSec = () => {
         />
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1593px] 2xl:max-w-[1800px] flex-col px-4 sm:px-6 lg:px-[25px]">
-          <div className={`transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-300 ${isRevealing ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-            <HeroNavbar />
-          </div>
-
-          <div className="grid flex-1 gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,412px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(412px,500px)] lg:items-center lg:gap-8 lg:pt-9 lg:pb-4 xl:gap-[72px]">
+          <div className="flex-1 grid gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,412px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(412px,500px)] lg:items-center lg:gap-8 lg:pt-9 lg:pb-4 xl:gap-[72px]">
             <div
               className={`max-w-[792px] xl:max-w-[900px] 2xl:max-w-[1100px] self-center md:self-end md:pb-8 lg:pb-[12px] transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-500 ${isRevealing ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
             >
