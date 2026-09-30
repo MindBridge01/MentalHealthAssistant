@@ -6,6 +6,7 @@ async function run() {
   const filePath = path.join(__dirname, "init_schema.sql");
   const sql = await fs.readFile(filePath, "utf8");
   await query(sql);
+  await query(await fs.readFile(path.join(__dirname, "patient_registration.sql"), "utf8"));
   console.log("[migrations] PostgreSQL schema is up to date");
 }
 

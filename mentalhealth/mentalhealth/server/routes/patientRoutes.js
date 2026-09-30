@@ -23,6 +23,10 @@ const router = express.Router();
 
 router.use(authenticateJWT());
 router.use(authorizeRoles("patient", "pending-doctor"));
+router.use((req, res, next) => {
+  if (req.path === '/onboarding') return next();
+  return require('../middleware/registrationMiddleware').requireApprovedPatient(req, res, next);
+});
 
 const ACTIVITIES = [
   {
@@ -148,6 +152,7 @@ router.get("/onboarding", requirePermission("view_own_profile"), async (req, res
 });
 
 router.put("/onboarding", requirePermission("edit_own_profile"), async (req, res) => {
+  if (req.user.role === 'patient') return res.status(409).json({ error: 'Please use the patient registration form to submit your application.' });
   const {
     name,
     age,

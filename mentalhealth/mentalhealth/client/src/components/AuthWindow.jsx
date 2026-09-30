@@ -123,9 +123,9 @@ const AuthWindow = ({ mode = "login" }) => {
       });
 
       setUser(user);
-      await refreshUser();
+      const refreshedUser = await refreshUser();
       setSuccess(mode === "login" ? "Signed in successfully." : "Account created successfully.");
-      redirectAfterAuth(user);
+      redirectAfterAuth(refreshedUser || user);
     } catch (err) {
       if (err.status === 401) {
         setError("Invalid credentials. Please check your email and password.");

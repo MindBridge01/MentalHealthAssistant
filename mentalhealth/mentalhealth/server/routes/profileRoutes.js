@@ -17,6 +17,8 @@ router.get('/', requirePermission('view_own_profile'), async (req, res) => {
   try {
     const profile = await findProfileByUserId(userId);
     const decryptedProfile = decryptClassifiedFields(profile || {});
+    const registrationStatus = req.user.role === 'patient'
+      ? await require('../models/registrationModel').getRegistrationStatus(userId) : null;
     const user = await findUserById(userId);
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -36,6 +38,7 @@ router.get('/', requirePermission('view_own_profile'), async (req, res) => {
       role: user.role === 'user' ? 'patient' : user.role,
       profilePic: user.profilePic,
       ...decryptedProfile,
+      ...(registrationStatus ? { registrationStatus, onboardingCompleted: registrationStatus === 'approved' } : {}),
     });
   } catch (_err) {
     return res.status(500).json({ error: 'Profile fetch failed' });
