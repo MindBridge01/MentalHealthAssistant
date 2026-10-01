@@ -1,22 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+
 import { apiRequest } from "../lib/apiClient";
 import { hasCompletePatientProfile } from "../lib/authStorage";
 import { useAuth } from "../context/AuthContext";
+
 import loginSideImage from "../assets/images/login-hero-figma.jpg";
+
 import LoginContainer from "./auth/LoginContainer";
 import LoginForm from "./auth/LoginForm";
-<<<<<<< HEAD:mentalhealth/mentalhealth/client/src/components/AuthWindow.jsx
 import SupportBanner from "./auth/SupportBanner";
 import DoctorSignupWizard from "../pages/registration/DoctorSignupWizard";
-=======
-import InputField from "./auth/InputField";
-import AuthButton from "./auth/AuthButton";
->>>>>>> fix-branch:client/src/components/AuthWindow.jsx
+
 import "./auth/auth.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
+
 const ROLE_PATIENT = "patient";
 const ROLE_DOCTOR = "doctor";
 const ROLE_ADMIN = "admin";
@@ -28,6 +28,7 @@ function normalizeRole(candidateRole, mode) {
   if (raw === ROLE_PATIENT) return ROLE_PATIENT;
   if (raw === ROLE_DOCTOR) return ROLE_DOCTOR;
   if (raw === ROLE_ADMIN && mode === "login") return ROLE_ADMIN;
+
   return ROLE_PATIENT;
 }
 
@@ -51,12 +52,16 @@ const AuthWindow = ({ mode = "login" }) => {
   const { role: urlRole } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+
   const { setUser, refreshUser } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [currentRole, setCurrentRole] = useState(() => normalizeRole(urlRole, mode));
+
+  const [currentRole, setCurrentRole] = useState(() =>
+    normalizeRole(urlRole, mode)
+  );
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -67,6 +72,7 @@ const AuthWindow = ({ mode = "login" }) => {
   const roleLabel = useMemo(() => {
     if (currentRole === ROLE_DOCTOR) return "Doctor";
     if (currentRole === ROLE_ADMIN) return "Admin";
+
     return "Patient";
   }, [currentRole]);
 
@@ -87,8 +93,12 @@ const AuthWindow = ({ mode = "login" }) => {
 
     if (!hasCompletePatientProfile(user)) {
       navigate("/patient/onboarding", {
-        state: { onboarding: true, from: location.state?.from || "/patient/dashboard" },
+        state: {
+          onboarding: true,
+          from: location.state?.from || "/patient/dashboard",
+        },
       });
+
       return;
     }
 
@@ -97,10 +107,17 @@ const AuthWindow = ({ mode = "login" }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setError("");
     setSuccess("");
 
-    const validationError = getFieldValidation({ mode, name, email, password });
+    const validationError = getFieldValidation({
+      mode,
+      name,
+      email,
+      password,
+    });
+
     if (validationError) {
       setError(validationError);
       return;
@@ -115,9 +132,13 @@ const AuthWindow = ({ mode = "login" }) => {
           : currentRole === ROLE_DOCTOR
             ? "/api/auth/signup-doctor"
             : "/api/auth/signup";
+
       const body =
         mode === "login"
-          ? { email: email.trim().toLowerCase(), password }
+          ? {
+              email: email.trim().toLowerCase(),
+              password,
+            }
           : {
               name: name.trim(),
               email: email.trim().toLowerCase(),
@@ -130,18 +151,31 @@ const AuthWindow = ({ mode = "login" }) => {
       });
 
       setUser(user);
+
       const refreshedUser = await refreshUser();
-      setSuccess(mode === "login" ? "Signed in successfully." : "Account created successfully.");
+
+      setSuccess(
+        mode === "login"
+          ? "Signed in successfully."
+          : "Account created successfully."
+      );
+
       redirectAfterAuth(refreshedUser || user);
     } catch (err) {
       if (err.status === 401) {
-        setError("Invalid credentials. Please check your email and password.");
+        setError(
+          "Invalid credentials. Please check your email and password."
+        );
       } else if (err.status === 403) {
-        setError("Your selected role does not have access for this account.");
+        setError(
+          "Your selected role does not have access for this account."
+        );
       } else if (err.status === 404 && mode === "login") {
         setError("No account found for this email.");
       } else {
-        setError(err.message || "Authentication failed. Please try again.");
+        setError(
+          err.message || "Authentication failed. Please try again."
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -155,19 +189,28 @@ const AuthWindow = ({ mode = "login" }) => {
     setIsSubmitting(true);
 
     try {
-      const fileKeys = ['docRegistrationCert', 'docSlmcId', 'docMedicalDegree', 'docPostgrad', 'docSpecialist', 'docOther'];
+      const fileKeys = [
+        "docRegistrationCert",
+        "docSlmcId",
+        "docMedicalDegree",
+        "docPostgrad",
+        "docSpecialist",
+        "docOther",
+      ];
+
       const uploadedUrls = {};
-      
+
       for (const key of fileKeys) {
         if (formData[key] instanceof File) {
           const uploadData = new FormData();
-          uploadData.append('image', formData[key]);
-          
-          // Use native fetch to hit the proxy for file uploads
-          const uploadRes = await fetch('/api/upload', {
-             method: 'POST',
-             body: uploadData
+
+          uploadData.append("image", formData[key]);
+
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: uploadData,
           });
+
           if (uploadRes.ok) {
             const uploadJson = await uploadRes.json();
             uploadedUrls[key] = uploadJson.imagePath;
@@ -178,9 +221,9 @@ const AuthWindow = ({ mode = "login" }) => {
       const body = {
         name: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
-        password: "PENDING_APPROVAL_123!", // Dummy password since admin sets credentials
+        password: "PENDING_APPROVAL_123!",
         ...formData,
-        ...uploadedUrls // Override File objects with URLs
+        ...uploadedUrls,
       };
 
       const user = await apiRequest("/api/auth/signup-doctor", {
@@ -189,13 +232,17 @@ const AuthWindow = ({ mode = "login" }) => {
       });
 
       setUser(user);
+
       await refreshUser();
+
       setApplicationSubmitted(true);
     } catch (err) {
       if (err.status === 409) {
         setError("User already exists with this email.");
       } else {
-        setError(err.message || "Authentication failed. Please try again.");
+        setError(
+          err.message || "Authentication failed. Please try again."
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -218,7 +265,9 @@ const AuthWindow = ({ mode = "login" }) => {
           onEmailChange={(event) => setEmail(event.target.value)}
           onForgotPassword={handleForgotPassword}
           onPasswordChange={(event) => setPassword(event.target.value)}
-          onRememberChange={(event) => setRememberMe(event.target.checked)}
+          onRememberChange={(event) =>
+            setRememberMe(event.target.checked)
+          }
           onSubmit={handleSubmit}
           password={password}
           rememberMe={rememberMe}
@@ -231,71 +280,136 @@ const AuthWindow = ({ mode = "login" }) => {
   return (
     <section className="w-full max-w-xl mx-auto mt-10 mb-10 px-6 py-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
       <header className="mb-6 text-center">
-        <p className="text-sm uppercase tracking-wide text-slate-500 font-['Outfit']">MindBridge Secure Access</p>
-        <h1 className="login-ui__title mt-2 mb-2" style={{ textAlign: 'center', fontSize: '42px' }}>
-          {mode === "login" ? `Sign In as ${roleLabel}` : `Create ${roleLabel} Account`}
+        <p className="text-sm uppercase tracking-wide text-slate-500 font-['Outfit']">
+          MindBridge Secure Access
+        </p>
+
+        <h1
+          className="login-ui__title mt-2 mb-2"
+          style={{
+            textAlign: "center",
+            fontSize: "42px",
+          }}
+        >
+          {mode === "login"
+            ? `Sign In as ${roleLabel}`
+            : `Create ${roleLabel} Account`}
         </h1>
-        <p className="login-ui__subtitle" style={{ textAlign: 'center', fontSize: '18px' }}>
+
+        <p
+          className="login-ui__subtitle"
+          style={{
+            textAlign: "center",
+            fontSize: "18px",
+          }}
+        >
           {mode === "login"
             ? "Use your registered details to securely access your care dashboard."
             : "Start with your account details. You can complete your health profile next."}
         </p>
       </header>
 
-      <div className="flex bg-slate-100 p-1 rounded-xl mb-6" role="tablist" aria-label="Select account role">
+      <div
+        className="flex bg-slate-100 p-1 rounded-xl mb-6"
+        role="tablist"
+        aria-label="Select account role"
+      >
         <button
           type="button"
           onClick={() => setCurrentRole(ROLE_PATIENT)}
-          className={`flex-1 py-2 rounded-lg ${currentRole === ROLE_PATIENT ? "bg-white text-slate-900 font-semibold" : "text-slate-600"}`}
+          className={`flex-1 py-2 rounded-lg ${
+            currentRole === ROLE_PATIENT
+              ? "bg-white text-slate-900 font-semibold"
+              : "text-slate-600"
+          }`}
         >
           Patient
         </button>
+
         <button
           type="button"
           onClick={() => setCurrentRole(ROLE_DOCTOR)}
-          className={`flex-1 py-2 rounded-lg ${currentRole === ROLE_DOCTOR ? "bg-white text-slate-900 font-semibold" : "text-slate-600"}`}
+          className={`flex-1 py-2 rounded-lg ${
+            currentRole === ROLE_DOCTOR
+              ? "bg-white text-slate-900 font-semibold"
+              : "text-slate-600"
+          }`}
         >
           Doctor
         </button>
+
         {mode === "login" && (
           <button
             type="button"
             onClick={() => setCurrentRole(ROLE_ADMIN)}
-            className={`flex-1 py-2 rounded-lg ${currentRole === ROLE_ADMIN ? "bg-white text-slate-900 font-semibold" : "text-slate-600"}`}
+            className={`flex-1 py-2 rounded-lg ${
+              currentRole === ROLE_ADMIN
+                ? "bg-white text-slate-900 font-semibold"
+                : "text-slate-600"
+            }`}
           >
             Admin
           </button>
         )}
       </div>
 
-<<<<<<< HEAD:mentalhealth/mentalhealth/client/src/components/AuthWindow.jsx
       {applicationSubmitted ? (
         <div className="py-8 text-center bg-emerald-50 rounded-2xl border border-emerald-100">
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-slate-800 mb-2">Application Submitted!</h2>
+
+          <h2 className="text-2xl font-semibold text-slate-800 mb-2">
+            Application Submitted!
+          </h2>
+
           <p className="text-slate-600 max-w-sm mx-auto">
-            Your application has been submitted successfully. Our verification team will review your credentials.
+            Your application has been submitted successfully. Our
+            verification team will review your credentials.
           </p>
-          <button type="button" onClick={() => navigate("/")} className="mt-6 px-6 py-2 bg-sky-700 text-white rounded-xl hover:bg-sky-800 transition">
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mt-6 px-6 py-2 bg-sky-700 text-white rounded-xl hover:bg-sky-800 transition"
+          >
             Return to Home
           </button>
         </div>
       ) : mode === "signup" && currentRole === ROLE_DOCTOR ? (
-        <DoctorSignupWizard 
-          onSubmit={handleDoctorSubmit} 
-          isSubmitting={isSubmitting} 
-          error={error} 
-          success={success} 
+        <DoctorSignupWizard
+          onSubmit={handleDoctorSubmit}
+          isSubmitting={isSubmitting}
+          error={error}
+          success={success}
         />
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          noValidate
+        >
           {mode === "signup" && (
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
                 Full Name
               </label>
+
               <input
                 id="name"
                 type="text"
@@ -309,9 +423,13 @@ const AuthWindow = ({ mode = "login" }) => {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Email Address
             </label>
+
             <input
               id="email"
               type="email"
@@ -325,68 +443,45 @@ const AuthWindow = ({ mode = "login" }) => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Password
             </label>
+
             <input
               id="password"
               type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              autoComplete={
+                mode === "login"
+                  ? "current-password"
+                  : "new-password"
+              }
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
               placeholder="At least 8 characters"
               required
             />
-=======
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        {mode === "signup" && (
-          <InputField
-            autoComplete="name"
-            id="name"
-            label="Full Name"
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Enter your full name"
-            type="text"
-            value={name}
-          />
-        )}
-
-        <InputField
-          autoComplete="email"
-          id="email"
-          label="Email Address"
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="name@example.com"
-          type="email"
-          value={email}
-        />
-
-        <InputField
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          id="password"
-          label="Password"
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="At least 8 characters"
-          type="password"
-          value={password}
-        />
-
-        {error && (
-          <div aria-live="assertive" className="login-ui__message login-ui__message--error" role="alert">
-            {error}
->>>>>>> fix-branch:client/src/components/AuthWindow.jsx
           </div>
 
-<<<<<<< HEAD:mentalhealth/mentalhealth/client/src/components/AuthWindow.jsx
           {error && (
-            <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"
+            >
               {error}
             </div>
           )}
 
           {success && (
-            <div role="status" aria-live="polite" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+            <div
+              role="status"
+              aria-live="polite"
+              className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm"
+            >
               {success}
             </div>
           )}
@@ -396,37 +491,39 @@ const AuthWindow = ({ mode = "login" }) => {
             disabled={isSubmitting}
             className="w-full py-3 rounded-xl text-white bg-sky-700 hover:bg-sky-800 disabled:bg-slate-400 font-semibold"
           >
-            {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+            {isSubmitting
+              ? "Please wait..."
+              : mode === "login"
+                ? "Sign In"
+                : "Create Account"}
           </button>
         </form>
       )}
-=======
-        {success && (
-          <div aria-live="polite" className="login-ui__message login-ui__message--success" role="status">
-            {success}
-          </div>
-        )}
-
-        <div className="pt-2">
-          <AuthButton disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-          </AuthButton>
-        </div>
-      </form>
->>>>>>> fix-branch:client/src/components/AuthWindow.jsx
 
       <div className="text-center mt-6 text-sm text-slate-600">
         {mode === "login" ? (
           <span>
             Need an account?{" "}
-            <button type="button" className="text-sky-700 hover:underline" onClick={() => navigate(`/signup/${currentRole}`)}>
+            <button
+              type="button"
+              className="text-sky-700 hover:underline"
+              onClick={() =>
+                navigate(`/signup/${currentRole}`)
+              }
+            >
               Sign up
             </button>
           </span>
         ) : (
           <span>
             Already registered?{" "}
-            <button type="button" className="text-sky-700 hover:underline" onClick={() => navigate(`/login/${currentRole}`)}>
+            <button
+              type="button"
+              className="text-sky-700 hover:underline"
+              onClick={() =>
+                navigate(`/login/${currentRole}`)
+              }
+            >
               Sign in
             </button>
           </span>

@@ -1,18 +1,18 @@
 import { Navigate, Outlet, Route, Routes, useLocation, Link } from "react-router-dom";
+
 import { useAuth } from "./context/AuthContext";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteLoader from "./components/RouteLoader";
 import HeroNavbar from "./components/HeroNavbar/HeroNavbar";
 import PatientShell from "./components/patient/PatientShell";
 import AuthWindow from "./components/AuthWindow";
+
 import Home from "./pages/Home";
 import OnboardingPage from "./pages/patient/OnboardingPage";
-<<<<<<< HEAD:mentalhealth/mentalhealth/client/src/App.jsx
 import RegistrationPage from "./pages/patient/RegistrationPage";
-=======
 import DoctorOnboardingPage from "./pages/doctor/DoctorOnboardingPage";
 import AboutPage from "./pages/AboutPage";
->>>>>>> fix-branch:client/src/App.jsx
 import DashboardPage from "./pages/patient/DashboardPage";
 import ChatPage from "./pages/patient/ChatPage";
 import AssessmentPage from "./pages/patient/AssessmentPage";
@@ -26,12 +26,16 @@ import DoctorProfilePage from "./pages/patient/DoctorProfilePage";
 import BookingPage from "./pages/patient/BookingPage";
 import BookingConfirmationPage from "./pages/patient/BookingConfirmationPage";
 import AppointmentsPage from "./pages/patient/AppointmentsPage";
+
 import Unauthorized from "./pages/Unauthorized";
 import DoctorDashboard from "./pages/DoctorDashboard";
+
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLogin from "./pages/admin/AdminLogin";
+
 import PatientSignupWizard from "./pages/registration/PatientSignupWizard";
 import DoctorSignupWizard from "./pages/registration/DoctorSignupWizard";
+
 
 function RootRedirect() {
   const { isHydrating, isAuthenticated, role, user } = useAuth();
@@ -47,7 +51,11 @@ function RootRedirect() {
   if (role === "patient") {
     return (
       <Navigate
-        to={user?.onboardingCompleted ? "/patient/dashboard" : "/patient/onboarding"}
+        to={
+          user?.onboardingCompleted
+            ? "/patient/dashboard"
+            : "/patient/onboarding"
+        }
         replace
       />
     );
@@ -56,7 +64,11 @@ function RootRedirect() {
   if (role === "pending-doctor") {
     return (
       <Navigate
-        to={user?.onboardingCompleted ? "/patient/dashboard" : "/doctor/onboarding"}
+        to={
+          user?.onboardingCompleted
+            ? "/patient/dashboard"
+            : "/doctor/onboarding"
+        }
         replace
       />
     );
@@ -73,6 +85,7 @@ function RootRedirect() {
   return <Navigate to="/login" replace />;
 }
 
+
 function PatientGate({ requireOnboardingComplete = true }) {
   const { user, isHydrating, role } = useAuth();
   const location = useLocation();
@@ -82,8 +95,18 @@ function PatientGate({ requireOnboardingComplete = true }) {
   }
 
   if (requireOnboardingComplete && !user?.onboardingCompleted) {
-    const onboardingPath = role === "pending-doctor" ? "/doctor/onboarding" : "/patient/onboarding";
-    return <Navigate to={onboardingPath} state={{ from: location.pathname }} replace />;
+    const onboardingPath =
+      role === "pending-doctor"
+        ? "/doctor/onboarding"
+        : "/patient/onboarding";
+
+    return (
+      <Navigate
+        to={onboardingPath}
+        state={{ from: location.pathname }}
+        replace
+      />
+    );
   }
 
   if (!requireOnboardingComplete && user?.onboardingCompleted) {
@@ -93,6 +116,7 @@ function PatientGate({ requireOnboardingComplete = true }) {
   return <Outlet />;
 }
 
+
 function PatientShellLayout() {
   return (
     <PatientShell>
@@ -101,98 +125,193 @@ function PatientShellLayout() {
   );
 }
 
+
 function RegistrationEntry() {
   const { role } = useAuth();
-  return role === 'patient' ? <RegistrationPage /> : <OnboardingPage />;
+
+  return role === "patient" ? (
+    <RegistrationPage />
+  ) : (
+    <OnboardingPage />
+  );
 }
+
 
 function App() {
   const location = useLocation();
-<<<<<<< HEAD:mentalhealth/mentalhealth/client/src/App.jsx
-  const hidePublicNavbar =
-    location.pathname === "/" ||
-    location.pathname.startsWith("/patient") ||
-    location.pathname.startsWith("/doctor/dashboard") ||
-    location.pathname.startsWith("/admin/dashboard") ||
-    location.pathname === "/admin" ||
-    location.pathname.startsWith("/signup");
-=======
+
   const isHomePage = location.pathname === "/";
   const isAboutPage = location.pathname === "/about";
-  const isAuthPage = location.pathname.startsWith("/login") || location.pathname.startsWith("/signup");
-  
-  // Dashboard areas usually have their own sidebar/layout (PatientShell)
-  const isDashboardArea = 
-    location.pathname.startsWith("/patient") || 
-    location.pathname.startsWith("/doctor/dashboard") || 
-    location.pathname.startsWith("/admin/dashboard");
->>>>>>> fix-branch:client/src/App.jsx
 
-  // Choose the navbar theme based on the page
-  let navTheme = "sticky"; // Default for white bg pages
+  const isAuthPage =
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/signup");
+
+  const isDashboardArea =
+    location.pathname.startsWith("/patient") ||
+    location.pathname.startsWith("/doctor/dashboard") ||
+    location.pathname.startsWith("/admin/dashboard");
+
+  const hidePublicNavbar =
+    isHomePage ||
+    isAuthPage ||
+    isDashboardArea ||
+    location.pathname === "/admin";
+
+  let navTheme = "sticky";
+
   if (isHomePage || isAboutPage) {
-    navTheme = "light"; // Transparent over video
+    navTheme = "light";
   }
 
   return (
     <>
-      {/* Show the unified HeroNavbar on all pages EXCEPT auth pages and dashboard areas (which have PatientShell) */}
-      {!isAuthPage && !isDashboardArea && (
-        <div className={isHomePage || isAboutPage ? "absolute top-0 left-0 w-full z-[100]" : ""}>
+      {!isAuthPage && !isDashboardArea && !hidePublicNavbar && (
+        <div
+          className={
+            isHomePage || isAboutPage
+              ? "absolute top-0 left-0 w-full z-[100]"
+              : ""
+          }
+        >
           <HeroNavbar theme={navTheme} />
         </div>
       )}
 
       {isAuthPage ? (
         <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 z-50">
-          <Link to="/" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
             Back to Home
           </Link>
         </div>
       ) : null}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/start" element={<RootRedirect />} />
-        <Route path="/login" element={<AuthWindow mode="login" />} />
-        <Route path="/login/:role" element={<AuthWindow mode="login" />} />
-        <Route path="/signup/patient" element={<PatientSignupWizard />} />
-        <Route path="/signup/doctor" element={<DoctorSignupWizard />} />
-        <Route path="/signup/:role" element={<AuthWindow mode="signup" />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
 
-        <Route path="/ai-chat" element={<ChatPage />} />
+      <Routes>
+        {/* Public routes */}
+
+        <Route path="/" element={<Home />} />
+
+        <Route path="/about" element={<AboutPage />} />
+
+        <Route path="/start" element={<RootRedirect />} />
+
+        <Route path="/login" element={<AuthWindow mode="login" />} />
+
+        <Route
+          path="/login/:role"
+          element={<AuthWindow mode="login" />}
+        />
+
+        <Route
+          path="/signup/patient"
+          element={<PatientSignupWizard />}
+        />
+
+        <Route
+          path="/signup/doctor"
+          element={<DoctorSignupWizard />}
+        />
+
+        <Route
+          path="/signup/:role"
+          element={<AuthWindow mode="signup" />}
+        />
+
+        <Route
+          path="/unauthorized"
+          element={<Unauthorized />}
+        />
+
+        <Route
+          path="/ai-chat"
+          element={<ChatPage />}
+        />
+
+        {/* Community shortcut */}
+
         <Route
           path="/community"
           element={
-            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+            <ProtectedRoute
+              allowedRoles={["patient", "pending-doctor"]}
+            >
               <PatientGate />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/patient/community" replace />} />
+          <Route
+            index
+            element={
+              <Navigate
+                to="/patient/community"
+                replace
+              />
+            }
+          />
         </Route>
+
+        {/* Doctor dashboard shortcut */}
+
         <Route
           path="/doctor-dashboard"
           element={
-            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+            <ProtectedRoute
+              allowedRoles={["patient", "pending-doctor"]}
+            >
               <PatientGate />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/patient/doctors" replace />} />
+          <Route
+            index
+            element={
+              <Navigate
+                to="/patient/doctors"
+                replace
+              />
+            }
+          />
         </Route>
+
+        {/* Questions shortcut */}
+
         <Route
           path="/questions"
           element={
-            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+            <ProtectedRoute
+              allowedRoles={["patient", "pending-doctor"]}
+            >
               <PatientGate />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/patient/assessments" replace />} />
+          <Route
+            index
+            element={
+              <Navigate
+                to="/patient/assessments"
+                replace
+              />
+            }
+          />
         </Route>
+
+        {/* Patient onboarding */}
 
         <Route
           element={
@@ -201,8 +320,13 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/patient/onboarding" element={<RegistrationEntry />} />
+          <Route
+            path="/patient/onboarding"
+            element={<RegistrationEntry />}
+          />
         </Route>
+
+        {/* Doctor onboarding */}
 
         <Route
           element={
@@ -211,33 +335,105 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/doctor/onboarding" element={<DoctorOnboardingPage />} />
+          <Route
+            path="/doctor/onboarding"
+            element={<DoctorOnboardingPage />}
+          />
         </Route>
+
+        {/* Patient application */}
 
         <Route
           element={
-            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+            <ProtectedRoute
+              allowedRoles={["patient", "pending-doctor"]}
+            >
               <PatientGate />
             </ProtectedRoute>
           }
         >
-          <Route path="/patient" element={<PatientShellLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="assessments" element={<AssessmentPage />} />
-            <Route path="assessments/:assessmentId" element={<AssessmentResultPage />} />
-            <Route path="activities" element={<ActivitiesPage />} />
-            <Route path="activities/:activityId" element={<ActivityDetailPage />} />
-            <Route path="community" element={<CommunityPage />} />
-            <Route path="community/:postId" element={<CommunityPostPage />} />
-            <Route path="doctors" element={<DoctorsPage />} />
-            <Route path="doctors/:doctorId" element={<DoctorProfilePage />} />
-            <Route path="doctors/:doctorId/book" element={<BookingPage />} />
-            <Route path="booking/confirmed" element={<BookingConfirmationPage />} />
-            <Route path="appointments" element={<AppointmentsPage />} />
+          <Route
+            path="/patient"
+            element={<PatientShellLayout />}
+          >
+            <Route
+              index
+              element={
+                <Navigate
+                  to="dashboard"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="dashboard"
+              element={<DashboardPage />}
+            />
+
+            <Route
+              path="chat"
+              element={<ChatPage />}
+            />
+
+            <Route
+              path="assessments"
+              element={<AssessmentPage />}
+            />
+
+            <Route
+              path="assessments/:assessmentId"
+              element={<AssessmentResultPage />}
+            />
+
+            <Route
+              path="activities"
+              element={<ActivitiesPage />}
+            />
+
+            <Route
+              path="activities/:activityId"
+              element={<ActivityDetailPage />}
+            />
+
+            <Route
+              path="community"
+              element={<CommunityPage />}
+            />
+
+            <Route
+              path="community/:postId"
+              element={<CommunityPostPage />}
+            />
+
+            <Route
+              path="doctors"
+              element={<DoctorsPage />}
+            />
+
+            <Route
+              path="doctors/:doctorId"
+              element={<DoctorProfilePage />}
+            />
+
+            <Route
+              path="doctors/:doctorId/book"
+              element={<BookingPage />}
+            />
+
+            <Route
+              path="booking/confirmed"
+              element={<BookingConfirmationPage />}
+            />
+
+            <Route
+              path="appointments"
+              element={<AppointmentsPage />}
+            />
           </Route>
         </Route>
+
+        {/* Doctor dashboard */}
 
         <Route
           path="/doctor/dashboard"
@@ -247,6 +443,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Admin dashboard */}
+
         <Route
           path="/admin/dashboard"
           element={
@@ -255,8 +454,20 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* Admin login */}
+
+        <Route
+          path="/admin"
+          element={<AdminLogin />}
+        />
+
+        {/* Catch-all */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
       </Routes>
     </>
   );
