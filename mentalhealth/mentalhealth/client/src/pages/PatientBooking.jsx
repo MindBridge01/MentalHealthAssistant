@@ -96,7 +96,7 @@ const PatientBooking = () => {
         alert("Appointment booked successfully!");
         setMyAppointments([
           ...myAppointments,
-          { doctorName: selectedDoctor.name, date: slotDate, time: slotTime, status: 'Upcoming' }
+          { _id: Date.now(), doctorName: selectedDoctor.name, date: slotDate, time: slotTime, status: 'Upcoming' }
         ]);
 
         // Remove locally immediately
@@ -115,6 +115,44 @@ const PatientBooking = () => {
     }
   };
 
+  // Helper component to reduce nesting depth
+  const SlotPicker = ({ slots, onSelect, currentSelection }) => {
+    if (!slots || slots.length === 0) {
+      return <div className="text-sm text-gray-500 italic">No available slots listed currently.</div>;
+    }
+
+    const slotsByDate = slots.reduce((acc, slot) => {
+      if (!acc[slot.date]) acc[slot.date] = [];
+      acc[slot.date].push(slot);
+      return acc;
+    }, {});
+
+    const sortedDates = Object.keys(slotsByDate).sort((a, b) => new Date(a) - new Date(b));
+
+    return sortedDates.map(date => (
+      <div key={date} className="w-full border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm">
+        <div className="font-bold text-dark-blue900 mb-3 border-b border-gray-200 pb-2 text-lg">{date}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {slotsByDate[date].map((slot) => {
+            const slotStr = `${slot.date} ${slot.startTime} - ${slot.endTime}`;
+            const isSelected = currentSelection === slotStr;
+            return (
+              <button
+                key={slot._id}
+                type="button"
+                className={`flex justify-start px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${isSelected ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-100'}`}
+                onClick={() => onSelect(slotStr)}
+              >
+                <span className={isSelected ? 'text-purple-200 mr-2 font-bold' : 'text-purple-400 mr-2 font-bold'}>•</span>
+                <span>{slot.startTime} - {slot.endTime}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <div className="w-full min-h-screen bg-purple-50 py-12 px-4 flex flex-col items-center">
       <h2 className="font-['General_Sans'] font-semibold text-dark-blue900 text-3xl md:text-5xl mb-6 text-center">Find & Book a Doctor</h2>
@@ -129,23 +167,30 @@ const PatientBooking = () => {
               </div>
             ) : (
               doctorsList.map((doc) => (
-                <div key={doc._id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`} onClick={async () => {
-                  setSelectedDoctor(doc);
-                  try {
-                    const res = await axios.get(
-                      apiUrl(`/api/doctor/profile/${doc.userId}`),
-                      { withCredentials: true }
-                    );
-                    setSelectedDoctor(res.data);
-                  } catch (e) { }
-                }}>
+                <button
+                  type="button"
+                  key={doc._id}
+                  className={`flex items-center text-left w-full gap-4 p-4 rounded-xl border cursor-pointer ${selectedDoctor?._id === doc._id ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
+                  onClick={async () => {
+                    setSelectedDoctor(doc);
+                    try {
+                      const res = await axios.get(
+                        apiUrl(`/api/doctor/profile/${doc.userId}`),
+                        { withCredentials: true }
+                      );
+                      setSelectedDoctor(res.data);
+                    } catch (e) {
+                      console.error("Failed to load doctor profile", e);
+                    }
+                  }}
+                >
                   <img src={doc.profilePic || "/assets/images/default-user.png"} alt={doc.name} className="w-16 h-16 rounded-full object-cover border-2 border-purple-200" />
                   <div>
                     <div className="font-bold text-lg text-dark-blue900">{doc.name}</div>
                     <div className="text-purple-700 font-medium">{doc.specialty}</div>
                     <div className="text-gray-500 text-sm">Experience: {doc.yearsOfExperience ? `${doc.yearsOfExperience} years` : "N/A"}</div>
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>
@@ -165,43 +210,11 @@ const PatientBooking = () => {
               <div className="mb-4">
                 <h4 className="font-semibold text-dark-blue900 mb-2">Book Appointment</h4>
                 <div className="flex flex-col gap-4 mb-2 w-full">
-                  {(() => {
-                    if (!selectedDoctor.slots || selectedDoctor.slots.length === 0) {
-                      return <div className="text-sm text-gray-500 italic">No available slots listed currently.</div>;
-                    }
-
-                    // Group slots by date
-                    const slotsByDate = selectedDoctor.slots.reduce((acc, slot) => {
-                      if (!acc[slot.date]) acc[slot.date] = [];
-                      acc[slot.date].push(slot);
-                      return acc;
-                    }, {});
-
-                    // Sort dates (optional: you could sort by string or Date object)
-                    const sortedDates = Object.keys(slotsByDate).sort();
-
-                    return sortedDates.map(date => (
-                      <div key={date} className="w-full border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm">
-                        <div className="font-bold text-dark-blue900 mb-3 border-b border-gray-200 pb-2 text-lg">{date}</div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {slotsByDate[date].map((slot, idx) => {
-                            const slotStr = `${slot.date} ${slot.startTime} - ${slot.endTime}`;
-                            const isSelected = selectedSlot === slotStr;
-                            return (
-                              <button
-                                key={idx}
-                                className={`flex justify-start px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${isSelected ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-100'}`}
-                                onClick={() => setSelectedSlot(slotStr)}
-                              >
-                                <span className={isSelected ? 'text-purple-200 mr-2 font-bold' : 'text-purple-400 mr-2 font-bold'}>{idx + 1} -</span>
-                                <span>{slot.startTime} - {slot.endTime}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ));
-                  })()}
+                  <SlotPicker
+                    slots={selectedDoctor.slots}
+                    onSelect={setSelectedSlot}
+                    currentSelection={selectedSlot}
+                  />
                 </div>
                 <textarea className="w-full p-3 border border-gray-300 rounded-xl mb-4 mt-2 focus:ring-2 focus:ring-purple-500 outline-none placeholder-gray-400 resize-none" rows="3" placeholder="Additional notes or message to doctor (optional)" value={message} onChange={e => setMessage(e.target.value)} />
                 <button
@@ -226,8 +239,8 @@ const PatientBooking = () => {
             <div className="mt-8 pt-6 border-t border-gray-200 w-full">
               <h4 className="font-semibold text-dark-blue900 mb-4 text-xl">My Upcoming Appointments</h4>
               <div className="flex flex-col gap-3">
-                {myAppointments.map((appt, idx) => (
-                  <div key={idx} className="bg-green-50 border border-green-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                {myAppointments.map((appt) => (
+                  <div key={appt._id || `${appt.doctorName}-${appt.date}-${appt.time}`} className="bg-green-50 border border-green-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
                     <div>
                       <div className="font-bold text-green-900 text-lg">{appt.doctorName}</div>
                       <div className="text-green-800 font-medium">{appt.date} at {appt.time}</div>

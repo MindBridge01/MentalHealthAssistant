@@ -4,7 +4,7 @@ import './StressCatch.css';
 const StressCatch = () => {
   const [score, setScore] = useState(0);
   const [misses, setMisses] = useState(0);
-  const [bestScore, setBestScore] = useState(parseInt(localStorage.getItem('stressCatchBest')) || 0);
+  const [bestScore, setBestScore] = useState(Number.parseInt(localStorage.getItem('stressCatchBest')) || 0);
   const [gameState, setGameState] = useState('menu'); // menu, playing, paused, gameOver
   const [clouds, setClouds] = useState([]);
   const [basketX, setBasketX] = useState(50); // percentage

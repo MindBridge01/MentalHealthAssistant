@@ -191,8 +191,9 @@ const DoctorOnlyDashboard = () => {
             {editProfile ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label htmlFor="doctorName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                   <input
+                    id="doctorName"
                     value={profile.name || ""}
                     onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -201,8 +202,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization (Psychiatrist / Psychologist / Therapist / Counselor)</label>
+                  <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-1">Specialization (Psychiatrist / Psychologist / Therapist / Counselor)</label>
                   <input
+                    id="specialty"
                     value={profile.specialty || ""}
                     onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -211,8 +213,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                  <label htmlFor="exp" className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
                   <input
+                    id="exp"
                     type="number"
                     value={profile.yearsOfExperience || ""}
                     onChange={(e) => setProfile({ ...profile, yearsOfExperience: e.target.value })}
@@ -222,8 +225,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
+                  <label htmlFor="qual" className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
                   <input
+                    id="qual"
                     value={profile.qualifications || ""}
                     onChange={(e) => setProfile({ ...profile, qualifications: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -232,8 +236,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">License / Registration Number</label>
+                  <label htmlFor="lic" className="block text-sm font-medium text-gray-700 mb-1">License / Registration Number</label>
                   <input
+                    id="lic"
                     value={profile.licenseNumber || ""}
                     onChange={(e) => setProfile({ ...profile, licenseNumber: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -242,8 +247,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Professional Bio</label>
+                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">Professional Bio</label>
                   <textarea
+                    id="bio"
                     value={profile.bio || ""}
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none min-h-[100px]"
@@ -252,8 +258,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Information</label>
+                  <label htmlFor="contact" className="block text-sm font-medium text-gray-700 mb-1">Contact Information</label>
                   <input
+                    id="contact"
                     value={profile.contact || ""}
                     onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
                     className="p-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -262,8 +269,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo (Upload new)</label>
+                  <label htmlFor="photo" className="block text-sm font-medium text-gray-700 mb-1">Profile Photo (Upload new)</label>
                   <input
+                    id="photo"
                     type="file"
                     onChange={handleImageUpload}
                     className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer border border-gray-200 rounded-lg p-2 bg-white"
@@ -272,8 +280,9 @@ const DoctorOnlyDashboard = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Availability Status Message</label>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Availability Status Message</label>
                   <input
+                    id="status"
                     value={statusMessage || ""}
                     onChange={(e) => setStatusMessage(e.target.value)}
                     placeholder="Current status (e.g. Taking new patients currently)"
@@ -484,12 +493,15 @@ const DoctorOnlyDashboard = () => {
           <tbody>
             {appointments.map((a) => (
               <tr key={a.id} className="border-b hover:bg-gray-50 transition-colors">
-                <td
-                  className="font-medium text-purple-700 cursor-pointer hover:underline"
-                  onClick={() => navigate(`/patient-profile/${a.patientId}`)}
-                  title="View Patient Profile"
-                >
-                  {a.patient}
+                <td className="px-4 py-2">
+                  <button
+                    type="button"
+                    className="font-medium text-purple-700 cursor-pointer hover:underline bg-transparent border-none p-0 text-left"
+                    onClick={() => navigate(`/patient-profile/${a.patientId}`)}
+                    title="View Patient Profile"
+                  >
+                    {a.patient}
+                  </button>
                 </td>
                 <td>{a.patientEmail || "N/A"}</td>
                 <td>{a.date}</td>

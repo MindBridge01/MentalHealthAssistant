@@ -96,9 +96,17 @@ async function updateUser(userId, updates) {
 
 async function listPendingDoctors() {
   const result = await query(
-    "SELECT * FROM users WHERE role = 'pending-doctor' ORDER BY created_at DESC"
+    `SELECT u.*, a.application_data 
+     FROM users u 
+     LEFT JOIN doctor_applications a ON u.id = a.user_id 
+     WHERE u.role = 'pending-doctor' 
+     ORDER BY u.created_at DESC`
   );
-  return result.rows.map(mapUser);
+  return result.rows.map(row => {
+    const user = mapUser(row);
+    user.applicationData = row.application_data || {};
+    return user;
+  });
 }
 
 async function approveDoctor(doctorId) {

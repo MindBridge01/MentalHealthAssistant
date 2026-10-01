@@ -20,23 +20,26 @@ const MoodCard = ({ onSelectMood, onClose }) => {
         <p className="text-blue-900 text-[20px] font-bold font-[Satoshi]">
           How are you feeling today?
         </p>
-        <span
-          className="material-icons cursor-pointer text-blue-800"
+        <button
+          type="button"
+          className="material-icons cursor-pointer text-blue-800 bg-transparent border-none p-0"
           onClick={onClose}
+          aria-label="Close"
         >
           close
-        </span>
+        </button>
       </div>
       <div className="inline-flex items-center gap-8 relative flex-[0_0_auto]">
         {moods.map((mood) => (
-          <div
+          <button
+            type="button"
             key={mood.label}
-            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer bg-transparent border-none p-0"
             onClick={() => onSelectMood(mood.label)}
           >
             <img src={mood.image} alt={mood.label} style={{ width: "63px", height: "63px" }} />
             <p className="font-[Satoshi] text-[16px] text-blue-800">{mood.label}</p>
-          </div>
+          </button>
         ))}
       </div>
     </div>

@@ -168,10 +168,12 @@ const FruitMatch = () => {
 
             <div className="cards-grid">
               {cards.map(card => (
-                <div
+                <button
+                  type="button"
                   key={card.id}
-                  className={`card ${card.flipped || card.matched ? 'flipped' : ''}`}
+                  className={`card ${card.flipped || card.matched ? 'flipped' : ''} bg-transparent border-none p-0 block w-full text-left`}
                   onClick={() => handleCardClick(card.id)}
+                  aria-label={`Fruit card ${card.name}`}
                 >
                   <div className="card-inner">
                     <div className="card-front">?</div>

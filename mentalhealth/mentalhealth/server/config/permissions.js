@@ -20,6 +20,7 @@ const permissions = {
     "update_slots",
   ],
   admin: [
+    "view_own_profile",
     "manage_users",
     "approve_doctor",
     "reject_doctor",

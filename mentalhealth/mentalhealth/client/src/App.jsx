@@ -23,7 +23,10 @@ import BookingConfirmationPage from "./pages/patient/BookingConfirmationPage";
 import AppointmentsPage from "./pages/patient/AppointmentsPage";
 import Unauthorized from "./pages/Unauthorized";
 import DoctorDashboard from "./pages/DoctorDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLogin from "./pages/admin/AdminLogin";
+import PatientSignupWizard from "./pages/registration/PatientSignupWizard";
+import DoctorSignupWizard from "./pages/registration/DoctorSignupWizard";
 
 function RootRedirect() {
   const { isHydrating, isAuthenticated, role, user } = useAuth();
@@ -94,7 +97,9 @@ function App() {
     location.pathname === "/" ||
     location.pathname.startsWith("/patient") ||
     location.pathname.startsWith("/doctor/dashboard") ||
-    location.pathname.startsWith("/admin/dashboard");
+    location.pathname.startsWith("/admin/dashboard") ||
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/signup");
 
   return (
     <>
@@ -104,7 +109,8 @@ function App() {
         <Route path="/start" element={<RootRedirect />} />
         <Route path="/login" element={<AuthWindow mode="login" />} />
         <Route path="/login/:role" element={<AuthWindow mode="login" />} />
-        <Route path="/signup" element={<AuthWindow mode="signup" />} />
+        <Route path="/signup/patient" element={<PatientSignupWizard />} />
+        <Route path="/signup/doctor" element={<DoctorSignupWizard />} />
         <Route path="/signup/:role" element={<AuthWindow mode="signup" />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -191,6 +197,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin" element={<AdminLogin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

@@ -141,18 +141,20 @@ const ChatInput = ({ setMessages, className }) => {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             placeholder="We are here with you, Talk with us!"
             className="chat-input"
           />
         </div>
-        <span
+        <button
+          type="button"
           className={`material-icons mic-icon ${isRecording ? "recording" : ""}`}
-          style={{ fontSize: "36px" }}
+          style={{ fontSize: "36px", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           onClick={startSpeechRecognition}
+          aria-label="Voice Input"
         >
           mic
-        </span>
+        </button>
       </div>
     </div>
   );

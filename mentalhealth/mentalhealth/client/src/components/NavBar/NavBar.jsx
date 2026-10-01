@@ -185,15 +185,16 @@ const NavBar = ({ user }) => {
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]">
                   {user.role !== "doctor" && (
-                    <div
-                      className="block px-4 py-2 hover:bg-purple-50 cursor-pointer"
+                    <button
+                      type="button"
+                      className="block w-full text-left px-4 py-2 hover:bg-purple-50 cursor-pointer"
                       onClick={() => {
                         setIsUserDropdownOpen(false);
                         window.location.href = "/profile-settings";
                       }}
                     >
                       Edit Profile
-                    </div>
+                    </button>
                   )}
 
                   <button
