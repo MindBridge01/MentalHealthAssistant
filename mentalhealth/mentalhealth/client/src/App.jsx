@@ -7,6 +7,7 @@ import PatientShell from "./components/patient/PatientShell";
 import AuthWindow from "./components/AuthWindow";
 import Home from "./pages/Home";
 import OnboardingPage from "./pages/patient/OnboardingPage";
+import RegistrationPage from "./pages/patient/RegistrationPage";
 import DashboardPage from "./pages/patient/DashboardPage";
 import ChatPage from "./pages/patient/ChatPage";
 import AssessmentPage from "./pages/patient/AssessmentPage";
@@ -82,6 +83,11 @@ function PatientShellLayout() {
   );
 }
 
+function RegistrationEntry() {
+  const { role } = useAuth();
+  return role === 'patient' ? <RegistrationPage /> : <OnboardingPage />;
+}
+
 function App() {
   const location = useLocation();
   const hidePublicNavbar =
@@ -141,7 +147,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/patient/onboarding" element={<OnboardingPage />} />
+          <Route path="/patient/onboarding" element={<RegistrationEntry />} />
         </Route>
 
         <Route

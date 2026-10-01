@@ -18,23 +18,5 @@ export function clearStoredUser() {
 
 export function hasCompletePatientProfile(user) {
   if (!user || user.role !== "patient") return true;
-
-  const requiredFields = [
-    "name",
-    "email",
-    "birthday",
-    "age",
-    "gender",
-    "phone",
-    "address",
-    "zipcode",
-    "country",
-    "city",
-    "guardianName",
-    "guardianPhone",
-    "guardianEmail",
-    "illnesses",
-  ];
-
-  return requiredFields.every((key) => String(user[key] || "").trim().length > 0);
+  return user.registrationStatus === 'approved';
 }

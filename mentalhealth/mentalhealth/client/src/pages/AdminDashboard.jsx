@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { apiUrl } from "../config/api";
+import PatientRegistrationReview from '../components/PatientRegistrationReview';
 
 const AdminDashboard = () => {
   const [pendingDoctors, setPendingDoctors] = useState([]);
@@ -62,6 +63,7 @@ const AdminDashboard = () => {
   return (
     <div className="w-full min-h-screen bg-gray-50 py-12 px-4 flex flex-col items-center">
       <h2 className="font-bold text-3xl mb-6">Admin Dashboard</h2>
+      <PatientRegistrationReview />
       <div className="w-full max-w-3xl bg-white rounded-3xl shadow-md p-6">
         <h3 className="font-semibold text-xl mb-4">
           Pending Doctor Applications

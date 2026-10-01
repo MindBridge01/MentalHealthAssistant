@@ -68,6 +68,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/registration", require("./routes/registrationRoutes"));
 app.use("/api/admin", adminRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/profile", profileRoutes);
