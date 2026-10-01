@@ -1,0 +1,33 @@
+const permissions = {
+  patient: [
+    "view_own_profile",
+    "edit_own_profile",
+    "chat_ai",
+    "create_appointment",
+    "view_own_appointments",
+    "request_doctor_access",
+    "use_patient_module",
+  ],
+  "pending-doctor": [
+    "view_own_profile",
+    "edit_own_profile",
+    "chat_ai",
+    "use_patient_module",
+  ],
+  doctor: [
+    "view_patient_records",
+    "manage_appointments",
+    "update_slots",
+  ],
+  admin: [
+    "view_own_profile",
+    "manage_users",
+    "approve_doctor",
+    "reject_doctor",
+    "view_all_records",
+    "view_audit_logs",
+    "chat_ai",
+  ],
+};
+
+module.exports = { permissions };
