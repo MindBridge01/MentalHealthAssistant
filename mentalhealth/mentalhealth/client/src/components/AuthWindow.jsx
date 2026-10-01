@@ -7,6 +7,7 @@ import loginSideImage from "../assets/images/login-hero-figma.jpg";
 import LoginContainer from "./auth/LoginContainer";
 import LoginForm from "./auth/LoginForm";
 import SupportBanner from "./auth/SupportBanner";
+import DoctorSignupWizard from "../pages/registration/DoctorSignupWizard";
 import "./auth/auth.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,7 @@ const AuthWindow = ({ mode = "login" }) => {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
 
   const roleLabel = useMemo(() => {
     if (currentRole === ROLE_DOCTOR) return "Doctor";
@@ -123,9 +125,9 @@ const AuthWindow = ({ mode = "login" }) => {
       });
 
       setUser(user);
-      await refreshUser();
+      const refreshedUser = await refreshUser();
       setSuccess(mode === "login" ? "Signed in successfully." : "Account created successfully.");
-      redirectAfterAuth(user);
+      redirectAfterAuth(refreshedUser || user);
     } catch (err) {
       if (err.status === 401) {
         setError("Invalid credentials. Please check your email and password.");
@@ -133,6 +135,60 @@ const AuthWindow = ({ mode = "login" }) => {
         setError("Your selected role does not have access for this account.");
       } else if (err.status === 404 && mode === "login") {
         setError("No account found for this email.");
+      } else {
+        setError(err.message || "Authentication failed. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDoctorSubmit = async (formData) => {
+    setError("");
+    setSuccess("");
+
+    setIsSubmitting(true);
+
+    try {
+      const fileKeys = ['docRegistrationCert', 'docSlmcId', 'docMedicalDegree', 'docPostgrad', 'docSpecialist', 'docOther'];
+      const uploadedUrls = {};
+      
+      for (const key of fileKeys) {
+        if (formData[key] instanceof File) {
+          const uploadData = new FormData();
+          uploadData.append('image', formData[key]);
+          
+          // Use native fetch to hit the proxy for file uploads
+          const uploadRes = await fetch('/api/upload', {
+             method: 'POST',
+             body: uploadData
+          });
+          if (uploadRes.ok) {
+            const uploadJson = await uploadRes.json();
+            uploadedUrls[key] = uploadJson.imagePath;
+          }
+        }
+      }
+
+      const body = {
+        name: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: "PENDING_APPROVAL_123!", // Dummy password since admin sets credentials
+        ...formData,
+        ...uploadedUrls // Override File objects with URLs
+      };
+
+      const user = await apiRequest("/api/auth/signup-doctor", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      setUser(user);
+      await refreshUser();
+      setApplicationSubmitted(true);
+    } catch (err) {
+      if (err.status === 409) {
+        setError("User already exists with this email.");
       } else {
         setError(err.message || "Authentication failed. Please try again.");
       }
@@ -208,76 +264,98 @@ const AuthWindow = ({ mode = "login" }) => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        {mode === "signup" && (
+      {applicationSubmitted ? (
+        <div className="py-8 text-center bg-emerald-50 rounded-2xl border border-emerald-100">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-slate-800 mb-2">Application Submitted!</h2>
+          <p className="text-slate-600 max-w-sm mx-auto">
+            Your application has been submitted successfully. Our verification team will review your credentials.
+          </p>
+          <button type="button" onClick={() => navigate("/")} className="mt-6 px-6 py-2 bg-sky-700 text-white rounded-xl hover:bg-sky-800 transition">
+            Return to Home
+          </button>
+        </div>
+      ) : mode === "signup" && currentRole === ROLE_DOCTOR ? (
+        <DoctorSignupWizard 
+          onSubmit={handleDoctorSubmit} 
+          isSubmitting={isSubmitting} 
+          error={error} 
+          success={success} 
+        />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {mode === "signup" && (
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                placeholder="Enter your full name"
+              />
+            </div>
+          )}
+
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
-              Full Name
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+              Email Address
             </label>
             <input
-              id="name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-              placeholder="Enter your full name"
+              placeholder="name@example.com"
+              required
             />
           </div>
-        )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-            placeholder="name@example.com"
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-            placeholder="At least 8 characters"
-            required
-          />
-        </div>
-
-        {error && (
-          <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-            {error}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+              placeholder="At least 8 characters"
+              required
+            />
           </div>
-        )}
 
-        {success && (
-          <div role="status" aria-live="polite" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
-            {success}
-          </div>
-        )}
+          {error && (
+            <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-3 rounded-xl text-white bg-sky-700 hover:bg-sky-800 disabled:bg-slate-400 font-semibold"
-        >
-          {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-        </button>
-      </form>
+          {success && (
+            <div role="status" aria-live="polite" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+              {success}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 rounded-xl text-white bg-sky-700 hover:bg-sky-800 disabled:bg-slate-400 font-semibold"
+          >
+            {isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+          </button>
+        </form>
+      )}
 
       <div className="text-center mt-6 text-sm text-slate-600">
         {mode === "login" ? (

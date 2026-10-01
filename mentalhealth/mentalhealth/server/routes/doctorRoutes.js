@@ -22,6 +22,7 @@ const {
 const { createObjectId } = require('../lib/objectId');
 
 router.use(authenticateJWT());
+router.use(require('../middleware/registrationMiddleware').requireApprovedPatient);
 
 function isAdmin(req) {
   return req.user?.role === 'admin';

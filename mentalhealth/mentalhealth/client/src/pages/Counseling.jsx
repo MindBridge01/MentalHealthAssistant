@@ -6,12 +6,14 @@ const Counseling = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4 md:p-8 relative">
-            <span
-                className="material-icons absolute top-6 left-6 text-3xl cursor-pointer text-gray-500 hover:text-gray-800 transition-colors"
+            <button
+                type="button"
+                className="material-icons absolute top-6 left-6 text-3xl cursor-pointer text-gray-500 hover:text-gray-800 transition-colors bg-transparent border-none p-0"
                 onClick={() => navigate('/')}
+                aria-label="Go Back"
             >
                 arrow_back
-            </span>
+            </button>
 
             <div className="w-full max-w-3xl bg-white/80 backdrop-blur border border-purple-100 shadow-xl rounded-3xl p-8 md:p-12 relative overflow-hidden text-center">
                 <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-purple-200 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
