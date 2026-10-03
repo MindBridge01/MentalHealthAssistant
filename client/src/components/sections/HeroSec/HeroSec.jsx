@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { apiUrl } from "../../../config/api";
 import ChatBubble from "../../ChatBubble/ChatBubble";
 import WelcomeScreen from "./WelcomeScreen";
 
 import closeIcon from "../../../assets/hero/close-x.svg";
-import heroLogo from "../../../assets/hero/hero-logo.svg";
 import starIcon from "../../../assets/hero/star.svg";
 import heroPortrait from "../../../assets/videos/aiChatVideo.mp4";
 import heroVideo from "../../../assets/videos/heroVideo.mp4";
@@ -22,7 +21,6 @@ function QuickReplyButton({ children, onClick }) {
   );
 }
 
-import HeroNavbar from "../../HeroNavbar/HeroNavbar";
 // An interactive preview card that prompts users to engage with the AI Chat.
 // It includes a small looping video and an input form that triggers navigation to the chat application.
 function HeroChatCard() {

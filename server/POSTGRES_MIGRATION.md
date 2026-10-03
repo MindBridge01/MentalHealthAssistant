@@ -64,17 +64,6 @@ sudo -u postgres createuser --pwprompt mindbridge
 sudo -u postgres createdb -O mindbridge mindbridge
 ```
 
-Docker:
-
-```bash
-docker run --name mindbridge-postgres \
-  -e POSTGRES_USER=mindbridge \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=mindbridge \
-  -p 5432:5432 \
-  -d postgres:16
-```
-
 ## Run migrations
 
 ```bash

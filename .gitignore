@@ -3,6 +3,24 @@ node_modules/
 .env
 **/.env
 
+# Local copies retained outside the canonical project tree
+MentalHealthAssistant/
+mentalhealth/
+
+# Local database exports and test/runtime artifacts
+backups/
+**/backups/
+**/coverage/
+**/coverage_output.txt
+**/cookies.txt
+**/uploads/
+.scannerwork/
+
+# Flutter generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
 # Logs
 logs
 *.log

@@ -5,6 +5,7 @@ import facebookBlack from "../../assets/images/facebook-black.png";
 import Shape from "../../assets/images/Shape.png";
 import twitterBlack from "../../assets/images/twitter-black.png";
 import vimeoBlack from "../../assets/images/vimeo-black.png";
+import youtubeBlack from "../../assets/images/youtube-black.png";
 
 const Footer = () => {
   return (
@@ -54,7 +55,7 @@ const Footer = () => {
               <img className="w-6 h-6" src={facebookBlack} alt="Facebook" />
               <img className="w-6 h-5" src={twitterBlack} alt="Twitter" />
               <img className="w-6 h-5" src={vimeoBlack} alt="Vimeo" />
-              <div className="w-6 h-5 bg-[url('/youtube.svg')] bg-contain bg-no-repeat" />
+              <img className="w-6 h-5" src={youtubeBlack} alt="YouTube" />
             </div>
           </div>
 

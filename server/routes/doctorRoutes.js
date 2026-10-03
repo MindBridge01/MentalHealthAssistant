@@ -8,7 +8,6 @@ const {
   getDoctorByUserId,
   upsertDoctorProfile,
   addDoctorSlots,
-  getDoctorSlots,
   deleteDoctorSlot,
   updateDoctorSlot,
   listAvailabilities,

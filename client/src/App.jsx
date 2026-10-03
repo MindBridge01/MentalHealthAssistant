@@ -152,12 +152,6 @@ function App() {
     location.pathname.startsWith("/doctor/dashboard") ||
     location.pathname.startsWith("/admin/dashboard");
 
-  const hidePublicNavbar =
-    isHomePage ||
-    isAuthPage ||
-    isDashboardArea ||
-    location.pathname === "/admin";
-
   let navTheme = "sticky";
 
   if (isHomePage || isAboutPage) {
@@ -166,7 +160,9 @@ function App() {
 
   return (
     <>
-      {!isAuthPage && !isDashboardArea && !hidePublicNavbar && (
+      {!isAuthPage &&
+        !isDashboardArea &&
+        location.pathname !== "/admin" && (
         <div
           className={
             isHomePage || isAboutPage

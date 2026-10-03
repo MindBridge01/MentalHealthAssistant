@@ -5,8 +5,6 @@ import { apiRequest } from "../lib/apiClient";
 import { hasCompletePatientProfile } from "../lib/authStorage";
 import { useAuth } from "../context/AuthContext";
 
-import loginSideImage from "../assets/images/login-hero-figma.jpg";
-
 import LoginContainer from "./auth/LoginContainer";
 import LoginForm from "./auth/LoginForm";
 import SupportBanner from "./auth/SupportBanner";
@@ -253,10 +251,7 @@ const AuthWindow = ({ mode = "login" }) => {
 
   if (mode === "login") {
     return (
-      <LoginContainer
-        imageAlt="MindBridge calming wellness illustration"
-        imageSrc={loginSideImage}
-      >
+      <LoginContainer>
         <LoginForm
           currentRole={currentRole}
           email={email}

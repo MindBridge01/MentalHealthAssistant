@@ -1,12 +1,6 @@
 import React, { useState } from "react";
 import "./ChatInput.css";
 
-// Mood images (imported as in MoodCard)
-import Mood1 from "../../assets/images/Moods/Mood1.png";
-import Mood2 from "../../assets/images/Moods/Mood2.png";
-import Mood3 from "../../assets/images/Moods/Mood3.png";
-import Mood4 from "../../assets/images/Moods/Mood4.png";
-import Mood5 from "../../assets/images/Moods/Mood5.png";
 import { apiUrl } from "../../config/api";
 
 // Positive messages for thinking state
@@ -20,7 +14,7 @@ const positiveMessages = [
   "Gathering some hope...",
 ];
 
-const ChatInput = ({ setMessages, className }) => {
+const ChatInput = ({ setMessages, className = "" }) => {
   // --- State ---
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -114,18 +108,18 @@ const ChatInput = ({ setMessages, className }) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
-        onChange?.(transcript);
+        setInputText(transcript);
       };
       recognition.onend = () => setIsRecording(false);
       recognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
         setIsRecording(false);
-        onChange?.("Sorry, I couldn’t hear you. Please try again.");
+        setInputText("Sorry, I couldn’t hear you. Please try again.");
       };
 
       recognition.start();
     } else {
-      onChange?.("Sorry, your browser doesn’t support voice input.");
+      setInputText("Sorry, your browser doesn’t support voice input.");
     }
   };
 

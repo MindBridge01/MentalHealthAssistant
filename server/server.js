@@ -142,11 +142,6 @@ app.patch("/api/posts/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid action" });
   }
 
-  const update = {};
-  if (action === "like") update.likes = 1;
-  if (action === "comment") update.comments = 1;
-  if (action === "save") update.saved = 1;
-
   try {
     const post = await incrementPostMetric(id, action);
     if (!post) {
@@ -162,40 +157,6 @@ app.patch("/api/posts/:id", async (req, res) => {
 
 io.on("connection", (_socket) => {
   // socket handlers
-});
-
-// ✅ Chat API integration
-app.post("/api/chat", async (req, res) => {
-  const { message } = req.body;
-
-  try {
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "meta-llama/llama-4-maverick:free",
-        messages: [
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:5173",
-          "X-Title": "MindBridge Chat",
-        },
-      }
-    );
-
-    const content = response.data.choices[0].message.content;
-    res.json({ content });
-  } catch (error) {
-    console.error("Chat API error:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get AI response" });
-  }
 });
 
 app.use(errorHandler);

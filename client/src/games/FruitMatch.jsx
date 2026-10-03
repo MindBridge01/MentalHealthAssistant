@@ -182,7 +182,7 @@ const FruitMatch = () => {
                       <div className="fruit-name">{card.name}</div>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

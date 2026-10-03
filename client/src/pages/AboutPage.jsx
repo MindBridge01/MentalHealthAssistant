@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import HeroNavbar from "../components/HeroNavbar/HeroNavbar";
 import heroVideo from "../assets/videos/heroVideo.mp4";
 
 const SecurityFeature = ({ title, description, icon }) => (
@@ -38,10 +37,6 @@ const AboutPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0a]" />
 
         <div className="relative z-10 mx-auto flex h-full max-w-[1593px] flex-col px-4 sm:px-6 lg:px-[25px]">
-          <div className={`transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-300 ${isRevealing ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-            <HeroNavbar theme="light" />
-          </div>
-
           <div className="flex flex-1 items-center justify-center text-center">
             <div className={`max-w-4xl transition-all duration-[1s] ease-[cubic-bezier(0.16,1,0.3,1)] delay-500 ${isRevealing ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
               <span className="mb-4 inline-block text-sm font-semibold uppercase tracking-[0.3em] text-blue-400">Our Story</span>

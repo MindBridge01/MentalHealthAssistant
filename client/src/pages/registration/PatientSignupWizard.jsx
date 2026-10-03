@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiRequest } from '../../lib/apiClient';
 
-const PatientSignupWizard = ({ onSubmit, isSubmitting: parentIsSubmitting }) => {
+const PatientSignupWizard = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',

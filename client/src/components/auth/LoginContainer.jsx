@@ -1,4 +1,4 @@
-export default function LoginContainer({ children, imageAlt, imageSrc }) {
+export default function LoginContainer({ children }) {
   return (
     <section className="login-ui" aria-label="MindBridge login">
       <div className="login-ui__shell">
