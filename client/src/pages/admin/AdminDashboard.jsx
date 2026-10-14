@@ -1,238 +1,59 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { apiUrl } from "../../config/api";
-import { useAuth } from "../../context/AuthContext";
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { apiRequest } from '../../lib/apiClient';
+import PatientRegistrationReview from '../../components/PatientRegistrationReview';
+import Verification from './admin-dashboard/Verification';
+import './admin-dashboard.css';
 
-import Overview from "./admin-dashboard/Overview";
-import Verification from "./admin-dashboard/Verification";
-import Doctors from "./admin-dashboard/Doctors";
-import Patients from "./admin-dashboard/Patients";
-import Appointments from "./admin-dashboard/Appointments";
-import Calendar from "./admin-dashboard/Calendar";
-import Payments from "./admin-dashboard/Payments";
-import Reports from "./admin-dashboard/Reports";
-import MentalHealthContent from "./admin-dashboard/MentalHealthContent";
-
-const AdminDashboard = () => {
-  const [currentView, setCurrentView] = useState("dashboard");
-  const [pendingDoctors, setPendingDoctors] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const { logout } = useAuth();
-
-  useEffect(() => {
-    Promise.all([
-      axios.get(apiUrl("/api/admin/pending-doctors"), { withCredentials: true }),
-      axios.get(apiUrl("/api/admin/users"), { withCredentials: true }),
-    ])
-      .then(([pendingRes, usersRes]) => {
-        setPendingDoctors(pendingRes.data);
-        setUsers(usersRes.data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load admin data.");
-        setLoading(false);
-      });
-  }, []);
-
-  const handleApprove = (doctorId) => {
-    axios.post(
-      apiUrl("/api/admin/approve-doctor"),
-      { doctorId },
-      { withCredentials: true }
-    )
-      .then(() => {
-        setPendingDoctors(prev => prev.filter(d => d._id !== doctorId));
-        setUsers(prev => prev.map((user) => (
-          user._id === doctorId ? { ...user, role: "doctor" } : user
-        )));
-      })
-      .catch(() => {
-        setError("Failed to approve doctor.");
-      });
-  };
-
-  const handleReject = (doctorId) => {
-    axios.post(
-      apiUrl("/api/admin/reject-doctor"),
-      { doctorId },
-      { withCredentials: true }
-    )
-      .then(() => {
-        setPendingDoctors(prev => prev.filter(d => d._id !== doctorId));
-        setUsers(prev => prev.filter((user) => user._id !== doctorId));
-      })
-      .catch(() => {
-        setError("Failed to reject doctor.");
-      });
-  };
-
-  const stats = {
-    doctors: users.filter(u => u.role === 'doctor').length || 48,
-    patients: users.filter(u => u.role === 'patient').length || 1245,
-    bookings: 328, // Placeholder
-    pending: pendingDoctors.length
-  };
-
-  // ---------------- Views ----------------
-  const renderContent = () => {
-    switch (currentView) {
-      case "dashboard": return <Overview stats={stats} loading={loading} pendingDoctors={pendingDoctors} setCurrentView={setCurrentView} />;
-      case "verification": return <Verification pendingDoctors={pendingDoctors} loading={loading} handleApprove={handleApprove} handleReject={handleReject} />;
-      case "doctors": return <Doctors />;
-      case "patients": return <Patients />;
-      case "appointments": return <Appointments />;
-      case "calendar": return <Calendar />;
-      case "payments": return <Payments />;
-      case "reports": return <Reports />;
-      case "content": return <MentalHealthContent />;
-      default: return <Overview stats={stats} loading={loading} pendingDoctors={pendingDoctors} setCurrentView={setCurrentView} />;
-    }
-  };
-
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-    { id: "doctors", label: "Doctors", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
-    { id: "verification", label: "Verification", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
-    { id: "patients", label: "Patients", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
-    { id: "appointments", label: "Appointments", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
-    { id: "calendar", label: "Calendar", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
-    { id: "payments", label: "Payments", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-    { id: "reports", label: "Reports", icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-    { id: "content", label: "Mental Health Content", icon: "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" },
-  ];
-
-  return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-800">
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex-col hidden md:flex shrink-0">
-        <div className="h-16 flex items-center px-6 border-b border-slate-200 shrink-0">
-          <div className="flex items-center gap-2 text-sky-700 font-bold text-xl">
-            <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <span>MindBridge</span>
-          </div>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-          {menuItems.slice(0, 8).map(item => (
-            <button 
-              key={item.id}
-              onClick={() => setCurrentView(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                currentView === item.id 
-                  ? "bg-sky-50 text-sky-700" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <svg className={`w-5 h-5 shrink-0 ${currentView === item.id ? "text-sky-600" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-              </svg>
-              {item.label}
-              {item.id === "verification" && pendingDoctors.length > 0 && (
-                <span className="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {pendingDoctors.length}
-                </span>
-              )}
-            </button>
-          ))}
-
-          <div className="pt-4 mt-4 border-t border-slate-200 space-y-1">
-            <button 
-              onClick={() => setCurrentView("content")}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                currentView === "content" 
-                  ? "bg-sky-50 text-sky-700" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <svg className={`w-5 h-5 shrink-0 ${currentView === "content" ? "text-sky-600" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menuItems[8].icon} />
-              </svg>
-              Mental Health Content
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        {/* TOP HEADER */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="flex-1 max-w-lg">
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </span>
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6 ml-6">
-            <button className="text-slate-400 hover:text-slate-600 relative transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {pendingDoctors.length > 0 && (
-                <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border-2 border-white"></span>
-              )}
-            </button>
-            <div className="h-8 w-px bg-slate-200"></div>
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-slate-900 leading-tight">Admin</p>
-                <p className="text-xs text-slate-500">System Admin</p>
-              </div>
-              <button 
-                onClick={logout} 
-                className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 hover:bg-sky-200 transition-colors shadow-sm"
-                title="Logout"
-              >
-                A
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* DASHBOARD CONTENT BODY */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 capitalize">
-                {currentView === 'dashboard' ? 'Overview' : currentView.replace('-', ' ')}
-              </h1>
-              <p className="text-slate-500 text-sm mt-1">Manage and monitor the MindBridge platform</p>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-2xl flex items-center gap-3">
-              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-              {error}
-            </div>
-          )}
-
-          {renderContent()}
-
-        </main>
-      </div>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
-      `}} />
-    </div>
-  );
-};
-
-
-
-export default AdminDashboard;
+const sections = [
+ ['dashboard','Overview','space_dashboard'],['registrations','Patient applications','assignment_ind'],
+ ['verification','Professional verification','verified_user'],['directory','Account directory','group'],
+ ['appointments','Appointments','calendar_month'],['emails','Email delivery','outgoing_mail'],['activity','Audit activity','history']
+];
+const stamp=value=>value?new Date(value).toLocaleString(): '—';
+const words=value=>String(value||'').replaceAll('_',' ');
+const Icon=({name})=><span className="material-icons" aria-hidden="true">{name}</span>;
+function Badge({value}){return <span className={'admin-badge admin-badge-'+String(value).toLowerCase()}>{words(value)}</span>;}
+function DataView({view,onChanged}) {
+ const [items,setItems]=useState([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[search,setSearch]=useState(''),[filter,setFilter]=useState(''),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[more,setMore]=useState(false),[reload,setReload]=useState(0),[retrying,setRetrying]=useState(null);
+ const endpoints={directory:'directory',appointments:'appointment-list',emails:'email-delivery',activity:'activity'};
+ useEffect(()=>{let active=true;setBusy(true);setError('');
+  apiRequest('/api/admin/'+endpoints[view]+'?'+new URLSearchParams({search:query,status:filter,offset:String(offset)})).then(result=>{if(active){setItems(result.items);setMore(result.hasMore);}}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};
+ },[view,query,filter,offset,reload]);
+ const retry=async id=>{if(!window.confirm('Queue this failed notification for another delivery attempt?'))return;setRetrying(id);setError('');try{await apiRequest('/api/admin/email-delivery/'+id+'/retry',{method:'POST'});setReload(n=>n+1);onChanged();}catch(e){setError(e.message);}finally{setRetrying(null);}};
+ const columns={directory:['Name / email','Role','Login methods','Joined'],appointments:['Patient','Professional','Date / time','Status'],emails:['Notification','Recipient group','Status','Attempts','Created','Action'],activity:['Action','Actor role','Resource','Time']}[view];
+ const statuses=view==='directory'?['patient','pending-doctor','doctor','admin']:view==='emails'?['pending','processing','sent','failed']:[];
+ return <section className="admin-panel"><div className="admin-panel-heading"><div><h2>{sections.find(s=>s[0]===view)[1]}</h2><p>{view==='emails'?'Sent means accepted by the email server; inbox delivery is not confirmed.':view==='activity'?'Recorded access and administrative events. Sensitive event details are excluded.':view==='appointments'?'Administrative booking details. Clinical notes are excluded.':'Search accounts without exposing passwords or provider identifiers.'}</p></div><button className="admin-button" disabled={busy} onClick={()=>setReload(n=>n+1)}><Icon name="refresh"/>Refresh</button></div>
+ <form className="admin-filters" onSubmit={e=>{e.preventDefault();setOffset(0);setQuery(search.trim());}}>{view!=='emails'&&<><label className="admin-search"><Icon name="search"/><input aria-label={view==='activity'?'Search audit actions':'Search names or accounts'} placeholder={view==='activity'?'Search actions…':view==='appointments'?'Patient or professional name…':'Name or email…'} value={search} onChange={e=>setSearch(e.target.value)}/></label><button className="admin-button" type="submit">Search</button></>}{statuses.length>0&&<select aria-label={view==='directory'?'Filter by role':'Filter by delivery status'} value={filter} onChange={e=>{setOffset(0);setFilter(e.target.value);}}><option value="">All {view==='directory'?'roles':'statuses'}</option>{statuses.map(s=><option key={s} value={s}>{words(s)}</option>)}</select>}</form>
+ {error&&<p className="admin-error" role="alert">{error}</p>}{busy?<div className="admin-empty" role="status">Loading records…</div>:error?<div className="admin-empty">Records could not be loaded. Refresh to try again.</div>:!items.length?<div className="admin-empty"><Icon name="inbox"/><h3>No matching records</h3><p>New activity will appear here when it is recorded.</p></div>:<div className="admin-table-scroll"><table><caption className="admin-sr-only">{sections.find(s=>s[0]===view)[1]}</caption><thead><tr>{columns.map(c=><th key={c} scope="col">{c}</th>)}</tr></thead><tbody>{items.map(row=><tr key={row.id}>
+ {view==='directory'&&<><td><strong>{row.name}</strong><small>{row.email}</small></td><td><Badge value={row.role}/></td><td>{[row.has_password?'Password':null,row.has_google?'Google':null].filter(Boolean).join(' + ')||'Other provider'}</td><td>{stamp(row.created_at)}</td></>}
+ {view==='appointments'&&<><td>{row.patient}</td><td>{row.professional}</td><td>{row.appointment_date}<small>{row.appointment_time}</small></td><td><Badge value={row.status}/></td></>}
+ {view==='emails'&&<><td><strong>{words(row.event)}</strong><small>{row.application_kind} registration</small></td><td>{row.audience==='admin'?'Administrator':'Applicant'}</td><td><Badge value={row.status}/></td><td>{row.attempts}</td><td>{stamp(row.created_at)}</td><td>{row.status==='failed'?<button className="admin-button" disabled={retrying!==null} onClick={()=>retry(row.id)}>{retrying===row.id?'Queuing…':'Retry'}</button>:'—'}</td></>}
+ {view==='activity'&&<><td>{words(row.action)}</td><td>{row.user_role||'System'}</td><td>{words(row.resource_type)}</td><td>{stamp(row.timestamp)}</td></>}
+ </tr>)}</tbody></table></div>}
+ <footer className="admin-pagination"><span>Page {offset/25+1} · up to 25 records</span><div><button className="admin-button" disabled={busy||!offset} onClick={()=>setOffset(n=>Math.max(0,n-25))}>Previous</button><button className="admin-button" disabled={busy||!more||!!error} onClick={()=>setOffset(n=>n+25)}>Next</button></div></footer></section>;
+}
+function Overview({data,busy,onNavigate}) {
+ const cards=[['Patient accounts',data?.patients,'group','directory'],['Approved professionals',data?.professionals,'verified','directory'],['Applications to review',data?data.patient_reviews+data.professional_reviews:null,'assignment','registrations'],['Total appointments',data?.appointments,'calendar_month','appointments']];
+ return <><div className="admin-metrics">{cards.map(([label,value,icon,target])=><button className="admin-metric" key={label} onClick={()=>onNavigate(target)}><span className="admin-metric-icon"><Icon name={icon}/></span><span>{label}</span><strong>{busy?'…':value??'—'}</strong><small>View records <span aria-hidden="true">↗</span></small></button>)}</div>
+ <div className="admin-overview-grid"><section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-eyebrow">REVIEW QUEUE</span><h2>People waiting for a decision</h2><p>Review each application and share the next step.</p></div><Icon name="fact_check"/></div>{[['Patient applications',data?.patient_reviews,'Identity and registration review','registrations'],['Professional applications',data?.professional_reviews,'Credentials and scope verification','verification']].map(([title,count,description,target])=><button className="admin-review-card" key={target} onClick={()=>onNavigate(target)}><span className="admin-review-number">{busy?'…':count??'—'}</span><span><strong>{title}</strong><small>{description}</small></span><Icon name="arrow_forward"/></button>)}</section>
+ <section className="admin-panel admin-delivery-panel"><span className="admin-eyebrow">COMMUNICATIONS</span><h2>Registration emails</h2><p>Follow application notifications from queue to email server.</p><dl className="admin-email-counts"><div><dt>Queued / processing</dt><dd>{busy?'…':data?.queued_emails??'—'}</dd></div><div><dt>Accepted by server</dt><dd>{busy?'…':data?.sent_emails??'—'}</dd></div><div><dt>Failed</dt><dd>{busy?'…':data?.failed_emails??'—'}</dd></div></dl><button className="admin-button admin-button-primary" onClick={()=>onNavigate('emails')}>Open delivery monitor <Icon name="arrow_forward"/></button></section></div>
+ <section className="admin-guidance"><Icon name="shield"/><div><h3>Review with care</h3><p>Verify professional credentials with their issuing authority. Keep medical details inside authorized patient records and use application notes only for the registration decision.</p></div><button className="admin-button" onClick={()=>onNavigate('activity')}>View audit activity</button></section></>;
+}
+export default function AdminDashboard(){
+ const {user,logout}=useAuth();const [params,setParams]=useSearchParams();const requested=params.get('view');const view=sections.some(s=>s[0]===requested)?requested:'dashboard';
+ const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const refresh=useCallback(async()=>{setBusy(true);setError('');try{setData(await apiRequest('/api/admin/dashboard'));}catch(e){setData(null);setError(e.message);}finally{setBusy(false);}},[]);
+ useEffect(()=>{refresh();},[refresh,view]);
+ const navigate=next=>setParams({view:next});
+ const title=sections.find(s=>s[0]===view)?.[1];
+ const total=data?data.patient_reviews+data.professional_reviews:null;
+ return <div className="admin-workspace"><a className="admin-skip" href="#admin-main">Skip to content</a><aside className="admin-sidebar"><a className="admin-brand" href="/"><span className="admin-brand-symbol"><Icon name="spa"/></span>MindBridge</a><span className="admin-sidebar-caption">ADMINISTRATION</span><nav aria-label="Administration">{sections.map(([id,label,icon])=><button key={id} aria-current={view===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/><span>{label}</span>{id==='registrations'&&data?.patient_reviews>0&&<b>{data.patient_reviews}</b>}{id==='verification'&&data?.professional_reviews>0&&<b>{data.professional_reviews}</b>}</button>)}</nav><div className="admin-sidebar-footer"><Icon name="lock"/><span>Administrator workspace<small>Access is recorded and controlled.</small></span></div></aside>
+ <div className="admin-main-shell"><header className="admin-topbar"><span className="admin-breadcrumb">Workspace <span>/</span> {title}</span><div><span className="admin-avatar" aria-hidden="true">{(user?.name||'A').slice(0,1).toUpperCase()}</span><span className="admin-user-name">{user?.name||'Administrator'}<small>Administrator</small></span><button className="admin-button" onClick={logout}>Sign out</button></div></header><label className="admin-mobile-nav">Go to<select value={view} onChange={e=>navigate(e.target.value)}>{sections.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
+ <main id="admin-main" className="admin-main" tabIndex={-1}><div className="admin-page-heading"><div><span className="admin-eyebrow">MINDBRIDGE OPERATIONS</span><h1>{view==='dashboard'?'A clear view of your care community.':title}</h1><p>{view==='dashboard'?'Review applications, support your team, and keep people informed.':'Manage your workspace with clear decisions and a recorded history.'}</p></div><button className="admin-button" disabled={busy} onClick={refresh}><Icon name="refresh"/>Refresh counts</button></div>
+ {error&&<p role="alert" className="admin-error">{error}</p>}
+ <div className="admin-status-line"><span><span className="admin-status-dot"/>{total===null?'Review counts unavailable':`${total} application${total===1?'':'s'} awaiting review`}</span><span>{data?'Updated '+stamp(data.updatedAt):'Waiting for current data'}</span></div>
+ {view==='dashboard'?<Overview data={data} busy={busy} onNavigate={navigate}/>:view==='registrations'?<div className="admin-panel admin-review-host"><PatientRegistrationReview onReviewed={refresh}/></div>:view==='verification'?<div className="admin-panel admin-review-host"><Verification onReviewed={refresh}/></div>:<DataView key={view} view={view} onChanged={refresh}/>}
+ <footer className="admin-page-footer">MindBridge · Administration<span>Clinical records remain in the authorized patient workspace.</span></footer></main></div></div>;
+}

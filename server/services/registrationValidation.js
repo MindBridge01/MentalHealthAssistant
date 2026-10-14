@@ -23,7 +23,7 @@ function validateRegistration(input, now = new Date()) {
     let age = now.getUTCFullYear() - dob.getUTCFullYear();
     if (now.getUTCMonth() < dob.getUTCMonth() ||
        (now.getUTCMonth() === dob.getUTCMonth() && now.getUTCDate() < dob.getUTCDate())) age--;
-    if (age < 18) errors.dateOfBirth = 'This university prototype currently supports adults aged 18 and over.';
+    if (age < 18) errors.dateOfBirth = 'MindBridge currently supports adults aged 18 and over.';
   }
   if (!PHONE.test(data.phone)) errors.phone = 'Enter a valid contact number.';
   if (!LANGUAGES.includes(data.language)) errors.language = 'Choose a preferred language.';

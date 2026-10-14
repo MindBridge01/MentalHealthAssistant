@@ -45,6 +45,8 @@ test('admin application list excludes health context and trusted contacts', asyn
   const row = { user_id: 'patient-a', details: { name: 'Demo Patient', careContext: 'private', previousCare: 'yes',
     contactName: 'Private contact', contactPhone: '123456789', contactRelationship: 'Friend' }, status: 'submitted', version: 1 };
   const model = isolatedModule('../models/registrationModel.js', {
+    '../services/registrationNotifications': { queueRegistrationEmail: async () => {} },
+    '../services/registryPersistence': { captureRegistration: async () => {}, activatePatient: async () => {} },
     '../config/database': { query: async () => ({ rows: [row] }), withTransaction: () => {} },
     '../services/encryptionService': { encryptValue: (value) => value, decryptValue: (value) => ({ ...value }) },
   });
@@ -56,6 +58,8 @@ test('admin application list excludes health context and trusted contacts', asyn
 test('stale admin reviews and duplicate submissions return conflict without creating events', async () => {
   let calls = 0;
   const model = isolatedModule('../models/registrationModel.js', {
+    '../services/registrationNotifications': { queueRegistrationEmail: async () => {} },
+    '../services/registryPersistence': { captureRegistration: async () => {}, activatePatient: async () => {} },
     '../config/database': { query: () => {}, withTransaction: async (fn) => fn({ query: async () => { calls++; return { rows: [] }; } }) },
     '../services/encryptionService': { encryptValue: (value) => value, decryptValue: (value) => value },
   });

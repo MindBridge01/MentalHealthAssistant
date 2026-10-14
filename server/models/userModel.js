@@ -22,6 +22,11 @@ async function findUserByEmail(email) {
   return mapUser(result.rows[0]);
 }
 
+async function findUserByGoogleId(id) {
+  const result=await query('SELECT * FROM users WHERE google_id=$1 LIMIT 1',[id]);
+  return mapUser(result.rows[0]);
+}
+
 async function findUserByEmailOrFacebookId({ email, facebookId }) {
   const result = await query(
     `SELECT * FROM users
@@ -130,6 +135,7 @@ async function listUsers() {
 module.exports = {
   mapUser,
   findUserByEmail,
+  findUserByGoogleId,
   findUserByEmailOrFacebookId,
   findUserById,
   createUser,

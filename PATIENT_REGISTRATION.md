@@ -1,23 +1,29 @@
 # Patient registration
 
-The web signup flow now leads to `/patient/onboarding`, which displays a four-step registration form for patients. Pending doctor accounts retain their existing onboarding. The interface reuses the existing mint palette, fonts, and rounded controls.
+## Implemented web flow
 
-## Included
-- Adult-only university prototype registration, optional care context and trusted contact, reminder preference and versioned acknowledgements.
-- Encrypted application details and review notes using the existing PHI encryption service.
-- Admin review queue with approve, request information, and decline decisions. Clinical context and trusted-contact information are excluded from admin responses.
-- Patient status and resubmission flow; optimistic concurrency for reviews; transactional, append-only decision history.
-- Server-side approval checks for patient-module and doctor-directory/booking endpoints. Existing completed patient onboarding is grandfathered during migration.
+Account signup continues into /patient/registration with the entered phone and birth date. Returning patients can use the same URL; /patient/onboarding also opens the registration form. Four steps cover identity/contact details, optional care context/reports, trusted-contact preferences and explicit acknowledgements. Approval is administrative, not a diagnosis. A prior diagnosis or report is never required.
+
+Applications are encrypted. Submission creates versioned history and queues an admin alert and patient receipt in the same transaction. Admins use Patients in the current dashboard to approve, request information or decline with a patient-facing explanation. Filters include open, approved and declined applications, with 25-row pagination. The email delivery panel lists recent jobs and can retry failed jobs. The notification link opens the review queue directly. Patients can see decisions and resubmit after a request/decline. Stale decisions and duplicate submissions are rejected.
+
+## Private reports
+
+The care step and application-status screen support upload, download and removal. Reports are saved immediately, independently of application submission; the UI states this. Up to three files per account, 5 MB each, PDF/PNG/JPEG. The server checks signatures, scans files, encrypts filename and content, checks ownership on downloads/removal, and records audit events. No reports are served from the public uploads folder. Admins cannot download these reports. Reports are patient-supplied and unverified; no OCR, diagnosis extraction, clinical review or clinician sharing is implemented here. Clinical record sharing requires a separate explicit workflow.
+
+Set REGISTRATION_CLAMSCAN_PATH privately to an absolute clamscan executable path. Install ClamAV on the backend host and keep its signatures current. The backend process needs a private temporary directory; files are removed after scanning, but operators should handle abandoned temporary files after host crashes. Missing scanners, scan errors and timeouts reject uploads without blocking registration. Configure backups and retention for the encrypted database. No scanner bypass is provided.
 
 ## Setup
-Run `npm run migrate:postgres` in `server` using the application's normal configured environment, then restart the API. This applies the base schema followed by `patient_registration.sql`. The implementation task did not open environment files or run migrations against a database.
 
-The new endpoints are `GET/POST /api/registration/me` (patient) and `GET /api/registration/applications`, `PATCH /api/registration/applications/:userId` (admin). The review queue returns the oldest 100 submitted or needs-information applications. Only submitted applications can be decided; decisions require the current version. Submitted and approved applications cannot be overwritten by patient resubmission.
+From the repository root, run npm --prefix server run migrate:postgres, restart the API, and run npm --prefix server run worker:registration-email in a supervised process. See EMAIL_AUTOMATION.md for SMTP settings. Preserve the existing PHI encryption key. This implementation did not open environment files, migrate the live database, or send emails.
 
-## Scope
-Medical attachments, clinical review, email address verification, and background email delivery are not implemented in this first registration stage. The form says so and saves only the reminder preference. No SOS alert is generated. Use synthetic information for demonstrations. The Flutter application needs a corresponding registration UI/API integration before new mobile patients can access gated features.
+## Verification
 
-## Checks
-Run `node --test tests/registration.test.js tests/registrationAccess.test.js` from `server` for nine validation/access tests. These tests do not load environment files or connect to a database; database boundaries are mocked. Deployment testing should cover migration, concurrent reviews, patient ownership, encrypted persistence, resubmission, and the complete signup-to-approval path with a test database.
+Run npm --prefix server run test:registry and npm --prefix server run test:emails. Tests use synthetic data and isolated PostgreSQL, cover migrations, resubmission, review conflicts, encryption, consent, access controls, document quota/ownership, multipart uploads, scanner failure, email queueing and delivery retries. JSX parsing was checked. Live browser usability, actual ClamAV scanning and Gmail inbox delivery still require deployment acceptance testing.
 
-For an isolated UI demonstration, run `node scripts/preview-registration.mjs` from the web project root and visit `http://127.0.0.1:5178/patient/onboarding`. It uses synthetic data and an in-memory application, does not load environment files, and never contacts the real API or sends emails. The four-step submission and awaiting-review screen were exercised in this preview. It is not a production server.
+## Remaining release work
+
+Account email verification/recovery and the broader authentication hardening remain separate work. Clinical report review/sharing, retention automation, and Flutter registration integration are not included. Do not describe this web feature as a complete clinical records system or a verified production deployment. Reports currently use bounded encrypted database storage; review storage and backup capacity before scaling.
+
+## Admin review navigation
+
+Admin emails link to /admin/dashboard?view=registrations. Sign-in preserves this destination. The dashboard has a dedicated Patient registrations entry and a mobile section selector. Administrators can filter awaiting-review, waiting-for-patient, approved and declined applications, inspect the latest 100 decision events, confirm decisions, and inspect/retry email delivery. History contains review notes, actors and timestamps, not clinical context or private attachments.

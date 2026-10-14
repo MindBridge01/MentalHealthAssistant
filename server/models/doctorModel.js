@@ -37,7 +37,7 @@ function mapDoctor(row, extras = {}) {
 
 async function listAllDoctors() {
   const result = await query(
-    `SELECT * FROM doctors ORDER BY COALESCE(updated_at, created_at) DESC NULLS LAST`
+    `SELECT d.* FROM doctors d JOIN users u ON u.id=d.user_id WHERE u.role='doctor' ORDER BY COALESCE(d.updated_at, d.created_at) DESC NULLS LAST`
   );
   const slotsByDoctor = await getSlotsByDoctorIds(result.rows.map((row) => row.user_id));
   return result.rows.map((row) => mapDoctor(row, { slots: slotsByDoctor.get(row.user_id) || [] }));

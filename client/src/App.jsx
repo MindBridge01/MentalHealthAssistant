@@ -64,11 +64,7 @@ function RootRedirect() {
   if (role === "pending-doctor") {
     return (
       <Navigate
-        to={
-          user?.onboardingCompleted
-            ? "/patient/dashboard"
-            : "/doctor/onboarding"
-        }
+        to="/doctor/onboarding"
         replace
       />
     );
@@ -198,6 +194,7 @@ function App() {
       ) : null}
 
       <Routes>
+        <Route path="/patient/registration" element={<ProtectedRoute allowedRoles={["patient"]}><RegistrationPage /></ProtectedRoute>} />
         {/* Public routes */}
 
         <Route path="/" element={<Home />} />
@@ -326,9 +323,7 @@ function App() {
 
         <Route
           element={
-            <ProtectedRoute allowedRoles={["pending-doctor"]}>
-              <PatientGate requireOnboardingComplete={false} />
-            </ProtectedRoute>
+            <ProtectedRoute allowedRoles={["pending-doctor", "doctor"]}><Outlet /></ProtectedRoute>
           }
         >
           <Route

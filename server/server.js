@@ -9,7 +9,7 @@ const cookieParser = require("cookie-parser");
 
 const { loadEnvironment, getCorsOrigins, isProduction } = require("./config/environment");
 const { testConnection } = require("./config/database");
-const { createDefaultAdmin } = require("./utils/createDefaultAdmin");
+
 const { errorHandler } = require("./middleware/errorHandler");
 const { auditLogger } = require("./middleware/auditLogger");
 const { listPosts, createPost, incrementPostMetric } = require("./models/postModel");
@@ -69,6 +69,8 @@ const patientRoutes = require("./routes/patientRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/registration", require("./routes/registrationRoutes"));
+app.use("/api/professional-registration", require("./routes/professionalRegistrationRoutes"));
+app.use("/api/registry", require("./routes/registryRoutes"));
 app.use("/api/admin", adminRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/profile", profileRoutes);
@@ -163,7 +165,7 @@ app.use(errorHandler);
 
 async function startServer() {
   await connectToDatabase();
-  await createDefaultAdmin();
+
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
     console.log(`[startup] server listening on port ${PORT}`);

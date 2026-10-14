@@ -19,6 +19,7 @@ const { findProfileByUserId } = require('../models/profileModel');
 const { upsertDoctorProfile } = require('../models/doctorModel');
 const { createDocApplication } = require('../models/docApplicationModel');
 const { createObjectId } = require('../lib/objectId');
+const { signupFailure } = require('../services/signupDiagnostics');
 
 // Google Auth
 const { OAuth2Client } = require('google-auth-library');
@@ -65,35 +66,8 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
 
   try {
     const ticket = await client.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload();
-    const { email, name, picture, sub: googleId } = payload;
-
-    if (!email || !googleId) {
-      return res.status(400).json({ error: 'Invalid Google token' });
-    }
-
-    // Check if user exists
-    let user = await findUserByEmail(email);
-    if (!user) {
-      user = await createUser({
-        _id: createObjectId(),
-        email,
-        name,
-        googleId,
-        profilePic: picture || null,
-        role: ROLE_PATIENT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    } else {
-      const profilePic = picture || user.profilePic || null;
-      user = await updateUser(user._id, {
-        googleId: googleId || user.googleId,
-        profilePic,
-        name: name || user.name,
-        updatedAt: new Date(),
-      });
-    }
+    const { resolveGoogleIdentity } = require('../services/googleIdentity');
+    let user = await resolveGoogleIdentity(ticket.getPayload(), require('../models/userModel'), createObjectId);
 
     user = await normalizeUserRoleInDb(null, user);
 
@@ -126,7 +100,8 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
-  } catch {
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({error:error.message});
     console.error('[auth] google-login failed');
     await req.logAuditEvent?.({
       action: 'user_login_failed',
@@ -179,7 +154,9 @@ router.post('/facebook-login', authRateLimiter, async (req, res) => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-    } else if (!user.facebookId || user.profilePic !== picture || user.name !== name) {
+    } else if (user.facebookId !== facebookId) {
+      return res.status(409).json({error:'Use your existing login method. Account linking requires separate verification.'});
+    } else if (user.profilePic !== picture || user.name !== name) {
       user = await updateUser(user._id, {
         facebookId,
         profilePic: picture || user.profilePic || null,
@@ -275,17 +252,19 @@ router.post('/signup', authRateLimiter, async (req, res) => {
       token,
     });
 
-  } catch {
-    console.error('[auth] signup failed');
-    res.status(500).json({ error: 'Signup failed' });
+  } catch (error) {
+    const failure = signupFailure(error);
+    // Never log database messages/detail: these can contain credentials or personal data.
+    console.error(`[auth] signup failed: ${failure.diagnostic}`);
+    res.status(failure.status).json({ error: failure.message });
   }
 });
 
 // ------------------- Doctor Signup (Pending Approval) -------------------
 router.post('/signup-doctor', authRateLimiter, async (req, res) => {
   const { email, name, password } = req.body;
-  if (!email || !name || !password) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || typeof name !== 'string' || !name.trim() || name.length > 250 || typeof password !== 'string' || password.length < 12 || Buffer.byteLength(password) > 72 || password === 'PENDING_APPROVAL_123!') {
+    return res.status(400).json({ error: 'Provide a name, valid email, and your own password (12-72 bytes).'  });
   }
 
   try {
@@ -303,52 +282,6 @@ router.post('/signup-doctor', authRateLimiter, async (req, res) => {
       role: ROLE_PENDING_DOCTOR,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
-
-    // Save extra data to doctor profile (Minimal defaults for the profile)
-    await upsertDoctorProfile(user._id, {
-      name,
-      specialty: req.body.primarySpecialization || req.body.specialization || 'N/A',
-      contact: req.body.mobileNumber,
-      yearsOfExperience: req.body.yearsOfExperience,
-      licenseNumber: req.body.slmcNumber,
-      qualifications: JSON.stringify({}) // We now use doctor_applications table for full data
-    });
-
-    // Save full application data to the new doctor_applications table
-    await createDocApplication({
-      _id: createObjectId(),
-      userId: user._id,
-      applicationData: {
-        // Documents
-        docRegistrationCert: req.body.docRegistrationCert,
-        docSlmcId: req.body.docSlmcId,
-        docMedicalDegree: req.body.docMedicalDegree,
-        docPostgrad: req.body.docPostgrad,
-        docSpecialist: req.body.docSpecialist,
-        docOther: req.body.docOther,
-        // Full Registration Data
-        fullName: req.body.fullName,
-        nameWithInitials: req.body.nameWithInitials,
-        dateOfBirth: req.body.dateOfBirth,
-        gender: req.body.gender,
-        nicPassport: req.body.nicPassport,
-        email: req.body.email,
-        mobileNumber: req.body.mobileNumber,
-        residentialAddress: req.body.residentialAddress,
-        slmcNumber: req.body.slmcNumber,
-        doctorType: req.body.doctorType,
-        specialization: req.body.specialization,
-        yearsOfExperience: req.body.yearsOfExperience,
-        medicalDegree: req.body.medicalDegree,
-        university: req.body.university,
-        yearGraduated: req.body.yearGraduated,
-        currentHospital: req.body.currentHospital,
-        designation: req.body.designation,
-        primarySpecialization: req.body.primarySpecialization,
-        areasOfExpertise: req.body.areasOfExpertise,
-        registrationType: req.body.registrationType
-      }
     });
 
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
@@ -369,7 +302,7 @@ router.post('/signup-doctor', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       token,
-      message: 'Doctor application submitted and pending admin approval.',
+      message: 'Account created. Complete your professional registration to submit for review.',
     });
   } catch {
     res.status(500).json({ error: 'Doctor signup failed' });
@@ -416,25 +349,15 @@ router.post(
 
 // ------------------- Login -------------------
 router.post('/login', authRateLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body || {};
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
-  if (!email || !password) {
+  if (!email || typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
+  let stage = 'account_lookup';
   try {
-    if (email === 'admin' && password === 'admin') {
-      const adminUser = {
-        _id: 'admin_master_123',
-        email: 'admin',
-        name: 'System Admin',
-        role: 'admin',
-      };
-      const token = generateToken({ _id: adminUser._id, email: adminUser.email, role: adminUser.role });
-      res.cookie('auth_token', token, getCookieOptions());
-      return res.json(adminUser);
-    }
-
     let user = await findUserByEmail(email);
     if (!user) {
       await req.logAuditEvent?.({
@@ -446,8 +369,10 @@ router.post('/login', authRateLimiter, async (req, res) => {
           outcome: 'user_not_found',
         },
       });
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'Email or password is incorrect. Use the email supplied when your account was created.' });
     }
+    if (!user.password) return res.status(401).json({error:'Use the sign-in provider associated with this account.'});
+    stage = 'password_check';
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       await req.logAuditEvent?.({
@@ -459,16 +384,20 @@ router.post('/login', authRateLimiter, async (req, res) => {
           outcome: 'invalid_password',
         },
       });
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(401).json({ error: 'Email or password is incorrect. Use the email supplied when your account was created.' });
     }
 
+    stage = 'role_lookup';
     user = await normalizeUserRoleInDb(null, user);
 
     // Fetch extended profile data if it exists in the new separate entity
+    stage = 'profile_lookup';
     const profileData = await findProfileByUserId(user._id);
 
+    stage = 'session_creation';
     const token = generateToken({ _id: user._id, email: user.email, role: user.role });
     res.cookie('auth_token', token, getCookieOptions());
+    stage = 'login_audit';
     await req.logAuditEvent?.({
       action: 'user_login',
       resourceType: 'auth',
@@ -483,6 +412,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
       delete profileData._id; // prevent overwriting user._id
     }
 
+    stage = 'response';
     res.json({
       _id: user._id,
       email: user.email,
@@ -493,9 +423,10 @@ router.post('/login', authRateLimiter, async (req, res) => {
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
-  } catch {
-    console.error('[auth] login failed');
-    res.status(500).json({ error: 'Login failed' });
+  } catch (error) {
+    const failure = require('../services/loginDiagnostics').loginFailure(error);
+    console.error(`[auth] ${failure.diagnostic} stage=${stage}`);
+    res.status(failure.status).json({ error: `${failure.message} Reference: ${failure.diagnostic}/${stage}`, diagnostic: failure.diagnostic, stage });
   }
 });
 

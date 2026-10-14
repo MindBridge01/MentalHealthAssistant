@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { apiRequest } from '../../lib/apiClient';
+import { useAuth } from '../../context/AuthContext';
 
 const PatientSignupWizard = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -48,17 +49,10 @@ const PatientSignupWizard = () => {
     setIsSubmitting(true);
     
     try {
-      await apiRequest('/api/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: formData.fullName.trim(),
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password
-        })
-      });
+      await signup({ name: formData.fullName.trim(), email: formData.email.trim().toLowerCase(), password: formData.password });
       
-      // Navigate to login on success
-      navigate('/login', { state: { message: "Account created successfully. Please login." } });
+      // Continue directly into patient registration using the authenticated session.
+      navigate('/patient/registration', { replace: true, state: { registrationDefaults: { phone: formData.mobileNumber, dateOfBirth: formData.dateOfBirth } } });
     } catch (err) {
       if (err.status === 409) {
         setError("An account with this email already exists.");

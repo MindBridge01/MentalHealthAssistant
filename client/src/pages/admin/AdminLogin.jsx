@@ -1,114 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { apiRequest } from "../../lib/apiClient";
-import { useAuth } from "../../context/AuthContext";
-
-const AdminLogin = () => {
-  const [email, setEmail] = useState("admin");
-  const [password, setPassword] = useState("admin");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { setUser, refreshUser, isAuthenticated, role } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated && role === "admin") {
-      navigate("/admin/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, role, navigate]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email.trim() || !password) {
-      setError("Please enter both username and password.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const user = await apiRequest("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password, role: "admin" }),
-      });
-
-      setUser(user);
-      await refreshUser();
-      
-      const from = location.state?.from || "/admin/dashboard";
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError(err.message || "Invalid admin credentials.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Admin Portal</h1>
-            <p className="text-slate-500 text-sm">Sign in to manage MindBridge operations</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
-                placeholder="admin"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors pr-12"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sm leading-5 text-slate-500 hover:text-slate-700 focus:outline-none"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-sm text-center">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-slate-900 text-white py-3 rounded-xl font-medium hover:bg-slate-800 transition-colors disabled:opacity-70"
-            >
-              {isSubmitting ? "Authenticating..." : "Sign In to Admin Portal"}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AdminLogin;
+import React,{useState} from 'react';
+import {Navigate,useLocation,useNavigate} from 'react-router-dom';
+import {useAuth} from '../../context/AuthContext';
+import '../patient/registration.css';
+export default function AdminLogin(){
+ const {login,logout,isAuthenticated,role}=useAuth();const navigate=useNavigate();const location=useLocation();
+ const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const target=typeof location.state?.from==='string'&&/^\/admin\/dashboard(?:\?|$)/.test(location.state.from)?location.state.from:'/admin/dashboard';
+ if(isAuthenticated&&role==='admin')return <Navigate to={target} replace/>;
+ const submit=async e=>{e.preventDefault();setBusy(true);setError('');try{const user=await login({email:email.trim().toLowerCase(),password});if(user.role!=='admin'){await logout();throw new Error('This account does not have administrator access.');}navigate(target,{replace:true});}catch(e){setError(e.message);}finally{setBusy(false);}};
+ return <main className="registration-page"><header className="registration-topbar"><a className="registration-brand" href="/">MindBridge</a><a href="/login">Member sign in</a></header><div className="registration-intro"><span className="registration-eyebrow">ADMINISTRATION</span><h1>Welcome to your workspace.</h1><p>Sign in with your privately provisioned administrator account.</p></div><div className="registration-layout"><aside className="registration-sidebar"><div className="registration-reassurance"><h3>Access by authorization</h3><p>Administrator accounts are created privately by the platform operator. Public registration cannot grant administrator access.</p></div></aside><form className="registration-form" onSubmit={submit}><h2>Administrator sign in</h2>{error&&<p role="alert">{error}</p>}<fieldset className="registration-fields" disabled={busy}><label className="field"><span>Email address</span><input required type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}/></label><label className="field"><span>Password</span><input required type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label></fieldset><footer className="registration-form-footer"><span className="registration-footnote">Contact your operator if you need access.</span><button className="primary-button" disabled={busy}>{busy?'Signing in…':'Sign in'}</button></footer></form></div></main>;
+}

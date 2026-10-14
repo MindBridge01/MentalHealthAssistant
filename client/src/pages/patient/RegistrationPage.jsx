@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../lib/apiClient';
 import './registration.css';
+import RegistrationReports from '../../components/RegistrationReports';
 
 const STEPS = [
   { title: 'Your details', description: 'A little introduction', icon: 'person_outline' },
@@ -15,7 +16,7 @@ const EMPTY = { name: '', preferredName: '', dateOfBirth: '', gender: '', phone:
   contactPhone: '', privacyAccepted: false, supportAcknowledged: false, emailReminders: false };
 const STATUS = {
   submitted: { title: 'Your registration is with us.', label: 'Awaiting review', icon: 'hourglass_top',
-    copy: 'An administrator will check your registration details. You can return here to check the progress of your application.' },
+    copy: 'An administrator will check your registration details. A receipt email has been queued, and we will email you when the review changes. You can also check your status here.' },
   needs_information: { title: 'A little more information.', label: 'Action needed', icon: 'edit_note',
     copy: 'Please read the request below, update your details, and submit your application again.' },
   declined: { title: 'An update on your registration.', label: 'Review completed', icon: 'info_outline',
@@ -31,12 +32,14 @@ function Field({ label, optional, children }) {
 export default function RegistrationPage() {
   const { user, refreshUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ ...EMPTY, name: user?.name || '' });
+  const location = useLocation();
+  const [form, setForm] = useState({ ...EMPTY, name: user?.name || '', ...location.state?.registrationDefaults });
   const [step, setStep] = useState(0);
   const [application, setApplication] = useState(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState('');
   const formRef = useRef(null);
@@ -62,7 +65,7 @@ export default function RegistrationPage() {
       const today = new Date();
       const adultDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
       if (!Number.isFinite(birth.getTime()) || birth > adultDate || birth.getFullYear() < 1900) {
-        setError('This university prototype supports adults aged 18 and over. Please check your date of birth.'); return false;
+        setError('MindBridge currently supports adults aged 18 and over. Please check your date of birth.'); return false;
       }
       if (!/^\+?[0-9 ()-]{7,25}$/.test(form.phone)) {
         setError('Please enter a valid contact number.'); return false;
@@ -120,6 +123,7 @@ export default function RegistrationPage() {
           <button className="registration-secondary" onClick={load}>Refresh status</button>
         </div>
         {error && <p role="alert">{error}</p>}
+        <RegistrationReports onBusyChange={setReportBusy} />
         <p className="registration-footnote">Review is administrative, not a diagnosis. This page is not monitored for emergency requests.</p>
       </section> : <div className="registration-layout">
         <aside className="registration-sidebar">
@@ -131,7 +135,7 @@ export default function RegistrationPage() {
             </li>)}
           </ol>
           <div className="registration-reassurance"><span className="material-icons" aria-hidden="true">lock_outline</span><h3>Your story stays yours.</h3><p>Admins review registration details. Optional health context is kept out of their review queue.</p></div>
-          <p className="registration-demo-note">University prototype · Ages 18+<br />Please use fictional information for demonstrations.</p>
+          <p className="registration-demo-note">For adults aged 18+<br />You do not need a diagnosis to get started.</p>
         </aside>
         <form ref={formRef} onSubmit={submit} className="registration-form">
           <div className="registration-form-eyebrow">STEP 0{step + 1}<span>{step === 1 ? 'Optional care context' : 'Patient registration'}</span></div>
@@ -143,17 +147,17 @@ export default function RegistrationPage() {
               <div className="registration-field-grid"><Field label="Date of birth">{textInput('dateOfBirth', { type: 'date', required: true, min: '1900-01-01', max: new Date().toISOString().slice(0, 10), autoComplete: 'bday' })}</Field><Field label="Gender" optional><select value={form.gender} onChange={(e) => update('gender', e.target.value)}><option value="">Select an option</option>{['Woman', 'Man', 'Non-binary', 'Prefer not to say'].map((value) => <option key={value}>{value}</option>)}</select></Field></div>
               <div className="registration-field-grid"><Field label="Contact number">{textInput('phone', { type: 'tel', required: true, maxLength: 25, autoComplete: 'tel', placeholder: '+94 7X XXX XXXX' })}</Field><Field label="Preferred language"><select value={form.language} onChange={(e) => update('language', e.target.value)}>{['English', 'Sinhala', 'Tamil'].map((value) => <option key={value}>{value}</option>)}</select></Field></div>
               <div className="registration-field-grid"><Field label="Email address"><input type="email" value={user?.email || ''} readOnly aria-describedby="registration-email-note" /></Field><Field label="City / town" optional>{textInput('city', { maxLength: 120, autoComplete: 'address-level2', placeholder: 'Your city or town' })}</Field></div>
-              <p id="registration-email-note" className="registration-footnote">Your email comes from your account. Contact verification is not part of this prototype yet.</p>
+              <p id="registration-email-note" className="registration-footnote">Your email comes from your account. Check that you can receive messages at this address.</p>
             </>}
             {step === 1 && <>
               <fieldset className="registration-choice-group"><legend>Have you previously met a mental-health professional?</legend>
                 {[['yes', 'Yes, I have', 'I have received professional support before.'], ['no', 'This is my first step', 'I am exploring support for the first time.'], ['prefer-not-to-say', 'Prefer not to say', 'I would rather discuss this with my clinician.']].map(([value, title, copy]) => <label key={value} className={`registration-choice ${form.previousCare === value ? 'is-selected' : ''}`}><input type="radio" name="previousCare" value={value} checked={form.previousCare === value} onChange={() => update('previousCare', value)} /><span><strong>{title}</strong><small>{copy}</small></span></label>)}
               </fieldset>
               <Field label="Anything you would like to share?" optional><textarea rows="5" maxLength={2000} value={form.careContext} onChange={(e) => update('careContext', e.target.value)} placeholder="Share only what you feel comfortable sharing. You can also leave this blank." /></Field>
-              <div className="registration-inline-note"><span className="material-icons" aria-hidden="true">description</span><p>No documents are required for registration. Medical-report uploads will be added in a separate secure records feature.</p></div>
+              <RegistrationReports onBusyChange={setReportBusy} />
             </>}
             {step === 2 && <>
-              <label className="registration-choice"><input type="checkbox" checked={form.emailReminders} onChange={(e) => update('emailReminders', e.target.checked)} /><span><strong>Appointment email reminders</strong><small>Save my preference for reminders when the email service is enabled. No emails are sent by this registration feature yet.</small></span></label>
+              <label className="registration-choice"><input type="checkbox" checked={form.emailReminders} onChange={(e) => update('emailReminders', e.target.checked)} /><span><strong>Appointment email reminders</strong><small>Save my preference for appointment reminders when available. Registration status emails are sent separately to keep you informed about your application.</small></span></label>
               <div className="registration-section-heading"><h3>A trusted contact</h3><span className="registration-pill">Optional</span></div>
               <p className="registration-footnote">Add someone you feel safe contacting. We will not contact them automatically or share your medical information.</p>
               <Field label="Contact’s name" optional>{textInput('contactName', { maxLength: 120, placeholder: 'Full name' })}</Field>
@@ -161,13 +165,13 @@ export default function RegistrationPage() {
             </>}
             {step === 3 && <>
               <div className="registration-summary"><div><h3>Your registration details</h3><button type="button" className="registration-text-button" onClick={() => setStep(0)}>Edit details</button></div><dl>{[['Full name', form.name], ['Date of birth', form.dateOfBirth], ['Contact number', form.phone], ['Language', form.language], ['Email reminders', form.emailReminders ? 'Requested' : 'Not requested'], ['Trusted contact', form.contactName || 'Not added']].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>
-              <div className="registration-privacy-note"><h3>How your information is used</h3><p>Your registration details are stored to process your application. Administrators see identity and contact details for administrative review, but not your optional care context or trusted-contact details. This submission does not authorize treatment, family notifications, AI processing, or research use.</p><p>This university prototype has no automated emergency response. Use fictional data for demonstrations.</p></div>
+              <div className="registration-privacy-note"><h3>How your information is used</h3><p>Your registration details are stored to process your application. Administrators see identity and contact details for administrative review, but not your optional care context or trusted-contact details. This submission does not authorize treatment, family notifications, AI processing, or research use.</p><p>This service has no automated emergency response. Contact details are not permission to notify family or trusted contacts.</p></div>
               <label className="registration-choice"><input type="checkbox" required checked={form.privacyAccepted} onChange={(e) => update('privacyAccepted', e.target.checked)} /><span><strong>I have read how my registration information is used.</strong><small>I agree to submit these details for registration review.</small></span></label>
               <label className="registration-choice"><input type="checkbox" required checked={form.supportAcknowledged} onChange={(e) => update('supportAcknowledged', e.target.checked)} /><span><strong>I understand the limits of this service.</strong><small>MindBridge does not provide an emergency response or replace professional diagnosis and treatment.</small></span></label>
             </>}
           </fieldset>
           {error && <div className="registration-error" role="alert">{error}</div>}
-          <footer className="registration-form-footer"><span className="registration-footnote">{step === 3 ? 'You can check your status after submitting.' : 'Your details are saved when you submit.'}</span><div>{step > 0 && <button type="button" disabled={saving} className="registration-secondary" onClick={() => { setError(''); setStep(step - 1); }}>Back</button>}<button type="submit" disabled={saving} className="primary-button">{saving ? 'Submitting…' : step === 3 ? 'Submit registration' : 'Continue'} {!saving && <span aria-hidden="true">→</span>}</button></div></footer>
+          <footer className="registration-form-footer"><span className="registration-footnote">{step === 3 ? 'You can check your status after submitting.' : 'Your details are saved when you submit.'}</span><div>{step > 0 && <button type="button" disabled={saving || reportBusy} className="registration-secondary" onClick={() => { setError(''); setStep(step - 1); }}>Back</button>}<button type="submit" disabled={saving || reportBusy} className="primary-button">{saving ? 'Submitting…' : step === 3 ? 'Submit registration' : 'Continue'} {!saving && <span aria-hidden="true">→</span>}</button></div></footer>
         </form>
       </div>}
     <footer className="registration-bottom"><span className="material-icons" aria-hidden="true">favorite_border</span> A little support. A step forward. At your pace.</footer>

@@ -1,18 +1,16 @@
-const fs = require("fs/promises");
-const path = require("path");
-const { query, closePool } = require("../config/database");
+const { withTransaction, closePool } = require("../config/database");
+const { runMigrations } = require('./migrationRunner');
+const { backfillRegistry } = require('./registryBackfill');
 
 async function run() {
-  const filePath = path.join(__dirname, "init_schema.sql");
-  const sql = await fs.readFile(filePath, "utf8");
-  await query(sql);
-  await query(await fs.readFile(path.join(__dirname, "patient_registration.sql"), "utf8"));
+  const applied = await withTransaction((client) => runMigrations(client, backfillRegistry));
+  for (const migration of applied) console.log(`[migrations] ${migration.id}${migration.adopted ? ' (existing schema adopted)' : ''}`);
   console.log("[migrations] PostgreSQL schema is up to date");
 }
 
 run()
   .catch((error) => {
-    console.error("[migrations] failed", error);
+    console.error("[migrations] failed:", error.message);
     process.exitCode = 1;
   })
   .finally(async () => {

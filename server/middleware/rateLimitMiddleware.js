@@ -73,6 +73,7 @@ const authRateLimiter = createRateLimiter({
 });
 
 module.exports = {
+  createRateLimiter,
   authRateLimiter,
   publicChatRateLimiter,
   authenticatedChatRateLimiter,

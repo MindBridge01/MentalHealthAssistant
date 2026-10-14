@@ -85,7 +85,7 @@ const AuthWindow = ({ mode = "login" }) => {
     }
 
     if (user.role === ROLE_ADMIN) {
-      navigate("/admin/dashboard");
+      navigate(location.state?.from?.startsWith("/admin/dashboard") ? location.state.from : "/admin/dashboard");
       return;
     }
 
@@ -180,74 +180,9 @@ const AuthWindow = ({ mode = "login" }) => {
     }
   };
 
-  const handleDoctorSubmit = async (formData) => {
-    setError("");
-    setSuccess("");
-
-    setIsSubmitting(true);
-
-    try {
-      const fileKeys = [
-        "docRegistrationCert",
-        "docSlmcId",
-        "docMedicalDegree",
-        "docPostgrad",
-        "docSpecialist",
-        "docOther",
-      ];
-
-      const uploadedUrls = {};
-
-      for (const key of fileKeys) {
-        if (formData[key] instanceof File) {
-          const uploadData = new FormData();
-
-          uploadData.append("image", formData[key]);
-
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: uploadData,
-          });
-
-          if (uploadRes.ok) {
-            const uploadJson = await uploadRes.json();
-            uploadedUrls[key] = uploadJson.imagePath;
-          }
-        }
-      }
-
-      const body = {
-        name: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: "PENDING_APPROVAL_123!",
-        ...formData,
-        ...uploadedUrls,
-      };
-
-      const user = await apiRequest("/api/auth/signup-doctor", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-
-      setUser(user);
-
-      await refreshUser();
-
-      setApplicationSubmitted(true);
-    } catch (err) {
-      if (err.status === 409) {
-        setError("User already exists with this email.");
-      } else {
-        setError(
-          err.message || "Authentication failed. Please try again."
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleForgotPassword = () => {};
+
+  if (mode === "signup" && currentRole === ROLE_DOCTOR) return <DoctorSignupWizard />;
 
   if (mode === "login") {
     return (
@@ -385,7 +320,7 @@ const AuthWindow = ({ mode = "login" }) => {
         </div>
       ) : mode === "signup" && currentRole === ROLE_DOCTOR ? (
         <DoctorSignupWizard
-          onSubmit={handleDoctorSubmit}
+
           isSubmitting={isSubmitting}
           error={error}
           success={success}
