@@ -32,7 +32,7 @@ const ROLE_ADMIN = 'admin';
 
 function normalizeStoredRole(role) {
   const normalized = normalizeRole(role);
-  if (normalized === ROLE_PATIENT || normalized === ROLE_PENDING_DOCTOR || normalized === 'doctor' || normalized === ROLE_ADMIN) {
+  if (normalized === ROLE_PATIENT || normalized === ROLE_PENDING_DOCTOR || normalized === 'doctor' || normalized === 'hospital' || normalized === ROLE_ADMIN) {
     return normalized;
   }
   return ROLE_PATIENT;

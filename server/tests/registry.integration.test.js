@@ -49,7 +49,7 @@ test('registry migrations and workflows against embedded PostgreSQL', async (t) 
   t.after(() => db.close());
   const migrate = () => database.withTransaction((client) => runMigrations(client, backfillRegistry));
   await t.test('fresh install and repeat migration', async () => {
-    assert.equal((await migrate()).length, 5);
+    assert.equal((await migrate()).length, 6);
     assert.equal((await migrate()).length, 0);
     const tables = await database.query(`SELECT table_name FROM information_schema.tables
       WHERE table_name IN ('patients','patient_contacts','registration_revisions','patient_consents','care_team_assignments')`);
@@ -211,7 +211,7 @@ test('professional registration: private credentials, versioned decisions and tr
  await database.withTransaction(c=>runMigrations(c,backfillRegistry));
  for(const [id,role] of [['professional','pending-doctor'],['reviewer','admin'],['stranger','pending-doctor']]) await database.query('INSERT INTO users(id,email,role,name) VALUES($1,$2,$3,$1)',[id,id+'@example.test',role]);
  const model=loadModel('professionalRegistrationModel.js',database);
- const data={name:'Test Professional',phone:'0771234567',profession:'doctor',regulator:'Test authority',licenseNumber:'TEST-123',specialty:'Psychiatry',qualification:'Test degree',institution:'Test university',practiceLocation:'Test clinic',languages:'English',consent:true,version:0};
+ const data={name:'Test Professional',phone:'0771234567',profession:'doctor',country:'Sri Lanka',regulator:'Test authority',licenseNumber:'TEST-123',specialty:'Psychiatry',qualification:'Test degree',institution:'Test university',practiceLocation:'Test clinic',languages:'English',consent:true,version:0};
  await assert.rejects(model.submit('professional',data),/Upload/);
  const file={buffer:Buffer.from('%PDF-synthetic'),originalname:'private.pdf'};
  for(const kind of ['registration','degree']) await model.upload('professional',kind,file,'application/pdf');

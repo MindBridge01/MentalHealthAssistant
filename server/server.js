@@ -72,6 +72,7 @@ app.use("/api/registration", require("./routes/registrationRoutes"));
 app.use("/api/professional-registration", require("./routes/professionalRegistrationRoutes"));
 app.use("/api/registry", require("./routes/registryRoutes"));
 app.use("/api/admin", adminRoutes);
+app.use("/api/care", require("./routes/careRoutes"));
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api", chatRoutes);

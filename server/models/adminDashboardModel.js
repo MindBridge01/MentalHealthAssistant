@@ -11,7 +11,7 @@ async function summary() {
     (SELECT count(*)::int FROM users WHERE role='doctor') AS professionals,
     (SELECT count(*)::int FROM patient_registrations WHERE status='submitted') AS patient_reviews,
     (SELECT count(*)::int FROM professional_applications WHERE status='submitted') AS professional_reviews,
-    (SELECT count(*)::int FROM appointments) AS appointments,
+    ((SELECT count(*)::int FROM appointments)+(SELECT count(*)::int FROM care_bookings)) AS appointments,
     (SELECT count(*)::int FROM registration_email_jobs WHERE status='failed') AS failed_emails,
     (SELECT count(*)::int FROM registration_email_jobs WHERE status IN ('pending','processing')) AS queued_emails,
     (SELECT count(*)::int FROM registration_email_jobs WHERE status='sent') AS sent_emails`);

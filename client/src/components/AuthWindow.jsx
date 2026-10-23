@@ -79,6 +79,7 @@ const AuthWindow = ({ mode = "login" }) => {
   }, [urlRole, mode]);
 
   const redirectAfterAuth = (user) => {
+    if(user.role === "hospital") { navigate("/hospital/dashboard"); return; }
     if (user.role === ROLE_DOCTOR) {
       navigate(location.state?.from || "/doctor/dashboard");
       return;

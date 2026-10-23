@@ -7,7 +7,7 @@ const { findProfileByUserId, upsertProfile } = require('../models/profileModel')
 const { findUserById, updateUser } = require('../models/userModel');
 
 router.use(authenticateJWT());
-router.use(authorizeRoles('patient', 'doctor', 'admin', 'pending-doctor'));
+router.use(authorizeRoles('patient', 'doctor', 'admin', 'pending-doctor', 'hospital'));
 
 // ---------- Get user profile (self-only) ----------
 router.get('/', requirePermission('view_own_profile'), async (req, res) => {

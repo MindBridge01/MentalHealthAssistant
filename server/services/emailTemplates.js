@@ -8,7 +8,7 @@ const TEMPLATES = {
   patient_received: ['We have received your MindBridge application', 'Your patient application has been received and is awaiting review. We will email you when there is an update.', 'View application status', '/patient/registration'],
   professional_received: ['We have received your MindBridge professional application', 'Your professional application is awaiting verification. We will email you when there is an update.', 'View application status', '/doctor/onboarding'],
   patient_approved: ['Your MindBridge registration is approved', 'Your registration has been approved. You can now access your patient dashboard and request appointments with available professionals.', 'Open my dashboard', '/patient/dashboard'],
-  professional_approved: ['Your MindBridge professional account is approved', 'Your professional application has been approved. Sign in to review your profile and manage your availability and appointment requests.', 'Open professional dashboard', '/doctor/dashboard'],
+  professional_approved: ['Your MindBridge professional account is approved', 'Your professional application has been approved. Sign in, complete your public profile, select an admin-linked hospital and add agreed appointment slots. Publish only when ready. Read the Profile setup guide in your dashboard.', 'Open professional dashboard', '/doctor/dashboard'],
   patient_needs_information: ['Action needed on your MindBridge application', 'Our review team needs additional information. Please sign in to read the request, update your details, and resubmit.', 'Update application', '/patient/registration'],
   professional_needs_information: ['Action needed on your professional application', 'Our review team needs additional information. Sign in to view the request and next steps.', 'View application', '/doctor/onboarding'],
   patient_declined: ['An update on your MindBridge application', 'Your application has been reviewed and has not been approved at this time. Please sign in to read the explanation and available next steps.', 'View review outcome', '/patient/registration'],
@@ -35,6 +35,7 @@ function renderEmail(template, { appOrigin, firstName, reference, appointmentTim
   const details = [reference && `Reference: ${String(reference).slice(0, 80)}`, appointmentTime && `When: ${String(appointmentTime).slice(0, 120)}`].filter(Boolean);
   const footer = 'MindBridge\nPlease do not reply with medical information.' + (supportEmail ? `\nSupport: ${supportEmail}` : '');
   const paragraphs = [greeting, message, ...details];
+  if(template === 'professional_approved') paragraphs.push('Profile setup guide: '+new URL('/professional-setup-guide.html',origin).href);
   return {
     subject,
     text: [...paragraphs, `${action}: ${url}`, footer].join('\n\n'),

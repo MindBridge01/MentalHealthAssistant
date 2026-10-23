@@ -28,7 +28,7 @@ async function submit(id,input) {
     const row = await ensure(client,id);
     if (!['draft','needs_information'].includes(row.status) || row.version !== input.version) throw fail('Application changed. Refresh before submitting.');
     const docs = await client.query('SELECT kind FROM professional_documents WHERE user_id=$1',[id]);
-    if (docs.rows.length !== 2) throw fail('Upload your registration certificate and degree before submitting.',400);
+    if (!docs.rows.some(d=>d.kind==='degree') || (data.registrationApplicable && !docs.rows.some(d=>d.kind==='registration'))) throw fail('Upload the required qualification and registration certificates.',400);
     const result = await client.query(`UPDATE professional_applications SET data=$2,status='submitted',version=version+1,note='',updated_at=NOW() WHERE user_id=$1 RETURNING *`,[id,pack(data)]);
     await record(client,result.rows[0],id,'');
     return map(result.rows[0]);

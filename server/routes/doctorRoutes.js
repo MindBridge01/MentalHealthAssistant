@@ -21,6 +21,11 @@ const {
 const { createObjectId } = require('../lib/objectId');
 
 router.use(authenticateJWT());
+router.use((req,res,next)=>{
+ if(req.method!=='GET')return res.status(410).json({error:'Use the professional profile and hospital booking workspace.',code:'CARE_WORKFLOW_REQUIRED'});
+ if(req.path==='/all'||req.path==='/availabilities'||req.path.startsWith('/profile/'))return res.status(410).json({error:'Use the approved professional directory.',code:'CARE_WORKFLOW_REQUIRED'});
+ next();
+});
 router.use(require('../middleware/registrationMiddleware').requireApprovedPatient);
 
 function isAdmin(req) {

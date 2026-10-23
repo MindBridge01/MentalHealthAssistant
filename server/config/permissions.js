@@ -1,4 +1,5 @@
 const permissions = {
+  hospital: ["view_own_profile"],
   patient: [
     "view_own_profile",
     "edit_own_profile",
@@ -15,6 +16,7 @@ const permissions = {
     "use_patient_module",
   ],
   doctor: [
+    "view_own_profile",
     "view_patient_records",
     "manage_appointments",
     "update_slots",

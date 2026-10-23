@@ -102,17 +102,12 @@ router.get("/dashboard", requirePermission("view_own_profile"), async (req, res)
     const [profile, latestAssessment, appointments, posts, doctors] = await Promise.all([
       findProfileByUserId(req.user._id),
       findLatestAssessmentByUserId(req.user._id),
-      findAppointmentsByPatientId(req.user._id),
+      require('../services/careService').createCareService(require('../config/database')).bookings(req.user),
       listCommunityPosts(req.user._id),
-      listAllDoctors(),
+      require('../services/careService').createCareService(require('../config/database')).browse(),
     ]);
 
-    const upcomingAppointments = appointments
-      .slice(0, 3)
-      .map((appointment) => ({
-        ...appointment,
-        doctorName: doctors.find((doctor) => doctor.userId === appointment.doctorId)?.name || "MindBridge Doctor",
-      }));
+    const upcomingAppointments = appointments.filter(a=>a.status==='confirmed' && new Date(a.starts_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,3).map(a=>({_id:a.id,doctorName:a.professional_name,date:new Date(a.starts_at).toLocaleDateString('en-GB',{timeZone:a.timezone}),time:new Date(a.starts_at).toLocaleTimeString('en-GB',{timeZone:a.timezone})+' ('+a.timezone+')'}));
 
     return res.json({
       onboardingCompleted: Boolean(profile?.onboardingCompleted),

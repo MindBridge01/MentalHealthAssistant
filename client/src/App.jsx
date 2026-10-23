@@ -21,14 +21,11 @@ import ActivitiesPage from "./pages/patient/ActivitiesPage";
 import ActivityDetailPage from "./pages/patient/ActivityDetailPage";
 import CommunityPage from "./pages/patient/CommunityPage";
 import CommunityPostPage from "./pages/patient/CommunityPostPage";
-import DoctorsPage from "./pages/patient/DoctorsPage";
-import DoctorProfilePage from "./pages/patient/DoctorProfilePage";
-import BookingPage from "./pages/patient/BookingPage";
-import BookingConfirmationPage from "./pages/patient/BookingConfirmationPage";
-import AppointmentsPage from "./pages/patient/AppointmentsPage";
 
 import Unauthorized from "./pages/Unauthorized";
-import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorDashboard from "./pages/care/ProfessionalWorkspace";
+import {HospitalDashboard} from "./pages/care/shared";
+import {CareDirectory,CareProfessional,CareBooking,CareAppointments} from "./pages/care/PatientCare";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -74,6 +71,7 @@ function RootRedirect() {
     return <Navigate to="/doctor/dashboard" replace />;
   }
 
+  if (role === "hospital") return <Navigate to="/hospital/dashboard" replace />;
   if (role === "admin") {
     return <Navigate to="/admin/dashboard" replace />;
   }
@@ -146,6 +144,7 @@ function App() {
   const isDashboardArea =
     location.pathname.startsWith("/patient") ||
     location.pathname.startsWith("/doctor/dashboard") ||
+    location.pathname.startsWith("/hospital/dashboard") ||
     location.pathname.startsWith("/admin/dashboard");
 
   let navTheme = "sticky";
@@ -194,6 +193,7 @@ function App() {
       ) : null}
 
       <Routes>
+        <Route path="/hospital/dashboard" element={<ProtectedRoute role="hospital"><HospitalDashboard/></ProtectedRoute>}/>
         <Route path="/patient/registration" element={<ProtectedRoute allowedRoles={["patient"]}><RegistrationPage /></ProtectedRoute>} />
         {/* Public routes */}
 
@@ -399,27 +399,27 @@ function App() {
 
             <Route
               path="doctors"
-              element={<DoctorsPage />}
+              element={<CareDirectory />}
             />
 
             <Route
               path="doctors/:doctorId"
-              element={<DoctorProfilePage />}
+              element={<CareProfessional />}
             />
 
             <Route
               path="doctors/:doctorId/book"
-              element={<BookingPage />}
+              element={<CareBooking />}
             />
 
             <Route
               path="booking/confirmed"
-              element={<BookingConfirmationPage />}
+              element={<Navigate to="/patient/appointments" replace />}
             />
 
             <Route
               path="appointments"
-              element={<AppointmentsPage />}
+              element={<CareAppointments />}
             />
           </Route>
         </Route>

@@ -10,6 +10,7 @@ const MIGRATIONS = [
   { id: '003_patient_registry', file: '003_patient_registry.sql', backfill: true },
   { id: '004_registration_completion', file: '004_registration_completion.sql' },
   { id: '005_professional_registration', file: '005_professional_registration.sql' },
+  { id: '006_hospital_booking', file: '006_hospital_booking.sql' },
 ];
 
 async function runMigrations(client, backfillRegistry) {
