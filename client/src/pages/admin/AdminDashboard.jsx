@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../lib/apiClient';
 import PatientRegistrationReview from '../../components/PatientRegistrationReview';
+import LearnContentAdminPage from './LearnContentAdminPage';
 import Verification from './admin-dashboard/Verification';
 import './admin-dashboard.css';
 import HospitalManagement,{CareOperations} from '../care/HospitalManagement';
@@ -10,7 +11,7 @@ import HospitalManagement,{CareOperations} from '../care/HospitalManagement';
 const sections = [
  ['dashboard','Overview','space_dashboard'],['registrations','Patient applications','assignment_ind'],
  ['verification','Professional verification','verified_user'],['directory','Account directory','group'],
- ['hospitals','Hospitals & centres','local_hospital'],['care-bookings','Hospital bookings','event_available'],['appointments','Legacy appointments','calendar_month'],['emails','Email delivery','outgoing_mail'],['activity','Audit activity','history']
+ ['hospitals','Hospitals & centres','local_hospital'],['care-bookings','Hospital bookings','event_available'],['appointments','Legacy appointments','calendar_month'],['emails','Email delivery','outgoing_mail'],['content','Content review','menu_book'],['activity','Audit activity','history']
 ];
 const stamp=value=>value?new Date(value).toLocaleString(): '—';
 const words=value=>String(value||'').replaceAll('_',' ');
@@ -55,6 +56,6 @@ export default function AdminDashboard(){
  <main id="admin-main" className="admin-main" tabIndex={-1}><div className="admin-page-heading"><div><span className="admin-eyebrow">MINDBRIDGE OPERATIONS</span><h1>{view==='dashboard'?'A clear view of your care community.':title}</h1><p>{view==='dashboard'?'Review applications, support your team, and keep people informed.':'Manage your workspace with clear decisions and a recorded history.'}</p></div><button className="admin-button" disabled={busy} onClick={refresh}><Icon name="refresh"/>Refresh counts</button></div>
  {error&&<p role="alert" className="admin-error">{error}</p>}
  <div className="admin-status-line"><span><span className="admin-status-dot"/>{total===null?'Review counts unavailable':`${total} application${total===1?'':'s'} awaiting review`}</span><span>{data?'Updated '+stamp(data.updatedAt):'Waiting for current data'}</span></div>
- {view==='dashboard'?<Overview data={data} busy={busy} onNavigate={navigate}/>:view==='registrations'?<div className="admin-panel admin-review-host"><PatientRegistrationReview onReviewed={refresh}/></div>:view==='verification'?<div className="admin-panel admin-review-host"><Verification onReviewed={refresh}/></div>:view==='hospitals'?<HospitalManagement/>:view==='care-bookings'?<CareOperations/>:<DataView key={view} view={view} onChanged={refresh}/>}
+ {view==='dashboard'?<Overview data={data} busy={busy} onNavigate={navigate}/>:view==='registrations'?<div className="admin-panel admin-review-host"><PatientRegistrationReview onReviewed={refresh}/></div>:view==='verification'?<div className="admin-panel admin-review-host"><Verification onReviewed={refresh}/></div>:view==='hospitals'?<HospitalManagement/>:view==='care-bookings'?<CareOperations/>:view==='content'?<LearnContentAdminPage />:<DataView key={view} view={view} onChanged={refresh}/>}
  <footer className="admin-page-footer">MindBridge · Administration<span>Clinical records remain in the authorized patient workspace.</span></footer></main></div></div>;
 }

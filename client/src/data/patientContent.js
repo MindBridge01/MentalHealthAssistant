@@ -153,6 +153,12 @@ export const dashboardFeatures = [
     accent: "from-rose-100 via-pink-50 to-white",
   },
   {
+    title: "Learn & Unwind",
+    description: "Browse calming resources, expert guidance, and gentle self-care content.",
+    href: "/patient/learn",
+    accent: "from-emerald-100 via-teal-50 to-white",
+  },
+  {
     title: "Find a Doctor",
     description: "Browse specialists and choose a time that feels right.",
     href: "/patient/doctors",

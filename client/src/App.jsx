@@ -21,6 +21,9 @@ import ActivitiesPage from "./pages/patient/ActivitiesPage";
 import ActivityDetailPage from "./pages/patient/ActivityDetailPage";
 import CommunityPage from "./pages/patient/CommunityPage";
 import CommunityPostPage from "./pages/patient/CommunityPostPage";
+import LearnAndUnwindPage from "./pages/patient/LearnAndUnwindPage";
+import LearnResourceDetailPage from "./pages/patient/LearnResourceDetailPage";
+import LearnResourceSubmissionPage from "./pages/patient/LearnResourceSubmissionPage";
 
 import Unauthorized from "./pages/Unauthorized";
 import DoctorDashboard from "./pages/care/ProfessionalWorkspace";
@@ -28,6 +31,7 @@ import {HospitalDashboard} from "./pages/care/shared";
 import {CareDirectory,CareProfessional,CareBooking,CareAppointments} from "./pages/care/PatientCare";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import LearnContentAdminPage from "./pages/admin/LearnContentAdminPage";
 import AdminLogin from "./pages/admin/AdminLogin";
 
 import PatientSignupWizard from "./pages/registration/PatientSignupWizard";
@@ -235,6 +239,17 @@ function App() {
           element={<ChatPage />}
         />
 
+        <Route
+          path="/learn"
+          element={
+            <ProtectedRoute allowedRoles={["patient", "pending-doctor"]}>
+              <PatientGate />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/patient/learn" replace />} />
+        </Route>
+
         {/* Community shortcut */}
 
         <Route
@@ -398,6 +413,21 @@ function App() {
             />
 
             <Route
+              path="learn"
+              element={<LearnAndUnwindPage />}
+            />
+
+            <Route
+              path="learn/:resourceId"
+              element={<LearnResourceDetailPage />}
+            />
+
+            <Route
+              path="learn/submit"
+              element={<LearnResourceSubmissionPage />}
+            />
+
+            <Route
               path="doctors"
               element={<CareDirectory />}
             />
@@ -442,6 +472,15 @@ function App() {
           element={
             <ProtectedRoute role="admin">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/content-review"
+          element={
+            <ProtectedRoute role="admin">
+              <LearnContentAdminPage />
             </ProtectedRoute>
           }
         />

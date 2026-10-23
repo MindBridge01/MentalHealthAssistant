@@ -9,6 +9,7 @@ const navigation = [
   { label: "Assessments", href: "/patient/assessments", icon: "psychology" },
   { label: "Activities", href: "/patient/activities", icon: "self_improvement" },
   { label: "Community", href: "/patient/community", icon: "diversity_3" },
+  { label: "Learn & Unwind", href: "/patient/learn", icon: "menu_book" },
   { label: "Doctors", href: "/patient/doctors", icon: "medical_services" },
   { label: "Appointments", href: "/patient/appointments", icon: "event_available" },
 ];
