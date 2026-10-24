@@ -60,6 +60,7 @@ export function AuthProvider({ children }) {
         method: "POST",
         body: payload,
       });
+      if(authenticatedUser.requiresMfa) return authenticatedUser;
       const merged = mergeProfile(authenticatedUser, authenticatedUser);
       setUser(merged);
       return merged;

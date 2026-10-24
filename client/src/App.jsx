@@ -32,6 +32,8 @@ import AdminLogin from "./pages/admin/AdminLogin";
 
 import PatientSignupWizard from "./pages/registration/PatientSignupWizard";
 import DoctorSignupWizard from "./pages/registration/DoctorSignupWizard";
+import AcceptInvitationPage from "./pages/auth/AcceptInvitationPage";
+import DoctorMfaSetupPage from "./pages/doctor/DoctorMfaSetupPage";
 
 
 function RootRedirect() {
@@ -203,11 +205,14 @@ function App() {
 
         <Route path="/start" element={<RootRedirect />} />
 
+        <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+        <Route path="/security/setup" element={<DoctorMfaSetupPage />} />
+        <Route path="/doctor/mfa-setup" element={<DoctorMfaSetupPage />} />
         <Route path="/login" element={<AuthWindow mode="login" />} />
 
         <Route
           path="/login/:role"
-          element={<AuthWindow mode="login" />}
+          element={<Navigate to="/login" replace />}
         />
 
         <Route
@@ -450,7 +455,7 @@ function App() {
 
         <Route
           path="/admin"
-          element={<AdminLogin />}
+          element={<Navigate to="/login" replace />}
         />
 
         {/* Catch-all */}

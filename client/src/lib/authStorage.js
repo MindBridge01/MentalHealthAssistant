@@ -9,7 +9,7 @@ export function getStoredUser() {
 }
 
 export function setStoredUser(user) {
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user ? { _id:user._id,name:user.name,email:user.email,role:user.role,registrationStatus:user.registrationStatus,onboardingCompleted:user.onboardingCompleted,mfaEnabled:user.mfaEnabled } : null));
 }
 
 export function clearStoredUser() {

@@ -13,7 +13,7 @@ import DoctorSignupWizard from "../pages/registration/DoctorSignupWizard";
 import "./auth/auth.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MIN_LENGTH = 15;
 
 const ROLE_PATIENT = "patient";
 const ROLE_DOCTOR = "doctor";
@@ -30,7 +30,13 @@ function normalizeRole(candidateRole, mode) {
   return ROLE_PATIENT;
 }
 
-function getFieldValidation({ mode, name, email, password }) {
+function getFieldValidation({ mode, name, email, password, requiresMfa, mfaCode }) {
+  if (requiresMfa) {
+    if (!/^([0-9]{6}|[a-f0-9]{20})$/i.test(String(mfaCode || "").trim())) {
+      return "Please enter a valid authenticator or recovery code.";
+    }
+    return "";
+  }
   if (mode === "signup" && name.trim().length < 2) {
     return "Please enter your full name.";
   }
@@ -39,8 +45,8 @@ function getFieldValidation({ mode, name, email, password }) {
     return "Please enter a valid email address.";
   }
 
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return "Password must be at least 8 characters.";
+  if (mode === "signup" && password.length < PASSWORD_MIN_LENGTH) {
+    return "Password must be at least 15 characters.";
   }
 
   return "";
@@ -56,6 +62,8 @@ const AuthWindow = ({ mode = "login" }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [requiresMfa, setRequiresMfa] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
 
   const [currentRole, setCurrentRole] = useState(() =>
     normalizeRole(urlRole, mode)
@@ -79,8 +87,13 @@ const AuthWindow = ({ mode = "login" }) => {
   }, [urlRole, mode]);
 
   const redirectAfterAuth = (user) => {
+    if(user.role === "pending-doctor") { navigate("/doctor/onboarding"); return; }
     if(user.role === "hospital") { navigate("/hospital/dashboard"); return; }
     if (user.role === ROLE_DOCTOR) {
+      if (user.mfaEnabled === false) {
+        navigate("/doctor/mfa-setup");
+        return;
+      }
       navigate(location.state?.from || "/doctor/dashboard");
       return;
     }
@@ -115,6 +128,8 @@ const AuthWindow = ({ mode = "login" }) => {
       name,
       email,
       password,
+      requiresMfa,
+      mfaCode,
     });
 
     if (validationError) {
@@ -127,7 +142,7 @@ const AuthWindow = ({ mode = "login" }) => {
     try {
       const path =
         mode === "login"
-          ? "/api/auth/login"
+          ? (requiresMfa ? "/api/auth/mfa/verify" : "/api/auth/login")
           : currentRole === ROLE_DOCTOR
             ? "/api/auth/signup-doctor"
             : "/api/auth/signup";
@@ -137,6 +152,7 @@ const AuthWindow = ({ mode = "login" }) => {
           ? {
               email: email.trim().toLowerCase(),
               password,
+              ...(requiresMfa ? { mfaCode: mfaCode.trim() } : {}),
             }
           : {
               name: name.trim(),
@@ -148,6 +164,14 @@ const AuthWindow = ({ mode = "login" }) => {
         method: "POST",
         body: JSON.stringify(body),
       });
+
+      if(user.requiresMfaSetup){ setUser(null); navigate("/security/setup"); return; }
+      if (mode === "login" && user?.requiresMfa) {
+        setUser(null); setPassword("");
+        setRequiresMfa(true);
+        setIsSubmitting(false);
+        return;
+      }
 
       setUser(user);
 
@@ -181,7 +205,8 @@ const AuthWindow = ({ mode = "login" }) => {
     }
   };
 
-  const handleForgotPassword = () => {};
+  const handleForgotPassword = () => setError("Password recovery is not available in this release. Contact your account administrator. Never share your password or authenticator code.");
+  const handleGoogle = async idToken => { setError(""); try { const user=await apiRequest("/api/auth/google-login",{method:"POST",body:{idToken}});if(user.requiresMfa){setUser(null);setRequiresMfa(true);return;}setUser(user);redirectAfterAuth(user); } catch(e){setError(e.message);} };
 
   if (mode === "signup" && currentRole === ROLE_DOCTOR) return <DoctorSignupWizard />;
 
@@ -189,6 +214,8 @@ const AuthWindow = ({ mode = "login" }) => {
     return (
       <LoginContainer>
         <LoginForm
+          onGoogleCredential={handleGoogle}
+          onGoogleError={setError}
           currentRole={currentRole}
           email={email}
           error={error}
@@ -203,6 +230,14 @@ const AuthWindow = ({ mode = "login" }) => {
           password={password}
           rememberMe={rememberMe}
           success={success}
+          requiresMfa={requiresMfa}
+          mfaCode={mfaCode}
+          onMfaCodeChange={(e) => setMfaCode(e.target.value)}
+          onBackToLogin={() => {
+            setRequiresMfa(false);
+            setMfaCode("");
+            setError("");
+          }}
         />
       </LoginContainer>
     );
@@ -392,7 +427,7 @@ const AuthWindow = ({ mode = "login" }) => {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full p-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-              placeholder="At least 8 characters"
+              placeholder="At least 15 characters"
               required
             />
           </div>

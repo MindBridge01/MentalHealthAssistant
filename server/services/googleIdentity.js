@@ -4,7 +4,7 @@ async function resolveGoogleIdentity(payload, users, createId) {
     throw Object.assign(new Error('A verified Google email is required.'), {status:401});
   }
   const linked = await users.findUserByGoogleId(payload.sub);
-  if (linked) return linked;
+  if (linked) { if(linked.role !== 'patient') throw Object.assign(new Error('Staff must use local sign-in and MFA.'), {status:403}); return linked; }
   const email = payload.email.trim().toLowerCase();
   if (await users.findUserByEmail(email)) {
     throw Object.assign(new Error('An account already uses this email. Sign in using its existing login method. Google linking requires a separate verified account-linking step.'), {status:409});

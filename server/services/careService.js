@@ -9,23 +9,19 @@ function createCareService(db){
  const audit=async(c,u,action,id)=>c.query('INSERT INTO audit_logs(user_id,user_role,action,resource_type,resource_id) VALUES($1,$2,$3,\'care_booking\',$4)',[u._id,u.role,action,id]);
  async function professional(c,id){const r=(await c.query("SELECT a.*,u.role FROM professional_applications a JOIN users u ON u.id=a.user_id WHERE a.user_id=$1 FOR UPDATE OF a",[id])).rows[0];if(r?.status!=='approved'||r.role!=='doctor')throw fail('Approved professional access required.',403);return decryptValue(r.data);}
  function publicIdentity(d){return {name:d.name,profession:d.profession,specialty:d.specialty,qualification:d.qualification,institution:d.institution,regulator:d.regulator,licenseNumber:d.licenseNumber,country:d.country||''};}
- async function hospitals(u){if(u.role==='admin')return (await db.query('SELECT h.*,u.name AS officer_name,u.email AS officer_email FROM care_hospitals h JOIN users u ON u.id=h.officer_id ORDER BY h.name')).rows;return (await db.query(`SELECT h.id,h.name,h.address,h.city,h.public_phone,h.payment_method,h.payment_instructions,h.arrival_instructions,h.cancellation_instructions,h.demo FROM care_hospitals h JOIN care_affiliations a ON a.hospital_id=h.id WHERE a.professional_id=$1 AND a.active AND h.active`,[u._id])).rows;}
+ async function hospitals(u){if(u.role==='admin')return (await db.query('SELECT h.*,u.name AS officer_name,u.email AS officer_email FROM care_hospitals h LEFT JOIN users u ON u.id=h.officer_id ORDER BY h.name')).rows;return (await db.query(`SELECT h.id,h.name,h.address,h.city,h.public_phone,h.payment_method,h.payment_instructions,h.arrival_instructions,h.cancellation_instructions,h.demo FROM care_hospitals h JOIN care_affiliations a ON a.hospital_id=h.id WHERE a.professional_id=$1 AND a.active AND h.active`,[u._id])).rows;}
  async function saveHospital(u,input,id){
   const d={};for(const k of ['name','address','city','public_phone','payment_instructions','arrival_instructions','cancellation_instructions','agreement_reference'])d[k]=str(input[k],k,k.includes('instructions')?1500:250,k==='arrival_instructions'||k==='cancellation_instructions');
   d.website=str(input.website||'','website',500,true);if(d.website){try{const url=new URL(d.website);if(url.protocol!=='https:'||url.username||url.password)throw Error();}catch{throw fail('Website must be an HTTPS URL.');}}
   if(!['at_location','contact_provider'].includes(input.payment_method))throw fail('Choose a payment method.');
   d.payment_method=input.payment_method;d.demo=bool(input.demo);d.active=bool(input.active);
-  const email=str(input.officer_email,'booking email').toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw fail('Invalid booking email.');
-  const name=str(input.officer_name,'booking officer name');
-  // Existing hospital accounts may be assigned; unrelated accounts are never promoted.
-  let hash=null;if(input.officer_password){if(typeof input.officer_password!=='string'||input.officer_password.length<12||Buffer.byteLength(input.officer_password)>72)throw fail('Officer password must be 12–72 bytes.');hash=await bcrypt.hash(input.officer_password,12);}
+  if(input.officer_password)throw fail('Invite the officer by email; administrators cannot set officer passwords.');
   return db.withTransaction(async c=>{
-   let officer=(await c.query('SELECT id,role FROM users WHERE lower(email)=$1',[email])).rows[0];
-   if(officer&&officer.role!=='hospital')throw fail('Use a dedicated hospital account email.');
-   if(officer) await c.query('UPDATE users SET name=$2 WHERE id=$1',[officer.id,name]);
-   if(!officer){if(!hash)throw fail('Set an initial password for the new hospital account.');officer={id:randomUUID()};await c.query("INSERT INTO users(id,email,name,password,role) VALUES($1,$2,$3,$4,'hospital')",[officer.id,email,name,hash]);}
+   let officer=null;
+   if(input.officer_email){officer=(await c.query("SELECT id,role FROM users WHERE lower(email)=$1 AND role='hospital'",[input.officer_email.trim().toLowerCase()])).rows[0];if(!officer)throw fail('Invite a new officer using the invitation panel after saving the hospital.');}
+   if(!officer && id) officer=(await c.query('SELECT officer_id AS id FROM care_hospitals WHERE id=$1',[id])).rows[0];
    if(id){uuid(id);const exists=(await c.query('SELECT id FROM care_hospitals WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!exists)throw fail('Hospital not found.',404);}
-   const values=[...Object.values(d),officer.id];const keys=[...Object.keys(d),'officer_id'];
+   const values=[...Object.values(d),officer?.id || null];const keys=[...Object.keys(d),'officer_id'];
    const row=id?(await c.query(`UPDATE care_hospitals SET ${keys.map((k,i)=>k+'=$'+(i+1)).join(',')} WHERE id=$${values.length+1} RETURNING id`,[...values,id])).rows[0]:(await c.query(`INSERT INTO care_hospitals(${keys.join(',')}) VALUES(${values.map((_,i)=>'$'+(i+1)).join(',')}) RETURNING id`,values)).rows[0];
    await audit(c,u,'save_hospital',row.id);return row;
   });

@@ -17,10 +17,11 @@ test('hospital affiliations, profile publication, booking lifecycle and transact
  for(const id of ['patient','other']){const row=(await db.query('INSERT INTO patients(user_id) VALUES($1) RETURNING id',[id])).rows[0];await db.query("INSERT INTO patient_registrations(user_id,patient_id,details,status,consent_version) VALUES($1,$2,'{}','approved','test')",[id,row.id]);}
  const profile={bio:'Synthetic professional biography',services:'Support',languages:'English',age_groups:'Adults',published:true,accepting:true};
  await assert.rejects(care.saveProfile(doc,profile),/affiliation/);
- const hospital={name:'Fictional Demo Clinic',address:'Demo address',city:'Demo city',public_phone:'0000000000',website:'',officer_name:'Demo Officer',officer_email:'officer@example.test',officer_password:'Synthetic hospital password!',payment_method:'at_location',payment_instructions:'Pay at hospital',arrival_instructions:'Arrive early',cancellation_instructions:'Contact clinic',agreement_reference:'Demo only',demo:true,active:true};
+ const hospital={name:'Fictional Demo Clinic',address:'Demo address',city:'Demo city',public_phone:'0000000000',website:'',officer_name:'Demo Officer',officer_email:'officer@example.test',officer_password:'',payment_method:'at_location',payment_instructions:'Pay at hospital',arrival_instructions:'Arrive early',cancellation_instructions:'Contact clinic',agreement_reference:'Demo only',demo:true,active:true};
+ await db.query("INSERT INTO users(id,email,name,password,role) VALUES('officer','officer@example.test','Demo Officer','$2b$synthetic','hospital')");
  const h=await care.saveHospital(admin,hospital);const officerId=(await db.query('SELECT officer_id FROM care_hospitals WHERE id=$1',[h.id])).rows[0].officer_id;const officer={_id:officerId,role:'hospital'};
  assert.match((await db.query('SELECT password FROM users WHERE id=$1',[officerId])).rows[0].password,/^\$2/);
- await assert.rejects(care.saveHospital(admin,{...hospital,officer_email:'patient@example.test'}),/dedicated/);
+ await assert.rejects(care.saveHospital(admin,{...hospital,officer_email:'patient@example.test'}),/Invite/);
  await care.link(admin,h.id,{professionalId:'doc',active:true});await care.saveProfile(doc,profile);
  assert.equal(JSON.stringify(await care.browse()).includes('PRIVATE_PHONE'),false);
  const base=Date.now()+48*3600000;const input=(n)=>({hospitalId:h.id,startsAt:new Date(base+n*3600000).toISOString(),endsAt:new Date(base+n*3600000+1800000).toISOString(),timezone:'Asia/Colombo',fee:'LKR 1000 (demo)'});

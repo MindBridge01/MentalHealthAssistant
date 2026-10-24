@@ -16,7 +16,12 @@ function getCorsOrigins() {
   // In development, accept all localhost ports (for Flutter web dynamic ports)
   if (!isProduction()) {
     return (origin, callback) => {
-      if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
+      let local = !origin;
+      try {
+        const url = new URL(origin);
+        local = url.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+      } catch { /* Invalid origins are denied. */ }
+      if (local) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -29,6 +34,7 @@ function getCorsOrigins() {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+  if (!origins.length) throw new Error('CLIENT_ORIGIN is required in production.');
   
   return origins;
 }

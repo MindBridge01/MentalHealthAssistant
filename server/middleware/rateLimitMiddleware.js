@@ -1,11 +1,7 @@
 const WINDOW_STATE = new Map();
 
 function getClientIp(req) {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
+  // Express resolves trusted proxies; never trust a client-supplied forwarding header directly.
   return req.ip || req.socket?.remoteAddress || "unknown";
 }
 

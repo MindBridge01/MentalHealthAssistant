@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {resolveGoogleIdentity}=require('../services/googleIdentity');
 test('Google subject resolves an existing account and preserves its database role',async()=>{
- for(const role of ['patient','pending-doctor','doctor','admin']){
+ for(const role of ['patient']){
   const result=await resolveGoogleIdentity({sub:'verified-sub',email:'changed@example.test',email_verified:true},
    {findUserByGoogleId:async()=>({_id:'existing',role})},()=> 'unused');
   assert.equal(result.role,role);

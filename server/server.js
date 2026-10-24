@@ -19,7 +19,7 @@ loadEnvironment();
 
 const app = express();
 const server = http.createServer(app);
-app.set("trust proxy", 1);
+app.set("trust proxy", process.env.TRUST_PROXY_HOPS ? Number(process.env.TRUST_PROXY_HOPS) : false);
 
 const clientOrigins = getCorsOrigins();
 

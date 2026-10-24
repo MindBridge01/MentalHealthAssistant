@@ -12,13 +12,17 @@ function mapUser(row) {
     facebookId: row.facebook_id,
     profilePic: row.profile_pic,
     role: row.role,
+    mfaEnabled: Boolean(row.mfa_enabled),
+    authVersion: row.auth_version || 0,
+    mfaSecret: row.mfa_secret,
+    mfaEnrolledAt: row.mfa_enrolled_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 async function findUserByEmail(email) {
-  const result = await query("SELECT * FROM users WHERE email = $1 LIMIT 1", [email]);
+  const result = await query("SELECT * FROM users WHERE lower(email) = lower($1) LIMIT 1", [email]);
   return mapUser(result.rows[0]);
 }
 
@@ -78,6 +82,9 @@ async function updateUser(userId, updates) {
     facebookId: "facebook_id",
     profilePic: "profile_pic",
     role: "role",
+    mfaEnabled: "mfa_enabled",
+    mfaSecret: "mfa_secret",
+    mfaEnrolledAt: "mfa_enrolled_at",
     updatedAt: "updated_at",
   };
 

@@ -1,8 +1,9 @@
 // routes/auth.js
 const express = require('express');
 const router = express.Router();
+router.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 const bcrypt = require('bcrypt');
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 const { generateToken, verifyToken } = require('../lib/jwt'); // JWT helper
 const { authenticateJWT } = require('../middleware/authMiddleware');
 const { requirePermission, normalizeRole } = require('../middleware/permissionMiddleware');
@@ -35,7 +36,7 @@ function normalizeStoredRole(role) {
   if (normalized === ROLE_PATIENT || normalized === ROLE_PENDING_DOCTOR || normalized === 'doctor' || normalized === 'hospital' || normalized === ROLE_ADMIN) {
     return normalized;
   }
-  return ROLE_PATIENT;
+  throw Object.assign(new Error("Account role is invalid. Contact support."), {status:403});
 }
 
 async function normalizeUserRoleInDb(db, user) {
@@ -59,6 +60,7 @@ function getCookieOptions() {
 
 // ------------------- Google Login -------------------
 router.post('/google-login', authRateLimiter, async (req, res) => {
+  if(GOOGLE_CLIENT_ID==='YOUR_GOOGLE_CLIENT_ID') return res.status(503).json({error:'Google sign-in is not configured. Use email and password.'});
   const { idToken } = req.body;
   if (!idToken) {
     return res.status(400).json({ error: 'Missing Google ID token' });
@@ -70,11 +72,14 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
     let user = await resolveGoogleIdentity(ticket.getPayload(), require('../models/userModel'), createObjectId);
 
     user = await normalizeUserRoleInDb(null, user);
+    const challenge=await require('../services/authSecurity').begin(require('../config/database'),user);
+    if(challenge){res.clearCookie('auth_token',getCookieOptions());res.cookie('auth_step',challenge.token,{...getCookieOptions(),maxAge:600000});return res.json({requiresMfa:true,requiresMfaSetup:challenge.requiresMfaSetup});}
+
 
     // Fetch extended profile data if it exists in the new separate entity
     const profileData = await findProfileByUserId(user._id);
 
-    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
+    const token = await require('../services/authSecurity').issue(require('../config/database'), user);
     res.cookie('auth_token', token, getCookieOptions());
     await req.logAuditEvent?.({
       action: 'user_login',
@@ -96,7 +101,6 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
-      token,
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
@@ -112,106 +116,19 @@ router.post('/google-login', authRateLimiter, async (req, res) => {
         outcome: 'failure',
       },
     });
-    res.status(500).json({ error: 'Google login failed' });
+    res.status(401).json({ error: 'Google sign-in could not be verified. Please try again.' });
   }
 });
 
-// ------------------- Facebook Login -------------------
-router.post('/facebook-login', authRateLimiter, async (req, res) => {
-  const { accessToken } = req.body;
-  if (!accessToken) {
-    return res.status(400).json({ error: 'Missing Facebook access token' });
-  }
-
-  try {
-    const graphResponse = await axios.get('https://graph.facebook.com/me', {
-      params: {
-        fields: 'id,name,email,picture',
-        access_token: accessToken,
-      },
-    });
-
-    const fbUser = graphResponse.data || {};
-    const facebookId = fbUser.id;
-    const email = fbUser.email || `facebook_${facebookId}@noemail.local`;
-    const name = fbUser.name || 'Facebook User';
-    const picture = fbUser.picture?.data?.url || null;
-
-    if (!facebookId) {
-      return res.status(400).json({ error: 'Invalid Facebook token' });
-    }
-
-    let user = await findUserByEmailOrFacebookId({ email, facebookId });
-
-    if (!user) {
-      user = await createUser({
-        _id: createObjectId(),
-        email,
-        name,
-        facebookId,
-        profilePic: picture,
-        role: ROLE_PATIENT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    } else if (user.facebookId !== facebookId) {
-      return res.status(409).json({error:'Use your existing login method. Account linking requires separate verification.'});
-    } else if (user.profilePic !== picture || user.name !== name) {
-      user = await updateUser(user._id, {
-        facebookId,
-        profilePic: picture || user.profilePic || null,
-        name: name || user.name,
-        updatedAt: new Date(),
-      });
-    }
-
-    user = await normalizeUserRoleInDb(null, user);
-
-    const profileData = await findProfileByUserId(user._id);
-    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
-    res.cookie('auth_token', token, getCookieOptions());
-    await req.logAuditEvent?.({
-      action: 'user_login',
-      resourceType: 'auth',
-      resourceId: user._id,
-      metadata: {
-        authProvider: 'facebook',
-        outcome: 'success',
-      },
-    });
-
-    if (profileData) {
-      delete profileData._id;
-    }
-
-    return res.json({
-      _id: user._id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      profilePic: user.profilePic,
-      token,
-      ...(profileData || {}),
-    });
-  } catch {
-    await req.logAuditEvent?.({
-      action: 'user_login_failed',
-      resourceType: 'auth',
-      resourceId: req.body?.email || 'facebook-login',
-      metadata: {
-        authProvider: 'facebook',
-        outcome: 'failure',
-      },
-    });
-    return res.status(401).json({ error: 'Facebook login failed' });
-  }
-});
+// Only verified Google patient identities and local staff sign-in are supported.
+router.post('/facebook-login', (_req,res)=>res.status(410).json({error:'Use local sign-in or Google for patient accounts.'}));
 
 // ------------------- Signup -------------------
 router.post('/signup', authRateLimiter, async (req, res) => {
-  const { email, name, password } = req.body;
-  if (!email || !name || !password) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  const { name, password } = req.body;
+  const email=typeof req.body.email==='string'?req.body.email.trim().toLowerCase():'';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || typeof name!=='string' || !name.trim() || name.length>250 || typeof password!=='string' || password.length<15 || Buffer.byteLength(password)>72) {
+    return res.status(400).json({ error: 'Provide your name, valid email, and a password of at least 15 characters (maximum 72 bytes).' });
   }
 
   try {
@@ -232,7 +149,7 @@ router.post('/signup', authRateLimiter, async (req, res) => {
       updatedAt: new Date(),
     });
 
-    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
+    const token = await require('../services/authSecurity').issue(require('../config/database'), user);
     res.cookie('auth_token', token, getCookieOptions());
     await req.logAuditEvent?.({
       action: 'user_login',
@@ -249,7 +166,6 @@ router.post('/signup', authRateLimiter, async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      token,
     });
 
   } catch (error) {
@@ -284,7 +200,7 @@ router.post('/signup-doctor', authRateLimiter, async (req, res) => {
       updatedAt: new Date(),
     });
 
-    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
+    const token = await require('../services/authSecurity').issue(require('../config/database'), user);
     res.cookie('auth_token', token, getCookieOptions());
     await req.logAuditEvent?.({
       action: 'user_login',
@@ -301,7 +217,6 @@ router.post('/signup-doctor', authRateLimiter, async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      token,
       message: 'Account created. Complete your professional registration to submit for review.',
     });
   } catch {
@@ -326,8 +241,9 @@ router.post(
         return res.status(400).json({ error: 'Doctor application is already pending review' });
       }
 
+      if(!user.password) return res.status(409).json({error:'Professional access requires a local account. Contact support before changing account type.'});
       const updatedUser = await updateUser(userId, { role: ROLE_PENDING_DOCTOR, updatedAt: new Date() });
-      const token = generateToken({ _id: updatedUser._id, email: updatedUser.email, role: updatedUser.role });
+      const token = await require('../services/authSecurity').issue(require('../config/database'), updatedUser);
       res.cookie('auth_token', token, getCookieOptions());
       await req.logAuditEvent?.({
         action: 'change_user_role',
@@ -349,7 +265,7 @@ router.post(
 
 // ------------------- Login -------------------
 router.post('/login', authRateLimiter, async (req, res) => {
-  const { password } = req.body || {};
+  const { password, mfaCode } = req.body || {};
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
   if (!email || typeof password !== 'string' || !password) {
@@ -358,6 +274,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
 
   let stage = 'account_lookup';
   try {
+    await require('../services/authSecurity').limitAccount(require('../config/database'),email);
     let user = await findUserByEmail(email);
     if (!user) {
       await req.logAuditEvent?.({
@@ -387,6 +304,15 @@ router.post('/login', authRateLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Email or password is incorrect. Use the email supplied when your account was created.' });
     }
 
+    stage = 'mfa_check';
+    const security = require('../services/authSecurity');
+    const challenge = await security.begin(require('../config/database'), user);
+    if(challenge) {
+      res.clearCookie('auth_token', getCookieOptions());
+      res.cookie('auth_step', challenge.token, {...getCookieOptions(),maxAge:600000});
+      return res.json({requiresMfa:true,requiresMfaSetup:challenge.requiresMfaSetup});
+    }
+
     stage = 'role_lookup';
     user = await normalizeUserRoleInDb(null, user);
 
@@ -395,7 +321,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
     const profileData = await findProfileByUserId(user._id);
 
     stage = 'session_creation';
-    const token = generateToken({ _id: user._id, email: user.email, role: user.role });
+    const token = await require('../services/authSecurity').issue(require('../config/database'), user);
     res.cookie('auth_token', token, getCookieOptions());
     stage = 'login_audit';
     await req.logAuditEvent?.({
@@ -419,18 +345,88 @@ router.post('/login', authRateLimiter, async (req, res) => {
       name: user.name,
       role: user.role,
       profilePic: user.profilePic,
-      token,
+      mfaEnabled: Boolean(user.mfaEnabled),
       ...(profileData || {}), // Merge separated profile data smoothly
     });
 
   } catch (error) {
+    if(error.status) return res.status(error.status).json({error:error.message});
     const failure = require('../services/loginDiagnostics').loginFailure(error);
     console.error(`[auth] ${failure.diagnostic} stage=${stage}`);
     res.status(failure.status).json({ error: `${failure.message} Reference: ${failure.diagnostic}/${stage}`, diagnostic: failure.diagnostic, stage });
   }
 });
 
+// ------------------- Invitation Verification & Acceptance -------------------
+const handleVerifyInvitation = async (req, res) => {
+  const token = req.query?.token || req.body?.token;
+  const { verifyInvitationToken } = require('../services/invitationService');
+  const database = require('../config/database');
+  try {
+    const info = await verifyInvitationToken(database, token);
+    res.json(info);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+};
+if (typeof router.get === 'function') router.get('/invitation/verify', handleVerifyInvitation);
+router.post('/invitation/verify', handleVerifyInvitation);
+
+router.post('/invitation/accept', authRateLimiter, async (req, res) => {
+  const { token, password, mfaCode } = req.body || {};
+  const { acceptHospitalOfficerInvitation } = require('../services/invitationService');
+  const database = require('../config/database');
+  try {
+    const user = await acceptHospitalOfficerInvitation(database, { token, password, mfaCode, mfaSecret });
+    if(user.verificationError) return res.status(400).json({error:user.verificationError});
+    const sessionToken = await require('../services/authSecurity').issue(database, await findUserById(user._id), true);
+    res.cookie('auth_token', sessionToken, getCookieOptions());
+    await req.logAuditEvent?.({
+      action: 'accept_hospital_invitation',
+      resourceType: 'auth',
+      resourceId: user._id,
+      metadata: {
+        outcome: 'success',
+        role: user.role,
+      },
+    });
+    res.json({
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      recoveryCodes: user.recoveryCodes,
+      mfaEnabled: true,
+      hospitalId: user.hospitalId,
+      hospitalName: user.hospitalName,
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+// Limited challenges never grant access to protected APIs.
+router.post('/mfa/setup', authRateLimiter, async (req,res)=>{
+  res.set('Cache-Control','no-store');
+  try { res.json(await require('../services/authSecurity').setup(require('../config/database'),req.cookies?.auth_step)); }
+  catch(e){res.status(e.status||500).json({error:e.status?e.message:'MFA setup unavailable.'});}
+});
+router.post('/mfa/verify', authRateLimiter, async (req,res)=>{
+  res.set('Cache-Control','no-store');
+  try {
+    const security=require('../services/authSecurity'), db=require('../config/database');
+    const result=await security.finish(db,req.cookies?.auth_step,req.body?.mfaCode);
+    const user=await findUserById(result.userId);
+    const token=await security.issue(db,user,true);
+    res.cookie('auth_token',token,getCookieOptions());
+    res.clearCookie('auth_step',getCookieOptions());
+    await req.logAuditEvent?.({action:'mfa_verified',resourceType:'auth',resourceId:user._id});
+    res.json({_id:user._id,name:user.name,email:user.email,role:user.role,mfaEnabled:true,recoveryCodes:result.recoveryCodes});
+  } catch(e){res.status(e.status||500).json({error:e.status?e.message:'Verification unavailable. Sign in again.'});}
+});
+
 router.post('/logout', async (req, res) => {
+  if(req.cookies?.auth_step) { try { await require('../config/database').query('DELETE FROM auth_challenges WHERE token_hash=$1',[require('../services/authSecurity').digest(req.cookies.auth_step)]); } catch { /* Cookie removal still prevents local reuse. */ } }
   const authHeader = req.headers.authorization;
   const cookieToken = req.cookies?.auth_token;
   const bearerToken =
@@ -442,6 +438,7 @@ router.post('/logout', async (req, res) => {
   if (token) {
     try {
       const user = verifyToken(token);
+      if(user.sid) await require('../config/database').query('DELETE FROM auth_sessions WHERE id=$1',[user.sid]);
       req.user = req.user || user;
       await req.logAuditEvent?.({
         action: 'user_logout',

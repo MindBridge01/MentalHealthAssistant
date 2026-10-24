@@ -1,0 +1,3 @@
+export default function RecoveryCodes({codes,onContinue}) {
+ return <section className="login-ui__form-wrap"><h1 className="login-ui__title">Save your recovery codes</h1><p className="login-ui__subtitle">Keep these codes in your password manager or another private place. Each code works once if you lose your authenticator. They will not be shown again.</p><div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:12,margin:'24px 0'}}>{codes.map(c=><code key={c} style={{padding:10,background:'#f1f5f9',fontSize:12,whiteSpace:'nowrap'}}>{c}</code>)}</div><button className="login-ui__button login-ui__button--primary" onClick={onContinue}>I saved my codes — continue</button></section>;
+}

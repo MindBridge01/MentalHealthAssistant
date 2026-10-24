@@ -33,8 +33,8 @@ const PatientSignupWizard = () => {
     setError('');
 
     // Validation
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (formData.password.length < 15) {
+      setError("Password must be at least 15 characters.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -163,7 +163,7 @@ const PatientSignupWizard = () => {
                 className="w-full bg-white border border-[#e2e8f0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] transition-colors text-[#94a3b8]"
                 placeholder="••••••••"
                 required
-                minLength={8}
+                minLength={15}
               />
             </div>
 
@@ -177,7 +177,7 @@ const PatientSignupWizard = () => {
                 className="w-full bg-white border border-[#e2e8f0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] transition-colors text-[#94a3b8]"
                 placeholder="••••••••"
                 required
-                minLength={8}
+                minLength={15}
               />
             </div>
 

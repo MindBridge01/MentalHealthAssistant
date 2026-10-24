@@ -47,6 +47,7 @@ router.get('/', requirePermission('view_own_profile'), async (req, res) => {
       name: user.name,
       role: user.role === 'user' ? 'patient' : user.role,
       profilePic: user.profilePic,
+      mfaEnabled: user.mfaEnabled,
       ...decryptedProfile,
       ...(registrationStatus ? { registrationStatus, onboardingCompleted: registrationStatus === 'approved' } : {}),
     });

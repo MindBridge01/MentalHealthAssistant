@@ -8,7 +8,9 @@ const {loginFailure}=require('../services/loginDiagnostics');
 function loginRoute(user,dbError,profileError) {
   const handlers={};let lookup;const logs=[];
   const deps={
-    express:{Router:()=>({post:(route,...fns)=>{handlers[route]=fns.at(-1);}})},bcrypt,
+    express:{Router:()=>({use:()=>{},post:(route,...fns)=>{handlers[route]=fns.at(-1);}})},bcrypt,
+    '../config/database':{},
+    '../services/authSecurity':{limitAccount:async()=>{},begin:async(_db,u)=>u.role==='admin'?{token:'challenge',requiresMfa:true,requiresMfaSetup:true}:null,issue:async()=> 'test-token'},
     '../lib/jwt':{generateToken:()=> 'test-token'},
     '../middleware/authMiddleware':{authenticateJWT:()=>()=>{}},
     '../middleware/permissionMiddleware':{requirePermission:()=>()=>{},normalizeRole:role=>role},
@@ -24,7 +26,7 @@ function loginRoute(user,dbError,profileError) {
     require:id=>{if(!(id in deps))throw Error(id);return deps[id];}
   });
   return {run:async(body)=>{
-    const result={status:200};const res={status:code=>{result.status=code;return res;},json:value=>{result.body=value;return res;},cookie:(name,value)=>{result.cookie={name,value};}};
+    const result={status:200};const res={status:code=>{result.status=code;return res;},json:value=>{result.body=value;return res;},clearCookie:()=>{},cookie:(name,value)=>{result.cookie={name,value};}};
     await handlers['/login']({body},res);return {...result,lookup,logs};
   }};
 }
@@ -34,7 +36,7 @@ test('admin bcrypt cost 12 hash authenticates through actual login handler',asyn
   const handler=loginRoute(user);
   const good=await handler.run({email:' ADMIN@example.test ',password});
   assert.equal(good.status,200);assert.equal(good.lookup,'admin@example.test');
-  assert.equal(good.body.role,'admin');assert.equal(good.cookie.name,'auth_token');assert.equal(good.body.password,undefined);
+  assert.equal(good.body.requiresMfaSetup,true);assert.equal(good.cookie.name,'auth_step');assert.equal(good.body.password,undefined);
   assert.equal((await handler.run({email:user.email,password:'wrong'})).status,401);
 });
 test('missing account uses 401, while database failures produce safe diagnostics',async()=>{
@@ -46,7 +48,7 @@ test('missing account uses 401, while database failures produce safe diagnostics
 });
 
 test('login failure identifies failing stage without exposing internal error details',async()=>{
- const user={_id:'admin',role:'admin',password:await bcrypt.hash('Synthetic password!',10)};
+ const user={_id:'patient',role:'patient',password:await bcrypt.hash('Synthetic password!',10)};
  const response=await loginRoute(user,null,new Error('private connection details')).run({email:'admin@example.test',password:'Synthetic password!'});
  assert.equal(response.status,500);assert.equal(response.body.stage,'profile_lookup');
  assert.match(response.body.error,/unexpected_login_failure\/profile_lookup/);

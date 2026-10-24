@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("./");
 @import "material-icons/iconfont/material-icons.css";
 
 /* Define the color palette as CSS custom properties */

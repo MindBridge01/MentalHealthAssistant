@@ -11,6 +11,8 @@ const MIGRATIONS = [
   { id: '004_registration_completion', file: '004_registration_completion.sql' },
   { id: '005_professional_registration', file: '005_professional_registration.sql' },
   { id: '006_hospital_booking', file: '006_hospital_booking.sql' },
+  { id: '007_invitations_and_mfa', file: '007_invitations_and_mfa.sql' },
+  { id: '008_auth_security', file: '008_auth_security.sql' },
 ];
 
 async function runMigrations(client, backfillRegistry) {

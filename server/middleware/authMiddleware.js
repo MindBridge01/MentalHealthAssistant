@@ -12,7 +12,7 @@ function logAuthorizationFailure(req, reason) {
 }
 
 function authenticateJWT(requiredRole = null) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.auth_token;
     const tokenFromHeader =
@@ -26,7 +26,7 @@ function authenticateJWT(requiredRole = null) {
     }
 
     try {
-      const decoded = verifyToken(token);
+      const decoded = await require("../services/authSecurity").validate(require("../config/database"), verifyToken(token));
       req.user = { ...decoded, role: normalizeRole(decoded.role) }; // attach normalized role from verified token
 
       // If requiredRole is specified, check role
