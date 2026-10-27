@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="244" height="80" viewBox="0 0 244 80" fill="none">
+  <title>GDPR compliant</title>
+  <defs><path id="star" d="m0-2.5.73 1.5 1.66.24-1.2 1.17.28 1.65L0 1.28l-1.47.78.28-1.65-1.2-1.17 1.66-.24Z" fill="#2e2f6b"/></defs>
+  <g transform="translate(33 40)">
+    <use href="#star" y="-26"/><use href="#star" x="13" y="-22.52"/><use href="#star" x="22.52" y="-13"/>
+    <use href="#star" x="26"/><use href="#star" x="22.52" y="13"/><use href="#star" x="13" y="22.52"/>
+    <use href="#star" y="26"/><use href="#star" x="-13" y="22.52"/><use href="#star" x="-22.52" y="13"/>
+    <use href="#star" x="-26"/><use href="#star" x="-22.52" y="-13"/><use href="#star" x="-13" y="-22.52"/>
+  </g>
+  <g stroke="#2e2f6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="23" y="35" width="20" height="17" rx="2"/><path d="M27 35v-5a6 6 0 0 1 12 0v5M33 42v4"/>
+  </g>
+  <text x="73" y="39" fill="#2e2f6b" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="600" letter-spacing="2">GDPR</text>
+  <text x="75" y="59" fill="#716d7c" font-family="Arial, Helvetica, sans-serif" font-size="9" letter-spacing="3.2">COMPLIANT</text>
+</svg>

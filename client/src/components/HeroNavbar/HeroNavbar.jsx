@@ -43,7 +43,13 @@ export default function HeroNavbar({ theme = "light" }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navItems = [
+  const isLandingPage = location.pathname === "/";
+  const navItems = isLandingPage ? [
+    { label: "How it works", to: "#how-it-works" },
+    { label: "Our approach", to: "#service-scope" },
+    { label: "Privacy", to: "#privacy" },
+    { label: "FAQs", to: "#questions" },
+  ] : [
     { label: "Home", to: "/" },
     { label: "AI Chat", to: "/ai-chat" },
     { label: "Community", to: isAuthenticated ? "/patient/community" : "/login/patient" },
@@ -65,7 +71,7 @@ export default function HeroNavbar({ theme = "light" }) {
 
   const roleLinks = role === "admin" ? adminMenu : role === "doctor" ? doctorMenu : patientMenu;
 
-  const isLight = theme === "light";
+  const isLight = theme === "light" && location.pathname !== "/";
   const isSticky = theme === "sticky"; // For white background pages
 
   const headerClass = isSticky 
@@ -75,7 +81,7 @@ export default function HeroNavbar({ theme = "light" }) {
   const textClass = (isLight && !isSticky) ? "text-white" : "text-slate-900";
   const hoverTextClass = (isLight && !isSticky) ? "hover:text-white/75" : "hover:text-primary";
   const ringClass = (isLight && !isSticky) ? "focus-visible:ring-white" : "focus-visible:ring-primary";
-  const logoSrc = (isLight && !isSticky) ? "/logoBlack&White.png" : "/logoColored.png";
+  const logoSrc = isLandingPage ? "/mindbridge-logo-transparent.png" : (isLight && !isSticky) ? "/logoBlack&White.png" : "/logoColored.png";
 
   const handleSos = async () => {
     if (!user) {
@@ -103,9 +109,9 @@ export default function HeroNavbar({ theme = "light" }) {
   };
 
   return (
-    <header className={`flex min-h-[101px] w-full items-center gap-6 ${headerClass} ${textClass} lg:gap-[100px] px-4 sm:px-6 lg:px-[25px]`}>
+    <header className={`${location.pathname === "/" ? "landing-nav" : ""} flex min-h-[101px] w-full items-center gap-6 ${headerClass} ${textClass} lg:gap-[100px] px-4 sm:px-6 lg:px-[25px]`}>
       <Link to="/" className={`shrink-0 focus:outline-none focus-visible:ring-2 ${ringClass}`}>
-        <img src={logoSrc} alt="MindBridge" className="h-[64px] w-[90px] object-contain lg:h-[76px] lg:w-[161px]" />
+        {isLandingPage ? <span className="landing-brand-logo" role="img" aria-label="MindBridge" /> : <img src={logoSrc} alt="MindBridge" className="h-[64px] w-[90px] object-contain lg:h-[76px] lg:w-[161px]" />}
       </Link>
 
       <div className={`flex min-h-[101px] flex-1 flex-col gap-5 py-4 lg:flex-row lg:items-center lg:justify-between ${!isSticky ? (isLight ? "lg:border-l lg:border-white/25" : "lg:border-l lg:border-black/25") : ""} lg:py-0`}>
@@ -114,15 +120,16 @@ export default function HeroNavbar({ theme = "light" }) {
           aria-label="Primary navigation"
         >
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            {navItems.map((item) => (
-              <Link
+            {navItems.map((item) => {
+              const NavItem = item.to.startsWith("#") ? "a" : Link;
+              return <NavItem
                 key={item.label}
-                to={item.to}
+                {...(item.to.startsWith("#") ? { href: item.to } : { to: item.to })}
                 className={`font-['Helvetica_Neue',Helvetica,sans-serif] text-sm font-medium leading-[16.8px] tracking-[0.42px] transition duration-200 ${textClass} ${hoverTextClass} focus:outline-none focus-visible:ring-2 ${ringClass}`}
               >
                 {item.label}
-              </Link>
-            ))}
+              </NavItem>;
+            })}
             {isAuthenticated && roleLinks.map((item) => (
               <Link
                 key={item.label}
@@ -144,7 +151,7 @@ export default function HeroNavbar({ theme = "light" }) {
                   className={`inline-flex min-h-[40px] items-center justify-center gap-[10px] rounded-[4px] bg-[#fdd5d3] px-6 py-2 text-sm font-bold text-red-600 transition duration-200 hover:bg-[#fac4c1] focus:outline-none focus-visible:ring-2 ${ringClass}`}
                 >
                   <AlertIcon className="h-5 w-5 text-red-600" />
-                  <span className="whitespace-nowrap uppercase tracking-wider">SOS Help</span>
+                  <span className="whitespace-nowrap uppercase tracking-wider">{isLandingPage ? "Notify guardian" : "SOS Help"}</span>
                 </button>
               )}
               
@@ -198,11 +205,11 @@ export default function HeroNavbar({ theme = "light" }) {
                 Log In
               </Link>
               <Link
-                to="/login/patient"
+                to={isLandingPage ? "/patient/doctors" : "/login/patient"}
                 className={`inline-flex min-h-[40px] items-center justify-center gap-[10px] rounded-[4px] bg-[#fdd5d3] px-8 py-2 text-base font-medium text-red-600 transition duration-200 hover:bg-[#fac4c1] focus:outline-none focus-visible:ring-2 ${ringClass}`}
               >
-                <AlertIcon className="h-6 w-6 text-red-600" />
-                <span className="whitespace-nowrap text-red-600">Immediate Support</span>
+                {!isLandingPage && <AlertIcon className="h-6 w-6 text-red-600" />}
+                <span className="whitespace-nowrap text-red-600">{isLandingPage ? "Find a professional" : "Immediate Support"}</span>
               </Link>
             </>
           )}

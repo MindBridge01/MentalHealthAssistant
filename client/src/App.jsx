@@ -141,7 +141,12 @@ function App() {
 
   const isAuthPage =
     location.pathname.startsWith("/login") ||
-    location.pathname.startsWith("/signup");
+    location.pathname.startsWith("/signup") ||
+    ["/security/setup", "/doctor/mfa-setup"].includes(location.pathname);
+
+  const isOnboardingPage = ["/patient/onboarding", "/doctor/onboarding"].some(
+    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
 
   const isDashboardArea =
     location.pathname.startsWith("/patient") ||
@@ -158,6 +163,8 @@ function App() {
   return (
     <>
       {!isAuthPage &&
+        location.pathname !== "/ai-chat" &&
+        !isOnboardingPage &&
         !isDashboardArea &&
         location.pathname !== "/admin" && (
         <div
@@ -171,7 +178,7 @@ function App() {
         </div>
       )}
 
-      {isAuthPage ? (
+      {location.pathname.startsWith("/signup") && !["/signup/patient", "/signup/doctor"].includes(location.pathname) ? (
         <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 z-50">
           <Link
             to="/"
@@ -210,6 +217,7 @@ function App() {
         <Route path="/doctor/mfa-setup" element={<DoctorMfaSetupPage />} />
         <Route path="/login" element={<AuthWindow mode="login" />} />
 
+        <Route path="/login/doctor" element={<Navigate to="/login?portal=doctor" replace />} />
         <Route
           path="/login/:role"
           element={<Navigate to="/login" replace />}

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../lib/apiClient';
 import './registration.css';
+import PortalShell from '../../components/auth/PortalShell';
 import RegistrationReports from '../../components/RegistrationReports';
 
 const STEPS = [
@@ -99,16 +100,7 @@ export default function RegistrationPage() {
   const textInput = (key, extra = {}) => <input value={form[key]} onChange={(e) => update(key, e.target.value)} {...extra} />;
   const status = application && STATUS[application.status];
 
-  return <main className="registration-page">
-    <header className="registration-topbar">
-      <Link to="/" className="registration-brand"><span className="registration-brand-mark material-icons" aria-hidden="true">spa</span>MindBridge<span className="registration-brand-divider" />Your care starts here</Link>
-      <button type="button" className="registration-text-button" onClick={async () => { await logout(); navigate('/login'); }}>Sign out <span aria-hidden="true">↗</span></button>
-    </header>
-    <div className="registration-intro">
-      <span className="registration-eyebrow">A SMALL STEP TOWARDS FEELING BETTER</span>
-      <h1>Let’s get to know you.</h1>
-      <p>A few details to help us create a support space that feels right for you.</p>
-    </div>
+  return <PortalShell role="patient" backDisabled={saving || reportBusy} activeStep={status && !editing ? 4 : step + 1} onBack={step > 0 && !(status && !editing) ? () => { setError(''); setStep(step - 1); } : undefined} accountAction={<button type="button" onClick={async () => { await logout(); navigate('/login'); }}>Sign out</button>}>
     {loading ? <div className="registration-status" role="status">Preparing your registration…</div> : loadFailed ?
       <div className="registration-status"><p role="alert">{error}</p><button className="primary-button" onClick={load}>Try again</button></div> :
       status && !editing ? <section className="registration-status">
@@ -125,19 +117,7 @@ export default function RegistrationPage() {
         {error && <p role="alert">{error}</p>}
         <RegistrationReports onBusyChange={setReportBusy} />
         <p className="registration-footnote">Review is administrative, not a diagnosis. This page is not monitored for emergency requests.</p>
-      </section> : <div className="registration-layout">
-        <aside className="registration-sidebar">
-          <div className="registration-step-heading">YOUR REGISTRATION <span>{step + 1} / 4</span></div>
-          <ol className="registration-steps">
-            {STEPS.map((item, index) => <li key={item.title} aria-current={step === index ? 'step' : undefined} className={step === index ? 'is-current' : index < step ? 'is-complete' : ''}>
-              <span className="registration-step-icon material-icons" aria-hidden="true">{index < step ? 'check' : item.icon}</span>
-              <div><strong>{item.title}</strong><small>{item.description}</small></div>
-            </li>)}
-          </ol>
-          <div className="registration-reassurance"><span className="material-icons" aria-hidden="true">lock_outline</span><h3>Your story stays yours.</h3><p>Admins review registration details. Optional health context is kept out of their review queue.</p></div>
-          <p className="registration-demo-note">For adults aged 18+<br />You do not need a diagnosis to get started.</p>
-        </aside>
-        <form ref={formRef} onSubmit={submit} className="registration-form">
+      </section> :         <form ref={formRef} onSubmit={submit} className="registration-form">
           <div className="registration-form-eyebrow">STEP 0{step + 1}<span>{step === 1 ? 'Optional care context' : 'Patient registration'}</span></div>
           <h2 tabIndex="-1" ref={headingRef}>{['First, the basics.', 'Your experience matters.', 'Choose how we connect.', 'One last look.'][step]}</h2>
           <p className="registration-subtitle">{['Tell us what to call you and how to reach you. Fields marked optional can be left blank.', 'You do not need a diagnosis or a previous doctor’s report to register.', 'Choose your preferences. Adding a trusted person does not give them access to your records.', 'Check your details and read the notes below before sending your application.'][step]}</p>
@@ -172,8 +152,6 @@ export default function RegistrationPage() {
           </fieldset>
           {error && <div className="registration-error" role="alert">{error}</div>}
           <footer className="registration-form-footer"><span className="registration-footnote">{step === 3 ? 'You can check your status after submitting.' : 'Your details are saved when you submit.'}</span><div>{step > 0 && <button type="button" disabled={saving || reportBusy} className="registration-secondary" onClick={() => { setError(''); setStep(step - 1); }}>Back</button>}<button type="submit" disabled={saving || reportBusy} className="primary-button">{saving ? 'Submitting…' : step === 3 ? 'Submit registration' : 'Continue'} {!saving && <span aria-hidden="true">→</span>}</button></div></footer>
-        </form>
-      </div>}
-    <footer className="registration-bottom"><span className="material-icons" aria-hidden="true">favorite_border</span> A little support. A step forward. At your pace.</footer>
-  </main>;
+        </form>}
+  </PortalShell>;
 }

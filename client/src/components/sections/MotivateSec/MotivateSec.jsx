@@ -46,13 +46,14 @@ const MotivateSec = () => {
   }, [testimonials.length]);
 
   return (
-    <div className="relative w-full max-w-[1200px] mx-auto py-12 gap-20 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col items-center gap-2 md:gap-4 px-4">
+    <div className="landing-motivation landing-section">
+      <p className="landing-section-label">06 / A LITTLE PERSPECTIVE</p>
+      <div className="landing-section-heading">
         <h2 className="text-dark-blue900 text-5xl md:text-7xl text-center font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
-          Take a Quick Breath Activity!
+          A little inspiration. A new perspective.
         </h2>
         <p className="font-[Satoshi] font-normal text-dark-blue900 text-lg md:text-2xl text-center">
-          A one-minute break to calm your heart. So let’s try fast enough to fit anywhere.
+          Words to carry with you, wherever you are today.
         </p>
       </div>
       <div className="h-8 md:h-12"></div> {/* Added gap between text and card */}

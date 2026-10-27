@@ -1,0 +1,93 @@
+{
+  "primary": "#8B56F6",
+  "shades": [
+    {
+      "name": "purple/50",
+      "value": "#F7F2FF",
+      "css": "var(--primary-50)",
+      "role": "Canvas",
+      "onColor": "#000000",
+      "contrast": 19.0997
+    },
+    {
+      "name": "purple/100",
+      "value": "#EFE6FE",
+      "css": "var(--primary-100)",
+      "role": "Subtle",
+      "onColor": "#000000",
+      "contrast": 17.42
+    },
+    {
+      "name": "purple/200",
+      "value": "#DECCFD",
+      "css": "var(--primary-200)",
+      "role": "Border",
+      "onColor": "#000000",
+      "contrast": 14.1614
+    },
+    {
+      "name": "purple/300",
+      "value": "#C7A8FB",
+      "css": "var(--primary-300)",
+      "role": "Soft accent",
+      "onColor": "#000000",
+      "contrast": 10.4225
+    },
+    {
+      "name": "purple/400",
+      "value": "#AA7FF8",
+      "css": "var(--primary-400)",
+      "role": "Accent",
+      "onColor": "#000000",
+      "contrast": 7.1004
+    },
+    {
+      "name": "purple/500",
+      "value": "#8B56F6",
+      "css": "var(--primary-500)",
+      "role": "Primary",
+      "onColor": "#000000",
+      "contrast": 4.7597
+    },
+    {
+      "name": "purple/600",
+      "value": "#7639E0",
+      "css": "var(--primary-600)",
+      "role": "Hover / CTA",
+      "onColor": "#FFFFFF",
+      "contrast": 6.119
+    },
+    {
+      "name": "purple/700",
+      "value": "#6128BC",
+      "css": "var(--primary-700)",
+      "role": "Pressed",
+      "onColor": "#FFFFFF",
+      "contrast": 8.2744
+    },
+    {
+      "name": "purple/800",
+      "value": "#502399",
+      "css": "var(--primary-800)",
+      "role": "Heading",
+      "onColor": "#FFFFFF",
+      "contrast": 10.2866
+    },
+    {
+      "name": "purple/900",
+      "value": "#421F7C",
+      "css": "var(--primary-900)",
+      "role": "Text",
+      "onColor": "#FFFFFF",
+      "contrast": 12.2186
+    },
+    {
+      "name": "purple/950",
+      "value": "#29134F",
+      "css": "var(--primary-950)",
+      "role": "Ink",
+      "onColor": "#FFFFFF",
+      "contrast": 16.1497
+    }
+  ]
+}

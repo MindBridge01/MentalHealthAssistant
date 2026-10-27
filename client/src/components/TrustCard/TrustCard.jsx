@@ -9,7 +9,7 @@ const TrustCard = ({
 }) => {
   return (
     <div
-      className={`flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-12 p-4 md:p-6 border-b border-dark-blue100 ${className}`}
+      className={`landing-trust-card flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-12 p-4 md:p-6 border-b border-dark-blue100 ${className}`}
     >
       <div className="flex-shrink-0">{icon}</div>
       <div className="flex flex-col w-full md:w-auto items-center md:items-start gap-3 md:gap-4">

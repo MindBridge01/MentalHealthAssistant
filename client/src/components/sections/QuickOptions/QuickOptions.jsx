@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import Quickoptioncard from "../../Quickoptioncard/Quickoptioncard";
 
-import emergency from "../../../assets/images/emergency.png";
-import community from "../../../assets/images/community.png";
+import chatScreen from "../../../assets/product/ai-chat.png";
+import community from "../../../assets/landing-stock/connection.jpg";
 import doctor from "../../../assets/images/doctor.png";
 
 const QuickOptions = () => {
@@ -14,19 +14,19 @@ const QuickOptions = () => {
 
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center gap-8 sm:gap-16 py-8 sm:py-12 px-4">
-      {/* Title and Subtitle */}
-      <div className="w-full max-w-[1107px] flex flex-col items-center gap-2 sm:gap-4">
+    <div id="find-support" className="landing-support landing-section">
+      <p className="landing-section-label">02 / FIND YOUR SUPPORT</p>
+      <div className="landing-section-heading">
         <h2 className="text-center text-dark-blue900 text-5xl sm:text-7xl font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
-          Ways to Feel Better
+          Choose the support that fits.
         </h2>
         <p className="text-center font-[Satoshi] font-normal text-dark-blue900 text-lg sm:text-2xl">
-          Find help that fits you safe, simple, and here for you
+          Reflect with AI, explore professional care, or connect with other members.
         </p>
       </div>
 
       {/* Cards */}
-      <div className="flex flex-wrap justify-center gap-8 sm:gap-16">
+      <div className="landing-support-grid">
         <div
           ref={ref1}
           className={`transition duration-1000 ${
@@ -35,9 +35,9 @@ const QuickOptions = () => {
         >
           <Quickoptioncard
             imageSrc={doctor}
-            title="Talk to a Doctor"
-            description="Connect with a licensed professional for a private consultation—available through video or voice, booked right from the platform."
-            buttonText="Meet Doctor"
+            title="Find a professional"
+            description="Review published profiles, qualifications, hospital locations, and available appointment slots. Patient registration approval is required to request an appointment."
+            buttonText="Browse professionals"
             onClick={() => navigate("/patient/doctors")}
           />
         </div>
@@ -50,7 +50,7 @@ const QuickOptions = () => {
           <Quickoptioncard
             imageSrc={community}
             title="Join Our Community"
-            description="Share your thoughts or find strength in others’ stories—an anonymous, moderated space to connect on the Community page."
+            description="Read and share reflections with other signed-in members. Posts, comments, and profile information you share are visible within the community."
             buttonText="Join Community"
             onClick={() => navigate("/patient/community")}
           />
@@ -62,11 +62,11 @@ const QuickOptions = () => {
           } border-2 rounded-[24px] border-red-300`}
         >
           <Quickoptioncard
-            imageSrc={emergency}
-            title="Call Help Now"
-            description="Immediate support, 24/7—reach out anytime"
-            buttonText="Get a Call"
-            onClick={() => navigate("/patient/doctors")}
+            imageSrc={chatScreen}
+            title="Reflect with AI"
+            description="Try an automated conversation for reflection and general support. No account is needed. AI responses are not a diagnosis or professional advice."
+            buttonText="Try AI chat"
+            onClick={() => navigate("/ai-chat")}
           />
         </div>
       </div>

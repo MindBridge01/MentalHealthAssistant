@@ -73,7 +73,7 @@ const AuthWindow = ({ mode = "login" }) => {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
+  const [applicationSubmitted] = useState(false);
 
   const roleLabel = useMemo(() => {
     if (currentRole === ROLE_DOCTOR) return "Doctor";
@@ -212,8 +212,9 @@ const AuthWindow = ({ mode = "login" }) => {
 
   if (mode === "login") {
     return (
-      <LoginContainer>
+      <LoginContainer requiresMfa={requiresMfa} role={requiresMfa ? "doctor" : undefined}>
         <LoginForm
+          portalRole={new URLSearchParams(location.search).get("portal") === "doctor" ? "doctor" : "patient"}
           onGoogleCredential={handleGoogle}
           onGoogleError={setError}
           currentRole={currentRole}

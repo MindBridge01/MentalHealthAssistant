@@ -10,7 +10,7 @@ const MotivateCard = ({
 }) => {
   return (
     <div
-      className={`relative p-[2px] bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-500 rounded-[36px] shadow-xl w-[1156px] h-[356px] mx-auto ${className}`}
+      className={`landing-quote-card relative p-[2px] bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-500 rounded-[36px] shadow-xl w-[1156px] h-[356px] mx-auto ${className}`}
     >
       {/* White inner card */}
       <div className="bg-white rounded-[34px] p-6 sm:p-10 md:p-16 flex flex-col md:flex-row items-start gap-8 relative overflow-hidden h-full">

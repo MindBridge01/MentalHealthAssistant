@@ -1,43 +1,17 @@
-// TrustSec.jsx
-import React from "react";
-import TrustCard from "../../TrustCard/TrustCard";
-import TrustIcon1 from "../../../assets/TrustIcos/TrustIcon1.png";
-import TrustIcon2 from "../../../assets/TrustIcos/TrustIcon2.png";
-import TrustIcon3 from "../../../assets/TrustIcos/TrustIcon3.png";
+import hipaaMark from '../../../assets/compliance/hipaa.svg';
+import gdprMark from '../../../assets/compliance/gdpr.svg';
 
-const TrustSec = () => {
-  return (
-    <div className="w-full flex flex-col justify-start items-center gap-4 sm:gap-8 md:gap-16 px-4">
-      {/* Header Section */}
-      <div className="w-full max-w-[952px] flex flex-col justify-start items-center gap-2 sm:gap-3 md:gap-4">
-        <div className="text-center text-slate-800 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
-          You Can Trust Us
-        </div>
-        <div className="text-center text-slate-800 text-sm sm:text-base md:text-2xl font-normal font-['Satoshi']">
-          We keep you safe and supported, always here for you.
-        </div>
-      </div>
-
-      {/* Cards Section */}
-      <div className="w-full max-w-[952px] flex flex-col justify-start items-center gap-6 sm:gap-8 md:gap-16">
-        <TrustCard
-          icon={<img src={TrustIcon1} alt="Care icon" className="w-16 h-16 sm:w-20 sm:h-20 md:w-40 md:h-40" />}
-          title="Built on Unshaken Care"
-          description="Every tool, every word is crafted to hold you gently—your peace is our foundation."
-        />
-        <TrustCard
-          icon={<img src={TrustIcon2} alt="Strength icon" className="w-16 h-16 sm:w-20 sm:h-20 md:w-40 md:h-40" />}
-          title="Guarded by Silent Strength"
-          description="Your story stays safe with us, locked tight and handled with quiet respect."
-        />
-        <TrustCard
-          icon={<img src={TrustIcon3} alt="Support icon" className="w-16 h-16 sm:w-20 sm:h-20 md:w-40 md:h-40" />}
-          title="Always Here for You"
-          description="Day or night, our support is steady, ready to lift you when you need it most."
-        />
-      </div>
-    </div>
-  );
-};
-
-export default TrustSec;
+export default function TrustSec({ onOpenPolicy }) {
+  const items = [
+    ['AI conversations', 'Messages you send are processed by MindBridge’s server and its configured AI service. Public access does not mean you should share unnecessary identifying information.'],
+    ['Account records', 'Signed-in chat can save conversation history. Registration details and appointment records are used to support the account and booking features.'],
+    ['Sharing with others', 'Community posts are visible to other members. Appointment information is used by the relevant provider, hospital, and authorized administrative users.'],
+  ];
+  return <section id="privacy" className="landing-trust landing-section" aria-labelledby="landing-privacy-title">
+    <p className="landing-section-label">06 / PRIVACY AND YOUR INFORMATION</p>
+    <div className="landing-section-heading"><h2 id="landing-privacy-title">Know what you’re sharing.</h2><p>Understand how a feature uses information before you decide to use it.</p></div>
+    <div className="landing-privacy-grid">{items.map(([title, description]) => <article key={title}><h3>{title}</h3><p>{description}</p></article>)}</div>
+    <div className="landing-privacy-actions"><button type="button" className="landing-text-link" onClick={() => onOpenPolicy('privacy')}>Read the privacy notice draft <span aria-hidden="true">↗</span></button><button type="button" className="landing-text-link" onClick={() => onOpenPolicy('terms')}>Read the terms draft <span aria-hidden="true">↗</span></button></div>
+    <details className="landing-compliance-details"><summary>About the HIPAA and GDPR marks</summary><div className="landing-compliance"><img src={hipaaMark} alt="HIPAA compliance mark" width="244" height="80" /><img src={gdprMark} alt="GDPR compliance mark" width="244" height="80" /></div><p>These marks reflect the operator’s stated compliance. They are not independent accreditation. The finalized privacy notice and supporting compliance documentation should explain the applicable scope.</p></details>
+  </section>;
+}

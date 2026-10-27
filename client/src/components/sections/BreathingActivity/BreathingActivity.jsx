@@ -1,30 +1,29 @@
-import React from "react";
-import clock from "../../../assets/images/clock.png";
-import BreathingCard from "../../BreathingCard/BreathingCard";
-import BreathingCircle from "../../BreathingCircle/BreathingCircle";
+import { useEffect, useRef, useState } from 'react';
 
-const BreathingActivity = () => {
-  return (
-    <div className="flex flex-col items-center gap-8 md:gap-18 px-4 sm:px-8 py-8 md:py-12">
-      <div className="flex flex-col items-center gap-2 md:gap-4 px-4">
-        <h2 className="text-dark-blue900 text-5xl md:text-7xl text-center font-thin leading-[1.05] tracking-[-0.04em]" style={{ fontFamily: '"Editor\'s Note"', fontWeight: 50 }}>
-          Take a Quick Breath Activity!
-        </h2>
-        <p className="font-[Satoshi] font-normal text-dark-blue900 text-lg md:text-2xl text-center">
-          A one-minute break to calm your heart. So let’s try fast enough to fit anywhere.
-        </p>
-      </div>
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full px-4">
-        <BreathingCircle />
-        <BreathingCard
-          className="custom-class"
-          title="Relaxation"
-          description="I suggest is a simple, calming exercise called the 4-4-4 technique or box breathing. It’s designed to help you slow down, ease stress or anxiety, and bring your mind back to the present moment when things feel overwhelming. Here’s how it works: you inhale deeply through your nose for 4 seconds, hold that breath gently for 4 seconds,"
-          image={clock}
-        />
-      </div>
+export default function BreathingActivity() {
+  const [elapsed, setElapsed] = useState(0);
+  const [running, setRunning] = useState(false);
+  const elapsedRef = useRef(0);
+  useEffect(() => {
+    if (!running) return;
+    const started = performance.now() - elapsedRef.current;
+    const timer = window.setInterval(() => {
+      const next = Math.min(60000, performance.now() - started);
+      elapsedRef.current = next;
+      setElapsed(next);
+      if (next >= 60000) setRunning(false);
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  const reset = () => { setRunning(false); elapsedRef.current = 0; setElapsed(0); };
+  const start = () => { if (elapsed >= 60000) { elapsedRef.current = 0; setElapsed(0); } setRunning(true); };
+  const remaining = Math.ceil((60000 - elapsed) / 1000);
+  return <section id="breathing" className="landing-breathing landing-section" aria-labelledby="landing-breathing-title">
+    <p className="landing-section-label">03 / TRY A SELF-GUIDED ACTIVITY</p>
+    <div className="landing-section-heading"><h2 id="landing-breathing-title">Take a one-minute pause.</h2><p>A simple timer to make room for gentle, comfortable breathing.</p></div>
+    <div className="landing-breathing-layout">
+      <div className="landing-breathing-timer"><div className="landing-timer-ring" style={{ "--timer-progress": `${elapsed / 60000 * 360}deg` }} role="progressbar" aria-label="One-minute breathing timer" aria-valuemin={0} aria-valuemax={60} aria-valuenow={Math.floor(elapsed / 1000)}><span>{remaining}<small>seconds remaining</small></span></div><div className="landing-timer-controls"><button type="button" onClick={running ? () => setRunning(false) : start}>{running ? 'Pause timer' : elapsed >= 60000 ? 'Start again' : elapsed > 0 ? 'Resume timer' : 'Start timer'}</button><button type="button" onClick={reset} disabled={elapsed === 0 && !running}>Reset</button></div><p role="status" hidden={elapsed === 0 && !running}>{elapsed >= 60000 ? 'Your one-minute pause is complete.' : running ? 'Timer running. Breathe at your own pace.' : elapsed > 0 ? 'Timer paused.' : ''}</p></div>
+      <div className="landing-breathing-instructions"><h3>Keep it comfortable.</h3><ol><li>Find a comfortable position and let your shoulders relax.</li><li>Breathe gently, without forcing a deep breath or holding it.</li><li>Let your breath flow out comfortably, and continue at your own pace.</li></ol><p>This timer is a short introduction, not a treatment or the full NHS exercise. Stop if you feel uncomfortable.</p><a className="landing-text-link" href="https://www.nhs.uk/mental-health/self-help/guides-tools-and-activities/breathing-exercises-for-stress/" target="_blank" rel="noopener noreferrer">Read the full NHS breathing guidance <span aria-hidden="true">↗</span></a></div>
     </div>
-  );
-};
-
-export default BreathingActivity;
+  </section>;
+}
