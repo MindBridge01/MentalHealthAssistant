@@ -17,6 +17,12 @@ router.put('/hospitals/:id/affiliations',role('admin'),run(r=>service.link(r.use
 router.get('/professionals',role('admin'),run(()=>service.directory()));
 router.get('/profile',role('doctor'),run(r=>service.mine(r.user)));
 router.put('/profile',role('doctor'),run(r=>service.saveProfile(r.user,r.body)));
+const photoUpload=require('multer')({storage:require('multer').memoryStorage(),limits:{fileSize:512*1024,files:1,fields:0}});
+router.post('/profile/photo',role('doctor'),photoUpload.single('photo'),run(async r=>{
+ if(!r.file)throw Object.assign(new Error('Choose a profile photo.'),{status:400});
+ const photo=require('../services/profilePhoto').normalizeProfilePhoto(r.file.buffer);
+ await service.savePhoto(r.user,photo);
+}));
 router.post('/slots',role('doctor'),run(r=>service.addSlot(r.user,r.body)));
 router.delete('/slots/:id',role('doctor'),run(r=>service.removeSlot(r.user,r.params.id)));
 router.get('/directory',role('patient','admin','doctor','hospital'),run(()=>service.browse()));
@@ -33,3 +39,4 @@ router.post('/hospital-officers/invitations/:id/revoke', role('admin'), run(r =>
 router.post('/hospital-officers/invitations/:id/resend', role('admin'), run(r => invitations.resendHospitalOfficerInvitation(db, { adminUser: r.user, invitationId: r.params.id, appOrigin: process.env.APP_PUBLIC_URL || 'http://localhost:5173' })));
 router.use((e,req,res,next)=>{const status=e.status||(['23505','40P01','40001'].includes(e.code)?409:500);res.status(status).json({error:e.status?e.message:status===409?'This record changed or is already reserved. Refresh and try again.':'Unable to process this request.'});});
 module.exports=router;
+
