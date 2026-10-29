@@ -245,7 +245,7 @@ function App() {
 
         <Route
           path="/ai-chat"
-          element={<ChatPage />}
+          element={<Navigate to="/patient/chat" replace />}
         />
 
         {/* Community shortcut */}

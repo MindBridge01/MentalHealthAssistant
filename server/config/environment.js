@@ -4,7 +4,9 @@ let loaded = false;
 
 function loadEnvironment() {
   if (loaded) return;
-  require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+  // All backend and chatbot processes share server/.env.
+  // Existing process-environment overrides are preserved.
+  require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
   loaded = true;
 }
 

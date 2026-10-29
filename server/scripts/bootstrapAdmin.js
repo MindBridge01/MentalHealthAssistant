@@ -11,6 +11,12 @@ async function main() {
   } finally { input.password=''; await database.closePool(); }
 }
 main().catch(error=>{
-  console.error(error.code ? 'Administrator setup failed. Check database availability and migrations.' : error.message);
+  const knownMessages = [
+    'Set temporary ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD process variables before running this command.',
+    'Provide a valid email and a unique password of at least 15 characters (maximum 72 UTF-8 bytes).',
+    'An administrator already exists. First-admin setup is disabled.',
+    'This email already belongs to an account. Setup will not promote it automatically.'
+  ];
+  console.error(knownMessages.includes(error.message) ? error.message : require('../services/databaseDiagnostic').databaseDiagnostic(error));
   process.exitCode=1;
 });

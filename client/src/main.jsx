@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import axios from 'axios';
 import './styles/global.css';
 import App from './App.jsx';
+import './styles/workspace-theme.css';
 import { AuthProvider } from './context/AuthContext.jsx';
 
 axios.defaults.withCredentials = true;

@@ -1,3 +1,4 @@
+import BrandLogo from "../BrandLogo.jsx";
 import { useMemo, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -64,13 +65,8 @@ export default function PatientShell({ children }) {
         >
           <div className="mb-10 flex items-center justify-between">
             <Link to="/patient/dashboard" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-lg font-bold text-white">
-                M
-              </div>
-              <div>
-                <p className="font-display text-lg font-semibold text-[var(--color-text)]">MindBridge</p>
-                <p className="text-xs text-[var(--color-text-muted)]">Patient space</p>
-              </div>
+              <BrandLogo/>
+              <span className="text-xs text-[var(--color-text-muted)]">Patient space</span>
             </Link>
             <button
               type="button"

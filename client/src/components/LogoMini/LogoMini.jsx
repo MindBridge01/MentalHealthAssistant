@@ -1,5 +1,5 @@
 import React from "react";
-import logolight from "../../assets/logo/logolight.png";
+import logolight from "../../../../assets/logo/logolight.png";
 
 export const LogoMini = ({ className }) => {
     return (

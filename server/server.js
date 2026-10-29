@@ -64,7 +64,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const profileRoutes = require("./routes/profileRoutes");
-const chatRoutes = require("./routes/chatRoutes");
+
 const patientRoutes = require("./routes/patientRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -75,7 +75,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/care", require("./routes/careRoutes"));
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api", chatRoutes);
+app.use("/api/chatbot", require("./routes/chatbotRoutes"));
+app.post(["/api/chat", "/api/public-chat", "/api/save-conversation"], (_req,res)=>res.status(410).json({error:"This chat endpoint has been retired. Open the patient AI Chat workspace."}));
 app.use("/api/patient", patientRoutes);
 
 const storage = multer.diskStorage({
@@ -164,16 +165,42 @@ io.on("connection", (_socket) => {
 
 app.use(errorHandler);
 
+let emailWorker;
+let projectProcesses;
+let shuttingDown=false;
+async function shutdown() {
+  if(shuttingDown) return;
+  shuttingDown=true;
+  const timeout=setTimeout(()=>process.exit(1),45000);
+  timeout.unref();
+  const closed=new Promise(resolve=>server.close(resolve));
+  io.close();
+  try {
+    await projectProcesses?.stop();
+    await emailWorker?.stop();
+    await closed;
+    await require('./config/database').closePool();
+    clearTimeout(timeout);
+    process.exit(0);
+  } catch { process.exit(1); }
+}
+
 async function startServer() {
   await connectToDatabase();
 
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
     console.log(`[startup] server listening on port ${PORT}`);
+    projectProcesses=require('./services/projectProcesses').startProjectProcesses();
+    if(process.env.EMAIL_WORKER_ENABLED !== 'false') {
+      emailWorker=require('./services/emailWorkerRuntime').startEmailWorker({database:require('./config/database')});
+    } else console.log('[email-worker] Automatic startup disabled by EMAIL_WORKER_ENABLED.');
   });
 }
 
 if (require.main === module) {
+  process.once('SIGINT',shutdown);
+  process.once('SIGTERM',shutdown);
   startServer();
 }
 
