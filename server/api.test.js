@@ -8,7 +8,6 @@ const doctorModel = require("./models/doctorModel");
 const appointmentModel = require("./models/appointmentModel");
 const messageModel = require("./models/messageModel");
 const auditLogService = require("./services/auditLogService");
-const chatPipelineService = require("./services/chatPipelineService");
 const bcrypt = require("bcrypt");
 const axios = require("axios");
 
@@ -22,7 +21,6 @@ jest.mock("./models/doctorModel");
 jest.mock("./models/appointmentModel");
 jest.mock("./models/messageModel");
 jest.mock("./services/auditLogService");
-jest.mock("./services/chatPipelineService");
 jest.mock("bcrypt");
 jest.mock("axios");
 jest.mock('google-auth-library');
@@ -128,16 +126,9 @@ describe("API Coverage Suite", () => {
   });
 
   describe("Chat APIs", () => {
-    test("POST /api/chat", async () => {
-      chatPipelineService.runChatPipeline.mockResolvedValue({ 
-        responseText: "H",
-        moderation: { moderated: false, content: "H" }, 
-        knowledgeMatches: [],
-        sanitizedHistory: [],
-        blocked: false
-      });
+    test("POST /api/chat is retired", async () => {
       const res = await request(app).post("/api/chat").send({ message: "Hi" });
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(410);
     });
   });
 });

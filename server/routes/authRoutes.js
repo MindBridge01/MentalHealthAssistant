@@ -377,7 +377,9 @@ router.post('/invitation/accept', authRateLimiter, async (req, res) => {
   const { acceptHospitalOfficerInvitation } = require('../services/invitationService');
   const database = require('../config/database');
   try {
-    const user = await acceptHospitalOfficerInvitation(database, { token, password, mfaCode, mfaSecret });
+    // The invitation service reads the encrypted MFA secret from the database.
+    // Never accept a replacement secret from the browser.
+    const user = await acceptHospitalOfficerInvitation(database, { token, password, mfaCode });
     if(user.verificationError) return res.status(400).json({error:user.verificationError});
     const sessionToken = await require('../services/authSecurity').issue(database, await findUserById(user._id), true);
     res.cookie('auth_token', sessionToken, getCookieOptions());

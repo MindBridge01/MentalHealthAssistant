@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_DEV_API_PROXY_TARGET || 'http://localhost:3000';
 
   return {
+    resolve: { dedupe: ["react", "react-dom"] },
     plugins: [
       tailwindcss(),
       react()
@@ -23,6 +24,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
+      fs: { allow: ["."] },
       proxy: {
         "/api": {
           target: proxyTarget,

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import patientPhoto from '../../../../assets/patient-registration.jpg';
+import './patient-signup.css';
 
 const PatientSignupWizard = () => {
   const navigate = useNavigate();
@@ -65,8 +67,8 @@ const PatientSignupWizard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden p-8 md:p-12">
+    <div className="patient-signup">
+      <div className="patient-signup__form-panel relative">
         
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
@@ -239,7 +241,7 @@ const PatientSignupWizard = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium py-3.5 rounded-xl transition-colors text-[15px]"
+              className="w-full bg-[#2e2f6b] hover:bg-[#252659] active:bg-[#20214d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2e2f6b] disabled:opacity-55 disabled:cursor-not-allowed text-white font-medium py-3.5 rounded-xl transition-colors text-[15px]"
             >
               {isSubmitting ? "Processing..." : "Create Account"}
             </button>
@@ -250,8 +252,10 @@ const PatientSignupWizard = () => {
           Already have an account? <Link to="/login" className="text-[#334155] font-bold hover:underline">Sign in</Link>
         </p>
       </div>
+      <aside className="patient-signup__visual"><img src={patientPhoto} alt="People taking part in a supportive group conversation" /></aside>
     </div>
   );
 };
 
 export default PatientSignupWizard;
+

@@ -1,3 +1,4 @@
+import BrandLogo from "../../components/BrandLogo.jsx";
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -101,7 +102,7 @@ export default function RegistrationPage() {
 
   return <main className="registration-page">
     <header className="registration-topbar">
-      <Link to="/" className="registration-brand"><span className="registration-brand-mark material-icons" aria-hidden="true">spa</span>MindBridge<span className="registration-brand-divider" />Your care starts here</Link>
+      <Link to="/" className="registration-brand"><BrandLogo/><span className="registration-brand-divider" />Your care starts here</Link>
       <button type="button" className="registration-text-button" onClick={async () => { await logout(); navigate('/login'); }}>Sign out <span aria-hidden="true">↗</span></button>
     </header>
     <div className="registration-intro">

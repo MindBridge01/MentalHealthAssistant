@@ -1,5 +1,5 @@
 import AuthButton from "./AuthButton";
-import AuthCheckbox from "./AuthCheckbox";
+
 import AuthFooter from "./AuthFooter";
 import InputField from "./InputField";
 import SocialLoginSection from "./SocialLoginSection";
@@ -26,7 +26,7 @@ export default function LoginForm({
     return (
       <div className="login-ui__form-wrap">
         <div className="login-ui__intro">
-          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "48px", height: "48px", borderRadius: "12px", background: "#f0fdfa", color: "#0d9488", marginBottom: "16px" }}>
+          <div className="login-ui__mfa-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -152,3 +152,4 @@ export default function LoginForm({
     </div>
   );
 }
+

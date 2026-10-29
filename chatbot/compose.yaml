@@ -1,0 +1,25 @@
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: mindbridge_chatbot
+      POSTGRES_USER: chatbot
+      POSTGRES_PASSWORD: ${CHATBOT_DB_PASSWORD:?Set a new password for this isolated database}
+    ports: ["127.0.0.1:5434:5432"]
+    volumes: ["chatbot-db:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot -d mindbridge_chatbot"]
+      interval: 10s
+      retries: 5
+  models:
+    build: ./model-service
+    ports: ["127.0.0.1:8100:8100"]
+    volumes: ["model-cache:/home/model/.cache/huggingface"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 4g
+    pids_limit: 128
+
+volumes:
+  chatbot-db:
+  model-cache:

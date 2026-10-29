@@ -15,7 +15,8 @@
     "test": "npm run test:registry && jest --runInBand",
     "test:registry": "node --test tests/registration.test.js tests/registrationAccess.test.js tests/registrationDocuments.test.js tests/registry.integration.test.js tests/registrationRoutes.test.js tests/professionalRoutes.test.js tests/care.integration.test.js tests/careRoutes.test.js",
     "test:care": "node --test tests/care.integration.test.js tests/careRoutes.test.js",
-    "test:auth": "node --test tests/authHttp.test.js tests/authSecurity.test.js tests/login.test.js tests/adminSecurity.test.js tests/officerInvitationAndMfa.test.js"
+    "test:auth": "node --test tests/authHttp.test.js tests/authSecurity.test.js tests/login.test.js tests/adminSecurity.test.js tests/officerInvitationAndMfa.test.js",
+    "migrate:chatbot": "node scripts/migrateChatbot.js"
   },
   "keywords": [],
   "author": "",

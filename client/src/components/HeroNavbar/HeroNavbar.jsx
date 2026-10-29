@@ -1,3 +1,4 @@
+import brandLogo from "../../../../assets/logo/logolight.png";
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -75,7 +76,7 @@ export default function HeroNavbar({ theme = "light" }) {
   const textClass = (isLight && !isSticky) ? "text-white" : "text-slate-900";
   const hoverTextClass = (isLight && !isSticky) ? "hover:text-white/75" : "hover:text-primary";
   const ringClass = (isLight && !isSticky) ? "focus-visible:ring-white" : "focus-visible:ring-primary";
-  const logoSrc = (isLight && !isSticky) ? "/logoBlack&White.png" : "/logoColored.png";
+  const logoSrc = brandLogo;
 
   const handleSos = async () => {
     if (!user) {

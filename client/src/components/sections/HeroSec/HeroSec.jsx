@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { apiUrl } from "../../../config/api";
+import { Link, useNavigate } from "react-router-dom";
+
 import ChatBubble from "../../ChatBubble/ChatBubble";
 import WelcomeScreen from "./WelcomeScreen";
 
@@ -38,40 +38,8 @@ function HeroChatCard() {
     }
   }, [messages]);
 
-  const sendMessage = async (textOverride) => {
-    const messageToSend = textOverride || inputText;
-    if (!messageToSend.trim()) return;
-
-    const userMessage = { id: Date.now(), role: "user", content: messageToSend };
-    setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
-
-    const thinkingId = Date.now() + 1;
-    setMessages((prev) => [
-      ...prev,
-      { id: thinkingId, role: "thinking", content: "Thinking..." },
-    ]);
-
-    try {
-      const res = await fetch(apiUrl("/api/public-chat"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ message: messageToSend }),
-      });
-      const data = await res.json();
-      setMessages((prev) => {
-        const newMessages = prev.filter((msg) => msg.id !== thinkingId);
-        return [...newMessages, { id: Date.now(), role: "assistant", content: data.content || "I didn't quite catch that." }];
-      });
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => {
-        const newMessages = prev.filter((msg) => msg.id !== thinkingId);
-        return [...newMessages, { id: Date.now(), role: "assistant", content: "Sorry, I'm having trouble connecting to my servers right now." }];
-      });
-    }
-  };
+  const navigate=useNavigate();
+  const sendMessage = () => navigate('/patient/chat');
 
   const handleChatSubmit = (e) => {
     e.preventDefault();

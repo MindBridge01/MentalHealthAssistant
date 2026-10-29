@@ -1,7 +1,4 @@
-const path = require('node:path');
-
-const LOGO_PATH = path.join(__dirname, '../../assets/logo/logodark.png');
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const {emailLayout, logoAttachments, LOGO_PATH} = require('./emailLayout');
 const TEMPLATES = {
   patient_submitted_admin: ['New patient registration awaiting review', 'A patient registration has been submitted. Please sign in to review the application.', 'Review application', '/admin/dashboard?view=registrations'],
   professional_submitted_admin: ['New professional application awaiting verification', 'A professional application has been submitted. Please sign in to verify the credentials and review the application.', 'Review application', '/admin/dashboard?view=verification'],
@@ -39,8 +36,8 @@ function renderEmail(template, { appOrigin, firstName, reference, appointmentTim
   return {
     subject,
     text: [...paragraphs, `${action}: ${url}`, footer].join('\n\n'),
-    html: `<!doctype html><html lang="en"><body style="font-family:Arial,sans-serif;color:#243746;line-height:1.6;padding:20px"><img src="cid:mindbridge-logo" alt="MindBridge" width="150" style="max-width:150px;height:auto"><main>${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}<p><a href="${escapeHtml(url)}">${escapeHtml(action)}</a></p></main><hr><p style="font-size:12px">${escapeHtml(footer).replace(/\n/g, '<br>')}</p></body></html>`,
-    attachments: [{ filename: 'mindbridge-logo.png', path: LOGO_PATH, cid: 'mindbridge-logo', contentType: 'image/png', contentDisposition: 'inline' }],
+    html: emailLayout({title:subject, paragraphs, action, url, footer}),
+    attachments: logoAttachments(),
   };
 }
 module.exports = { renderEmail, TEMPLATES, LOGO_PATH };

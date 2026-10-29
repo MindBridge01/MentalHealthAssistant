@@ -1,3 +1,4 @@
+const {renderOfficerInviteEmail}=require('./officerEmailTemplate');
 const crypto = require('node:crypto');
 const bcrypt = require('bcrypt');
 const { encryptValue, decryptValue } = require('./encryptionService');
@@ -34,40 +35,6 @@ function validatePassword(password) {
   return password;
 }
 
-function renderOfficerInviteEmail({ name, hospitalName, inviteUrl, expiresHours = 48, appOrigin }) {
-  const origin = new URL(appOrigin);
-  const paragraphs = [
-    `Hello ${name},`,
-    `You have been invited by the administration to manage appointments for ${hospitalName} on the MindBridge care platform.`,
-    `As a hospital booking officer, you will receive appointment requests from verified patients and coordinate scheduling with approved professionals.`,
-    `To activate your account, set your secure password, and enroll in Multi-Factor Authentication (MFA), please open the secure link below:`,
-    inviteUrl,
-    `Security Note: This invitation is single-use and will expire in ${expiresHours} hours. This email does not contain a password. Never forward or share this link.`,
-    `MindBridge Operations\nPlease do not reply with medical information.`,
-  ];
-
-  name=escapeHtml(name); hospitalName=escapeHtml(hospitalName); inviteUrl=escapeHtml(inviteUrl);
-  return {
-    subject: `MindBridge: Invitation to join as Booking Officer for ${hospitalName}`,
-    text: paragraphs.join('\n\n'),
-    html: `<!doctype html><html lang="en"><body style="font-family:Arial,sans-serif;color:#243746;line-height:1.6;padding:24px;max-width:600px">
-      <div style="background:#0f172a;color:#fff;padding:20px;border-radius:12px;margin-bottom:24px">
-        <h2 style="margin:0 0 8px 0;font-size:22px">MindBridge Hospital Care</h2>
-        <p style="margin:0;color:#94a3b8;font-size:14px">Secure Healthcare Coordination Platform</p>
-      </div>
-      <p>Hello <strong>${name}</strong>,</p>
-      <p>You have been invited by system administrators to serve as the <strong>Hospital Booking Officer</strong> for <strong>${hospitalName}</strong>.</p>
-      <p>Your account allows you to securely review, confirm, decline, or propose alternative times for patient consultation requests at your hospital.</p>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:20px 0">
-        <p style="margin:0 0 12px 0;font-size:14px;color:#475569">Click the button below to set your password and configure your authenticator app (MFA):</p>
-        <a href="${inviteUrl}" style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 24px;border-radius:6px;font-size:15px">Complete Officer Setup &rarr;</a>
-      </div>
-      <p style="font-size:13px;color:#64748b">If the button does not work, copy and paste this secure link into your browser:<br><a href="${inviteUrl}" style="color:#0d9488;word-break:break-all">${inviteUrl}</a></p>
-      <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
-      <p style="font-size:12px;color:#94a3b8">This invitation expires in ${expiresHours} hours and is single-use. If you did not expect this invitation, please contact hospital administration.</p>
-    </body></html>`,
-  };
-}
 
 async function inviteHospitalOfficer(database, { adminUser, hospitalId, name: rawName, email: rawEmail, appOrigin = 'http://localhost:5173' }) {
   if (adminUser.role !== 'admin') throw fail('Administrator access required.', 403);

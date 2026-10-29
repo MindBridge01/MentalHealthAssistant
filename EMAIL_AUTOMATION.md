@@ -28,3 +28,9 @@ Configure these settings privately using your deployment configuration (no secre
 The worker polls every five seconds when idle, claims rows using transaction locks and SKIP LOCKED, and uses expiring leases with token fencing. It retries up to five attempts with exponential delay, then marks a job failed. Admin API endpoints expose recent jobs and retry failed ones. SMTP acceptance is recorded as `sent`, not proof of inbox delivery or reading. Provider bounce/delivery webhooks are not implemented. Delivery is at least once: a crash after SMTP acceptance but before the database update may duplicate an email; a stable Message-ID helps identify retries but cannot guarantee deduplication by recipients.
 
 The logo previews and live SMTP delivery must be checked in the deployment's email clients before release. Configure a test mailbox for staging. No live database migration or external email send was performed during implementation.
+
+
+### Automatic backend worker startup
+The backend now starts the email polling loop after the HTTP server begins listening. Run `npm --prefix server run dev` (or `npm --prefix server start`); no separate worker command is required. Stop any older standalone worker terminal. Existing SMTP and application URL settings still apply. Idle polling runs every five seconds; transient failures retry after thirty seconds. Shutdown waits for in-flight work (up to 45 seconds). Queue leases coordinate concurrent processes, but SMTP delivery remains at-least-once: a crash after SMTP acceptance can cause a retry.
+
+For a dedicated production worker deployment, set `EMAIL_WORKER_ENABLED=false` on the backend and run the existing worker command separately. The `--check` command remains read-only and sends no emails. Missing configuration is logged; correct it and restart the backend.

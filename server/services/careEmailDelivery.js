@@ -1,5 +1,5 @@
 const {randomUUID}=require('node:crypto');
-const {LOGO_PATH}=require('./emailTemplates');
+const {emailLayout,logoAttachments}=require('./emailLayout');
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function renderCareEmail(j,origin){
  const url=new URL(origin);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw Error('Invalid origin');
@@ -14,7 +14,7 @@ function renderCareEmail(j,origin){
  if(j.audience==='admin')paragraphs.push('Updated by: '+(j.actor_name||'System'),'Updated at: '+new Date(j.updated_at).toISOString(),'No action is required unless a booking issue is reported.');
  if(j.demo)paragraphs.push('DEMONSTRATION ONLY — this is not a real medical appointment.');
  paragraphs.push('View securely: '+new URL(route,url).href,'Please do not reply with medical information.');
- return {subject:(j.demo?'[DEMO] ':'')+title+' — '+j.booking_id,text:paragraphs.join('\n\n'),html:`<html><body style="font-family:Arial,sans-serif;line-height:1.6"><img src="cid:mindbridge-logo" width="150" alt="MindBridge">${paragraphs.map(p=>p.startsWith('View securely: ')?'<p><a href="'+escape(new URL(route,url).href)+'">View appointment securely</a></p>':'<p>'+escape(p)+'</p>').join('')}</body></html>`,attachments:[{filename:'mindbridge-logo.png',path:LOGO_PATH,cid:'mindbridge-logo',contentDisposition:'inline'}]};
+ return {subject:(j.demo?'[DEMO] ':'')+title+' — '+j.booking_id,text:paragraphs.join('\n\n'),html:emailLayout({title,paragraphs:paragraphs.filter(p=>!p.startsWith('View securely: ')),action:'View appointment securely',url:new URL(route,url).href}),attachments:logoAttachments()};
 }
 async function deliverCareNext({database,transport,config}){
  const job=await database.withTransaction(async c=>{

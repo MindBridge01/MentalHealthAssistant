@@ -1,0 +1,41 @@
+/* Shared registration and workspace controls; preserve card/navigation layouts. */
+:root { --color-primary:#2e2f6b; --color-primary-soft:#eeeef8; --color-primary-soft-strong:#dddff1; --button-hover:#252659; --button-pressed:#20214d; --font-body:var(--font-sans); }
+.mindbridge-brand-logo { display:block; width:120px; height:auto; object-fit:contain; flex-shrink:0; }
+.admin-brand { padding-bottom:26px; }
+.care-workspace { background:linear-gradient(135deg,#f3fbf9,#edf7f4); }
+.care-workspace,.care-main { font-family:var(--font-sans); color:var(--color-text); }
+.care-main h1,.care-main h2 { font-family:var(--font-display); font-weight:600; letter-spacing:-.7px; }
+.admin-workspace { --ad-green:var(--color-primary); --ad-ink:var(--color-text); --ad-muted:var(--color-text-muted); --ad-line:var(--color-border); background:var(--color-surface); }
+body :is(.registration-page,.care-workspace,.care-main,.admin-workspace) :is(button,.care-link),
+body .primary-button, body .registration-secondary {
+  font-family:var(--font-sans); font-size:15px!important; font-weight:600;
+  line-height:1.5; border-radius:12px; min-height:44px;
+  transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease,transform 160ms ease;
+}
+body :is(.primary-button,.care-main button,.care-top button,.care-link,.admin-button-primary) {
+  padding:12px 20px; border:1px solid var(--color-primary); background:var(--color-primary);
+  color:white; font-weight:700; cursor:pointer; text-align:center;
+  box-shadow:0 6px 16px #2e2f6b24;
+}
+body :is(.primary-button,.care-main button,.care-top button,.care-link,.admin-button-primary):hover:not(:disabled) {
+  background:var(--button-hover); border-color:var(--button-hover); transform:translateY(-1px); box-shadow:0 8px 20px #2e2f6b30;
+}
+body :is(.admin-button:not(.admin-button-primary),.registration-secondary) {
+  padding:12px 20px; color:var(--color-primary); background:white; border:1px solid var(--color-border); cursor:pointer;
+}
+body :is(.admin-button:not(.admin-button-primary),.registration-secondary):hover:not(:disabled) { background:var(--color-primary-soft); border-color:#a4a7d0; }
+body :is(.registration-page,.care-workspace,.care-main,.admin-workspace) :is(button,a):focus-visible,
+body :is(.primary-button,.registration-secondary):focus-visible { outline:3px solid #2e2f6b; outline-offset:3px; }
+body :is(.primary-button,.care-main button,.care-top button,.care-link,.admin-button-primary):active:not(:disabled) { background:var(--button-pressed); transform:translateY(0); box-shadow:inset 0 2px 4px #0002; }
+body :is(.admin-button:not(.admin-button-primary),.registration-secondary):active:not(:disabled) { background:var(--color-primary-soft-strong); }
+body :is(.registration-page,.care-workspace,.care-main,.admin-workspace) button:disabled,
+body .primary-button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+.admin-sidebar nav button[aria-current] { background:var(--color-primary); }
+.admin-sidebar nav button:hover:not([aria-current]) { background:var(--color-primary-soft); }
+.registration-text-button:hover { text-decoration:underline; }
+.care-top { gap:20px; flex-wrap:wrap; }
+@media(max-width:640px) { .mindbridge-brand-logo { width:90px; }.registration-brand { flex-wrap:wrap; }.care-top>div { flex-wrap:wrap; } }
+@media(prefers-reduced-motion:reduce) { body :is(.registration-page,.care-workspace,.care-main,.admin-workspace) :is(button,a),body .primary-button { transition:none; transform:none!important; } }
+
+.admin-mobile-brand { display:none; }
+@media(max-width:760px) { .admin-mobile-brand { display:block; }.admin-topbar { flex-wrap:wrap; } }

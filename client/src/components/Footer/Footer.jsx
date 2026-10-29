@@ -1,6 +1,6 @@
 // Footer.jsx
 import React from "react";
-import logolight from "../../assets/logo/logolight.png";
+import logolight from "../../../../assets/logo/logolight.png";
 import facebookBlack from "../../assets/images/facebook-black.png";
 import Shape from "../../assets/images/Shape.png";
 import twitterBlack from "../../assets/images/twitter-black.png";

@@ -1,3 +1,4 @@
+import BrandLogo from "../../components/BrandLogo.jsx";
 import React,{useEffect,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useAuth} from '../../context/AuthContext';
@@ -8,7 +9,7 @@ export const stamp=s=>new Date(s).toLocaleString();
 export function SlotTime({slot}){return <span>{new Date(slot.starts_at).toLocaleString(undefined,{timeZone:slot.timezone})} – {new Date(slot.ends_at).toLocaleTimeString(undefined,{timeZone:slot.timezone,hour:'2-digit',minute:'2-digit'})} ({slot.timezone})</span>;}
 export function Demo({value}){return value?<p className="care-demo">Demonstration only — this is not a real medical appointment.</p>:null;}
 export function Field({label,value,onChange,type='text',required=true,maxLength=250,...rest}){return <label className="care-field"><span>{label}</span><input type={type} required={required} maxLength={maxLength} value={value??''} onChange={e=>onChange(e.target.value)} {...rest}/></label>;}
-export function Shell({title,children}){const {logout}=useAuth();return <div className="care-workspace"><header className="care-top"><Link to="/">MindBridge</Link><div><Link to="/start">My workspace</Link><button onClick={logout}>Sign out</button></div></header><main className="care-main"><span className="care-eyebrow">YOUR CARE CONNECTIONS</span><h1>{title}</h1>{children}</main></div>;}
+export function Shell({title,children}){const {logout}=useAuth();return <div className="care-workspace"><header className="care-top"><Link to="/" aria-label="MindBridge home"><BrandLogo/></Link><div><Link to="/start">My workspace</Link><button onClick={logout}>Sign out</button></div></header><main className="care-main"><span className="care-eyebrow">YOUR CARE CONNECTIONS</span><h1>{title}</h1>{children}</main></div>;}
 export function useCareLoad(loader){const [data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);async function reload(){setBusy(true);try{setData(await loader());setError('');}catch(e){setError(e.message);}finally{setBusy(false);}}useEffect(()=>{reload();},[]);async function act(fn){setBusy(true);setError('');try{await fn();await reload();}catch(e){setError(e.message);}finally{setBusy(false);}}return {data,error,busy,reload,act};}
 export function Feedback({error,busy}){return <>{error&&<p role="alert" className="care-error">{error}</p>}{busy&&<p role="status">Working…</p>}</>;}
 export function BookingList({mode='patient'}){

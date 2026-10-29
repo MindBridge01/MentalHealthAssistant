@@ -1,0 +1,24 @@
+.patient-signup { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); min-height:100vh; background:white; color:#20334d; font-family:var(--font-sans,"Satoshi"),Arial,sans-serif; }
+.patient-signup__form-panel { width:100%; max-width:680px; justify-self:center; padding:90px 48px 40px; }
+.patient-signup__visual { position:relative; overflow:hidden; min-height:100%; background:#fff; padding:0; }
+.patient-signup__visual img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:48% center; margin:0; opacity:1; mask-image:linear-gradient(to right,transparent,#000 6%,#000 97%,transparent),linear-gradient(to bottom,transparent,#000 3%,#000 97%,transparent); mask-composite:intersect; -webkit-mask-image:linear-gradient(to right,transparent,#000 6%,#000 97%,transparent),linear-gradient(to bottom,transparent,#000 3%,#000 97%,transparent); -webkit-mask-composite:source-in; }
+.patient-signup h2 { font-family:var(--font-display,"General Sans"),Arial,sans-serif; font-size:32px; font-weight:600; line-height:1.2; letter-spacing:-.8px; color:#20334d; }
+.patient-signup label { font-size:14px; font-weight:600; color:#33465e; }
+.patient-signup input:not([type=checkbox]),.patient-signup select { width:100%; min-width:0; min-height:48px; padding:12px 14px; font:inherit; font-size:16px; color:#20334d; background:white; border:1px solid #d4dce8; border-radius:8px; box-shadow:none; }
+.patient-signup input::placeholder { color:#78869a; opacity:1; }
+.patient-signup input:not([type=checkbox]):focus,.patient-signup select:focus { outline:none; border-color:#2455ad; box-shadow:0 0 0 3px #2455ad20; }
+.patient-signup input[type=checkbox] { accent-color:#2455ad; }
+.patient-signup button[type=submit] { min-height:48px; background:#2455ad; color:white; border:1px solid #2455ad; border-radius:8px; padding:12px 18px; font-size:15px; font-weight:700; transition:background .18s,box-shadow .18s,transform .18s; }
+.patient-signup button[type=submit]:hover:not(:disabled) { background:#1c438b; box-shadow:0 6px 16px #2455ad25; }
+.patient-signup button[type=submit]:active:not(:disabled) { transform:translateY(1px); }
+.patient-signup button:focus-visible,.patient-signup a:focus-visible,.patient-signup input[type=checkbox]:focus-visible { outline:3px solid #7ba9f3; outline-offset:3px; }
+.patient-signup a { color:#2455ad; font-size:14px; font-weight:700; }
+.patient-signup a:hover { color:#1c438b; }
+.patient-signup__form-panel>.absolute:first-child>div { background:#2455ad; }
+.patient-signup__form-panel>.flex { background:#edf2fb; border-radius:8px; }
+.patient-signup__form-panel>.flex button { color:#2455ad; font-size:15px; }
+@media(max-width:900px) { .patient-signup { grid-template-columns:1fr; }.patient-signup__form-panel { padding:90px 24px 36px; }.patient-signup__visual { position:relative; overflow:hidden; min-height:100%; background:#fff; padding:0; }.patient-signup__visual img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:48% center; margin:0; opacity:1; mask-image:linear-gradient(to right,transparent,#000 6%,#000 97%,transparent),linear-gradient(to bottom,transparent,#000 3%,#000 97%,transparent); mask-composite:intersect; -webkit-mask-image:linear-gradient(to right,transparent,#000 6%,#000 97%,transparent),linear-gradient(to bottom,transparent,#000 3%,#000 97%,transparent); -webkit-mask-composite:source-in; } }
+@media(prefers-reduced-motion:reduce) { .patient-signup button { transition:none; } }
+
+
+@media(max-width:900px) { .patient-signup__visual { min-height:360px; } }

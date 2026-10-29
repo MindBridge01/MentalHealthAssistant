@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import logolight from "../../assets/logo/logolight.png";
+import logolight from "../../../../assets/logo/logolight.png";
 import { ButtonPrimary } from "../Buttons/ButtonPrimary/ButtonPrimary";
 import { apiUrl } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";

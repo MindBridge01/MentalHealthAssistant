@@ -4,7 +4,9 @@ let loaded = false;
 
 function loadEnvironment() {
   if (loaded) return;
-  require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+  // Shared configuration location explicitly selected by the project owner.
+  // Use one file only so stale root-level settings cannot be silently merged.
+  require("dotenv").config({ path: path.resolve(__dirname, "../../mentalhealth/mentalhealth/server/.env") });
   loaded = true;
 }
 

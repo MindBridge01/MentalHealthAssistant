@@ -1,3 +1,4 @@
+import BrandLogo from "../../components/BrandLogo.jsx";
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -20,7 +21,7 @@ export default function DoctorSignupWizard() {
    if(step===3){await apiRequest(root+'/me',{method:'POST',body:{...data,version:application?.version||0}});await load();}else setStep(step+1);
  });};
  const locked=application && !['draft','needs_information'].includes(application.status);
- return <main className="registration-page"><header className="registration-topbar"><Link className="registration-brand" to="/">MindBridge <span className="registration-brand-divider"/>Professional registration</Link><Link to="/login">Sign in</Link></header>
+ return <main className="registration-page"><header className="registration-topbar"><Link className="registration-brand" to="/"><BrandLogo/> <span className="registration-brand-divider"/>Professional registration</Link><Link to="/login">Sign in</Link></header>
  <div className="registration-intro"><span className="registration-eyebrow">JOIN OUR CARE NETWORK</span><h1>Care starts with trust.</h1><p>Share your professional details for administrator verification.</p></div>
  <div className="registration-layout"><aside className="registration-sidebar"><div className="registration-step-heading">YOUR REGISTRATION</div><ol className="registration-steps">{steps.map((title,i)=><li key={title} className={i===step?'is-current':i<step?'is-complete':''}><span className="registration-step-icon">{i+1}</span><strong>{title}</strong></li>)}</ol><div className="registration-reassurance"><h3>Private credential review</h3><p>Credentials are encrypted and available to you and authorized administrators. Emails contain no documents.</p></div></aside>
  <section className="registration-form">{error&&<p role="alert">{error}</p>}{!loaded&&user?<p>Loading your application…</p>:locked?<div className="registration-status"><span className="registration-pill">{application.status.replaceAll('_',' ')}</span><h2>{application.status==='approved'?'Your registration is approved':'Your application status'}</h2><p>{application.status==='submitted'?'Your application is awaiting administrator review. We will email you when a decision is made.':application.note}</p><button className="registration-secondary" onClick={()=>act(load)} disabled={busy}>Refresh status</button>{application.status==='approved'&&<p><Link to="/login">Sign in again to open your professional dashboard</Link></p>}</div>:<form onSubmit={next}>
