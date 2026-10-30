@@ -14,6 +14,7 @@ async function addDocument(userId, file, mediaType) {
     await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
     const count = await client.query('SELECT COUNT(*)::int AS total FROM registration_documents WHERE user_id = $1', [userId]);
     if (count.rows[0].total >= 3) throw Object.assign(new Error('You can keep up to three reports. Remove one before adding another.'), { status: 409 });
+    // eslint-disable-next-line no-control-regex -- Sanitize control bytes from uploaded filenames.
     const filename = String(file.originalname || 'report').replace(/[\x00-\x1f\x7f/\\]/g, '_').slice(0, 160);
     const result = await client.query(`INSERT INTO registration_documents(user_id,metadata,content,media_type,size_bytes)
       VALUES ($1,$2,$3,$4,$5) RETURNING id,metadata,media_type,size_bytes,created_at`,

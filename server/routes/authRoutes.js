@@ -4,21 +4,17 @@ const router = express.Router();
 router.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 12;
-const { generateToken, verifyToken } = require('../lib/jwt'); // JWT helper
+const { verifyToken } = require('../lib/jwt'); // JWT helper
 const { authenticateJWT } = require('../middleware/authMiddleware');
 const { requirePermission, normalizeRole } = require('../middleware/permissionMiddleware');
 const { authRateLimiter } = require('../middleware/rateLimitMiddleware');
-const axios = require('axios');
 const {
   findUserByEmail,
-  findUserByEmailOrFacebookId,
   createUser,
   updateUser,
   findUserById,
 } = require('../models/userModel');
 const { findProfileByUserId } = require('../models/profileModel');
-const { upsertDoctorProfile } = require('../models/doctorModel');
-const { createDocApplication } = require('../models/docApplicationModel');
 const { createObjectId } = require('../lib/objectId');
 const { signupFailure } = require('../services/signupDiagnostics');
 
@@ -265,7 +261,7 @@ router.post(
 
 // ------------------- Login -------------------
 router.post('/login', authRateLimiter, async (req, res) => {
-  const { password, mfaCode } = req.body || {};
+  const { password } = req.body || {};
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
   if (!email || typeof password !== 'string' || !password) {

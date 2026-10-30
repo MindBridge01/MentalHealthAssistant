@@ -1,11 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const { mountHealthRoutes, mountWebApp } = require('./services/webHosting');
 
 const { loadEnvironment, getCorsOrigins, isProduction } = require("./config/environment");
 const { testConnection } = require("./config/database");
@@ -40,7 +40,19 @@ const io = new Server(server, {
   },
 });
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  contentSecurityPolicy: { directives: {
+    scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
+    connectSrc: ["'self'", 'https://accounts.google.com/gsi/'],
+    frameSrc: ["'self'", 'blob:', 'https://accounts.google.com/gsi/'],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style', 'https://api.fontshare.com', 'https://fonts.googleapis.com'],
+    fontSrc: ["'self'", 'https://cdn.fontshare.com', 'https://fonts.gstatic.com', 'data:'],
+    imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleusercontent.com'],
+    mediaSrc: ["'self'", 'blob:'],
+  } },
+}));
 app.use(cookieParser());
 app.use(
   cors({
@@ -52,6 +64,7 @@ app.use(
 app.use(express.json());
 app.use(auditLogger);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+mountHealthRoutes(app, testConnection);
 
 app.use((req, res, next) => {
   if (!isProduction()) return next();
@@ -79,11 +92,7 @@ app.use("/api/chatbot", require("./routes/chatbotRoutes"));
 app.post(["/api/chat", "/api/public-chat", "/api/save-conversation"], (_req,res)=>res.status(410).json({error:"This chat endpoint has been retired. Open the patient AI Chat workspace."}));
 app.use("/api/patient", patientRoutes);
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, "uploads/"),
-  filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({ storage });
+const {communityUpload, uploadDirectory} = require('./services/communityUpload');
 
 async function connectToDatabase() {
   try {
@@ -95,9 +104,7 @@ async function connectToDatabase() {
   }
 }
 
-app.get("/health", (_req, res) => res.json({ status: "Server is running" }));
-
-app.post("/api/upload", upload.single("image"), (req, res) => {
+app.post("/api/upload", require('./middleware/authMiddleware').authenticateJWT('patient'), require('./middleware/registrationMiddleware').requireApprovedPatient, communityUpload(uploadDirectory), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No image uploaded" });
   const imagePath = `/uploads/${req.file.filename}`;
   return res.status(200).json({ imagePath });
@@ -163,6 +170,7 @@ io.on("connection", (_socket) => {
   // socket handlers
 });
 
+if (process.env.SERVE_WEB === 'true') mountWebApp(app, path.resolve(__dirname, '../dist'));
 app.use(errorHandler);
 
 let emailWorker;

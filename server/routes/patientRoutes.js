@@ -4,8 +4,6 @@ const { requirePermission } = require("../middleware/permissionMiddleware");
 const { createObjectId } = require("../lib/objectId");
 const { upsertProfile, findProfileByUserId } = require("../models/profileModel");
 const { updateUser, findUserById } = require("../models/userModel");
-const { listAllDoctors } = require("../models/doctorModel");
-const { findAppointmentsByPatientId } = require("../models/appointmentModel");
 const {
   createAssessmentSession,
   findLatestAssessmentByUserId,

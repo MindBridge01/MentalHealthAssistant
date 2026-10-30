@@ -47,6 +47,7 @@ const ssl =
 const pool = new Pool({
   connectionString,
   ssl,
+  connectionTimeoutMillis: Number(process.env.POSTGRES_CONNECT_TIMEOUT_MS || 5000),
   max: Number(process.env.POSTGRES_POOL_MAX || 10),
   idleTimeoutMillis: Number(process.env.POSTGRES_IDLE_TIMEOUT_MS || 30000),
 });

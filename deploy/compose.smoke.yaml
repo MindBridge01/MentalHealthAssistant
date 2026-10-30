@@ -1,0 +1,52 @@
+# Synthetic local integration check. No project .env or real database is used.
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: synthetic
+      POSTGRES_PASSWORD: synthetic-test-password
+      POSTGRES_DB: mindbridge_test
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U synthetic -d mindbridge_test]
+      interval: 2s
+      retries: 30
+    networks: [isolated]
+  migrate:
+    image: ${MINDBRIDGE_TEST_IMAGE:?Set the locally built application image}
+    depends_on:
+      database:
+        condition: service_healthy
+    entrypoint: [node, deploy/migrate.cjs]
+    environment: &synthetic
+      NODE_ENV: production
+      DATABASE_URL: postgresql://synthetic:synthetic-test-password@database:5432/mindbridge_test
+      POSTGRES_SSL: "false"
+      PHI_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      JWT_SECRET: synthetic-container-test-signing-key-at-least-32-characters
+      APP_PUBLIC_URL: https://example.test
+      CLIENT_ORIGIN: https://example.test
+      SERVE_WEB: "true"
+      ENABLE_CLAMAV: "false"
+      EMAIL_WORKER_ENABLED: "false"
+      CHATBOT_AUTOSTART: "false"
+      FRONTEND_AUTOSTART: "false"
+    networks: [isolated]
+  web:
+    image: ${MINDBRIDGE_TEST_IMAGE:?Set the locally built application image}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *synthetic
+    ports: ["127.0.0.1:18882:10000"]
+    volumes: [test-uploads:/app/server/uploads]
+    networks: [isolated, test-web]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:10000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      retries: 30
+networks:
+  isolated:
+    internal: true
+  test-web: {}
+volumes:
+  test-uploads:

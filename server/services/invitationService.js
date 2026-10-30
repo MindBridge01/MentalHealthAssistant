@@ -1,9 +1,7 @@
 const {renderOfficerInviteEmail}=require('./officerEmailTemplate');
 const crypto = require('node:crypto');
 const bcrypt = require('bcrypt');
-const { encryptValue, decryptValue } = require('./encryptionService');
-const { generateMfaSecret, verifyTotp, getOtpAuthUrl } = require('./mfaService');
-const { renderEmail } = require('./emailTemplates');
+const { generateMfaSecret, getOtpAuthUrl } = require('./mfaService');
 
 const {seal,unseal,counterFor,recoveryCodes}=require('./authSecurity');
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -35,7 +33,7 @@ function validatePassword(password) {
 }
 
 
-async function inviteHospitalOfficer(database, { adminUser, hospitalId, name: rawName, email: rawEmail, appOrigin = 'http://localhost:5173' }) {
+async function inviteHospitalOfficer(database, { adminUser, hospitalId, name: rawName, email: rawEmail }) {
   if (adminUser.role !== 'admin') throw fail('Administrator access required.', 403);
   const name = str(rawName, 'officer name', 150);
   const email = validateEmail(rawEmail);
@@ -84,7 +82,6 @@ async function inviteHospitalOfficer(database, { adminUser, hospitalId, name: ra
       [adminUser._id, invitation.id]
     );
 
-    const inviteUrl = `${appOrigin.replace(/\/$/, '')}/accept-invitation?token=${rawToken}`;
 
     return {
       id: invitation.id,
@@ -136,7 +133,7 @@ async function revokeHospitalOfficerInvitation(database, { adminUser, invitation
   });
 }
 
-async function resendHospitalOfficerInvitation(database, { adminUser, invitationId, appOrigin = 'http://localhost:5173' }) {
+async function resendHospitalOfficerInvitation(database, { adminUser, invitationId }) {
   if (adminUser.role !== 'admin') throw fail('Administrator access required.', 403);
 
   const rawToken = crypto.randomBytes(32).toString('hex');
@@ -173,7 +170,6 @@ async function resendHospitalOfficerInvitation(database, { adminUser, invitation
       [adminUser._id, invitationId]
     );
 
-    const inviteUrl = `${appOrigin.replace(/\/$/, '')}/accept-invitation?token=${rawToken}`;
     return { success: true, expiresAt };
   });
 }

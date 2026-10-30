@@ -58,6 +58,7 @@ async function upload(id,kind,file,mime) {
     if (!['draft','needs_information'].includes(row.status)) throw fail('Credentials cannot change while under review or after a decision.');
     await client.query(`INSERT INTO professional_documents(user_id,kind,content,filename,media_type,size_bytes) VALUES($1,$2,$3,$4,$5,$6)
       ON CONFLICT(user_id,kind) DO UPDATE SET content=$3,filename=$4,media_type=$5,size_bytes=$6`,
+    // eslint-disable-next-line no-control-regex -- Sanitize control bytes from uploaded filenames.
       [id,kind,pack({base64:file.buffer.toString('base64')}),pack(String(file.originalname).replace(/[\x00-\x1f\x7f/\\]/g,'_').slice(0,160)),mime,file.buffer.length]);
   });
 }

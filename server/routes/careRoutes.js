@@ -37,6 +37,6 @@ router.post('/hospital-officers/invite', role('admin'), run(r => invitations.inv
 router.get('/hospital-officers/invitations', role('admin'), run(r => invitations.listHospitalOfficerInvitations(db, { hospitalId: r.query.hospitalId })));
 router.post('/hospital-officers/invitations/:id/revoke', role('admin'), run(r => invitations.revokeHospitalOfficerInvitation(db, { adminUser: r.user, invitationId: r.params.id })));
 router.post('/hospital-officers/invitations/:id/resend', role('admin'), run(r => invitations.resendHospitalOfficerInvitation(db, { adminUser: r.user, invitationId: r.params.id, appOrigin: process.env.APP_PUBLIC_URL || 'http://localhost:5173' })));
-router.use((e,req,res,next)=>{const status=e.status||(['23505','40P01','40001'].includes(e.code)?409:500);res.status(status).json({error:e.status?e.message:status===409?'This record changed or is already reserved. Refresh and try again.':'Unable to process this request.'});});
+router.use((e,req,res,_next)=>{const status=e.status||(['23505','40P01','40001'].includes(e.code)?409:500);res.status(status).json({error:e.status?e.message:status===409?'This record changed or is already reserved. Refresh and try again.':'Unable to process this request.'});});
 module.exports=router;
 

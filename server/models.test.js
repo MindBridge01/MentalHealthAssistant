@@ -45,16 +45,16 @@ describe("Comprehensive Logic Tests", () => {
     });
 
     test("messageModel saveConversation", async () => {
-      db.query.mockResolvedValue({ rowCount: 1 });
-      await messageModel.saveConversation({ userId: "u1", messages: [] });
-      expect(db.query).toHaveBeenCalled();
+      db.query.mockResolvedValue({ rows: [{id: 'conversation-1', user_id: 'u1', messages: []}] });
+      const saved = await messageModel.saveConversation({ id: 'external-1', userId: "u1", messages: [] });
+      expect(saved.userId).toBe('u1');
     });
 
-    test("knowledgeModel searchKnowledge", async () => {
+    test("knowledgeModel searchKnowledgeChunks", async () => {
       db.query.mockResolvedValue({ rows: [{ content: "test knowledge" }] });
-      // searchKnowledge might expect vector input, but we mock db.query anyway
-      const result = await knowledgeModel.searchKnowledge([0.1, 0.2]);
+      const result = await knowledgeModel.searchKnowledgeChunks([0.1, 0.2]);
       expect(result.length).toBe(1);
+      expect(db.query.mock.calls[0][1]).toEqual(['[0.1,0.2]', 5]);
     });
 
     test("auditLogService logAuditEvent", async () => {

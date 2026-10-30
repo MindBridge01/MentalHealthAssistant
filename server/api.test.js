@@ -24,6 +24,13 @@ jest.mock("./services/auditLogService");
 jest.mock("bcrypt");
 jest.mock("axios");
 jest.mock('google-auth-library');
+jest.mock('./config/database');
+jest.mock('./services/authSecurity', () => ({
+  limitAccount: jest.fn(async () => {}),
+  begin: jest.fn(async () => null),
+  issue: jest.fn(async () => 'synthetic-session-token'),
+  digest: jest.fn(() => 'synthetic-digest'),
+}));
 
 process.env.JWT_SECRET = "test_jwt_secret_must_be_at_least_32_chars_long";
 process.env.PHI_ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -58,16 +65,16 @@ describe("API Coverage Suite", () => {
   });
 
   describe("Admin APIs", () => {
-    test("GET /api/admin/pending-doctors", async () => {
+    test("GET /api/admin/pending-doctors denies a non-administrator", async () => {
       userModel.listPendingDoctors.mockResolvedValue([]);
       const res = await request(app).get("/api/admin/pending-doctors");
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(403);
     });
 
-    test("POST /api/admin/approve-doctor", async () => {
+    test("POST /api/admin/approve-doctor denies a non-administrator", async () => {
       userModel.approveDoctor.mockResolvedValue({ success: true });
       const res = await request(app).post("/api/admin/approve-doctor").send({ doctorId: "d1" });
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(403);
     });
   });
 
@@ -76,7 +83,7 @@ describe("API Coverage Suite", () => {
       userModel.findUserByEmail.mockResolvedValue(null);
       userModel.createUser.mockResolvedValue({ _id: "u1", role: "patient" });
       bcrypt.hash.mockResolvedValue("hp");
-      const res = await request(app).post("/api/auth/signup").send({ email: "a@b.com", name: "A", password: "p" });
+      const res = await request(app).post("/api/auth/signup").send({ email: "a@b.com", name: "A", password: "synthetic-test-password" });
       expect(res.statusCode).toBe(201);
     });
 
@@ -94,10 +101,11 @@ describe("API Coverage Suite", () => {
   });
 
   describe("Doctor APIs", () => {
-    test("GET /api/doctor/profile/:userId", async () => {
+    test("GET /api/doctor/profile/:userId directs callers to the current care workspace", async () => {
       doctorModel.getDoctorByUserId.mockResolvedValue({ name: "Dr" });
       const res = await request(app).get("/api/doctor/profile/user123");
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(410);
+      expect(res.body.code).toBe('CARE_WORKFLOW_REQUIRED');
     });
 
     test("GET /api/doctor/messages/:userId", async () => {

@@ -1,0 +1,20 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const express = require('express');
+const request = require('supertest');
+const {communityUpload} = require('../services/communityUpload');
+test('community uploads use the mounted directory, generated image names and a bounded format', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mb-upload-'));
+  t.after(() => fs.rm(directory, {recursive: true, force: true}));
+  const app = express();
+  app.post('/upload', communityUpload(directory), (req,res)=>res.json({filename:req.file.filename}));
+  const good = await request(app).post('/upload').attach('image', Buffer.from([137,80,78,71,13,10,26,10]), {filename:'original-name.js',contentType:'image/png'});
+  assert.equal(good.status,200);assert.match(good.body.filename,/^[a-f0-9-]+\.png$/);
+  assert.equal((await fs.readdir(directory)).length,1);
+  assert.equal((await request(app).post('/upload').attach('image',Buffer.from('<script></script>'),{filename:'page.html',contentType:'text/html'})).status,400);
+  assert.equal((await request(app).post('/upload').attach('image',Buffer.alloc(5*1024*1024+1),{filename:'large.png',contentType:'image/png'})).status,413);
+  assert.equal((await fs.readdir(directory)).length,1);
+});

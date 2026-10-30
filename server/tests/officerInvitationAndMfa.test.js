@@ -150,7 +150,7 @@ test('Hospital booking officer invitation and MFA acceptance lifecycle', async (
   const messages=[];
   while(await require('../services/invitationService').deliverStaffInvitationNext({database:db,
     config:{appOrigin:'https://example.test',from:'mail@example.test'},
-    transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to]};}}})){}
+    transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to]};}}})){/* Drain the synthetic email queue. */}
   assert.equal(messages.length,1);
   assert.ok(messages[0].text.includes('/accept-invitation#token='));
   assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM staff_invitation_email_jobs WHERE status IN ('sent','skipped') AND token<>''")).rows[0].n,0);

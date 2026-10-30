@@ -88,7 +88,7 @@ export default function AcceptInvitationPage() {
       setUser(user);
       await refreshUser();
 
-      setCodes(result.recoveryCodes || []);
+      setCodes(recoveryCodes || []);
     } catch (err) {
       setSubmitError(err.message || "Failed to activate your account. Please check your credentials.");
       setIsSubmitting(false);

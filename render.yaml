@@ -1,0 +1,271 @@
+# Paid service definitions. Review the plan in Render before creating resources.
+# Disable Blueprint auto-sync: CI/CD persists exact image digests on these services.
+services:
+  - type: web
+    name: mindbridge-staging-web
+    runtime: image
+    plan: 1c-2g
+    region: singapore
+    image:
+      url: 'ghcr.io/mindbridge01/mentalhealthassistant-app:bootstrap'
+      creds:
+        fromRegistryCreds:
+          name: mindbridge-ghcr
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: POSTGRES_SSL
+        value: 'true'
+      - key: POSTGRES_SSL_REJECT_UNAUTHORIZED
+        value: 'true'
+      - key: FRONTEND_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_MODELS_AUTOSTART
+        value: 'false'
+      - key: PORT
+        value: '10000'
+      - key: SERVE_WEB
+        value: 'true'
+      - key: ENABLE_CLAMAV
+        value: 'true'
+      - key: TRUST_PROXY_HOPS
+        value: '1'
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: CLIENT_ORIGIN
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: APP_PUBLIC_URL
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_CA_PEM
+        sync: false
+      - key: PHI_ENCRYPTION_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CHATBOT_AUTH_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: EMAIL_WORKER_ENABLED
+        value: 'true'
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: REGISTRATION_ADMIN_EMAIL
+        sync: false
+      - key: CHATBOT_SERVICE_HOSTPORT
+        fromService:
+          type: pserv
+          name: mindbridge-staging-chatbot
+          property: hostport
+    healthCheckPath: /ready
+    dockerCommand: node server/server.js
+    preDeployCommand: node deploy/migrate.cjs
+    disk:
+      name: mindbridge-staging-uploads
+      mountPath: /app/server/uploads
+      sizeGB: 1
+  - type: pserv
+    name: mindbridge-staging-models
+    runtime: image
+    plan: 2c-4g
+    region: singapore
+    image:
+      url: 'ghcr.io/mindbridge01/mentalhealthassistant-models:bootstrap'
+      creds:
+        fromRegistryCreds:
+          name: mindbridge-ghcr
+    envVars:
+      - key: HF_HOME
+        value: /home/model/.cache/huggingface
+    healthCheckPath: /health
+    disk:
+      name: mindbridge-staging-models
+      mountPath: /home/model/.cache
+      sizeGB: 5
+  - type: pserv
+    name: mindbridge-staging-chatbot
+    runtime: image
+    plan: 1c-2g
+    region: singapore
+    image:
+      url: 'ghcr.io/mindbridge01/mentalhealthassistant-app:bootstrap'
+      creds:
+        fromRegistryCreds:
+          name: mindbridge-ghcr
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: POSTGRES_SSL
+        value: 'true'
+      - key: POSTGRES_SSL_REJECT_UNAUTHORIZED
+        value: 'true'
+      - key: FRONTEND_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_MODELS_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_PORT
+        value: '10000'
+      - key: CHATBOT_HOST
+        value: 0.0.0.0
+      - key: ENABLE_CLAMAV
+        value: 'true'
+      - key: CHATBOT_PUBLIC_ORIGIN
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: APP_PUBLIC_URL
+      - key: CHATBOT_AUTH_SECRET
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: CHATBOT_AUTH_SECRET
+      - key: DATABASE_CA_PEM
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: DATABASE_CA_PEM
+      - key: CHATBOT_DATABASE_URL
+        sync: false
+      - key: CHATBOT_DATA_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: MODEL_SERVICE_HOSTPORT
+        fromService:
+          type: pserv
+          name: mindbridge-staging-models
+          property: hostport
+    healthCheckPath: /api/health
+    dockerCommand: node chatbot/server/index.js
+  - type: worker
+    name: mindbridge-staging-ingestion
+    runtime: image
+    plan: 0.5c-512mb
+    region: singapore
+    image:
+      url: 'ghcr.io/mindbridge01/mentalhealthassistant-app:bootstrap'
+      creds:
+        fromRegistryCreds:
+          name: mindbridge-ghcr
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: POSTGRES_SSL
+        value: 'true'
+      - key: POSTGRES_SSL_REJECT_UNAUTHORIZED
+        value: 'true'
+      - key: FRONTEND_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_MODELS_AUTOSTART
+        value: 'false'
+      - key: ENABLE_CLAMAV
+        value: 'false'
+      - key: CHATBOT_DATABASE_URL
+        fromService:
+          type: pserv
+          name: mindbridge-staging-chatbot
+          envVarKey: CHATBOT_DATABASE_URL
+      - key: CHATBOT_DATA_KEY
+        fromService:
+          type: pserv
+          name: mindbridge-staging-chatbot
+          envVarKey: CHATBOT_DATA_KEY
+      - key: CHATBOT_AUTH_SECRET
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: CHATBOT_AUTH_SECRET
+      - key: DATABASE_CA_PEM
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: DATABASE_CA_PEM
+      - key: CHATBOT_PUBLIC_ORIGIN
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: APP_PUBLIC_URL
+      - key: MODEL_SERVICE_HOSTPORT
+        fromService:
+          type: pserv
+          name: mindbridge-staging-models
+          property: hostport
+    dockerCommand: node chatbot/server/worker.js
+  - type: cron
+    name: mindbridge-staging-retention
+    runtime: image
+    plan: 0.5c-512mb
+    region: singapore
+    image:
+      url: 'ghcr.io/mindbridge01/mentalhealthassistant-app:bootstrap'
+      creds:
+        fromRegistryCreds:
+          name: mindbridge-ghcr
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: POSTGRES_SSL
+        value: 'true'
+      - key: POSTGRES_SSL_REJECT_UNAUTHORIZED
+        value: 'true'
+      - key: FRONTEND_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_AUTOSTART
+        value: 'false'
+      - key: CHATBOT_MODELS_AUTOSTART
+        value: 'false'
+      - key: ENABLE_CLAMAV
+        value: 'false'
+      - key: CHATBOT_DATABASE_URL
+        fromService:
+          type: pserv
+          name: mindbridge-staging-chatbot
+          envVarKey: CHATBOT_DATABASE_URL
+      - key: CHATBOT_DATA_KEY
+        fromService:
+          type: pserv
+          name: mindbridge-staging-chatbot
+          envVarKey: CHATBOT_DATA_KEY
+      - key: CHATBOT_AUTH_SECRET
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: CHATBOT_AUTH_SECRET
+      - key: DATABASE_CA_PEM
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: DATABASE_CA_PEM
+      - key: CHATBOT_PUBLIC_ORIGIN
+        fromService:
+          type: web
+          name: mindbridge-staging-web
+          envVarKey: APP_PUBLIC_URL
+      - key: MODEL_SERVICE_HOSTPORT
+        fromService:
+          type: pserv
+          name: mindbridge-staging-models
+          property: hostport
+    schedule: 0 2 * * *
+    dockerCommand: node chatbot/scripts/retention.js

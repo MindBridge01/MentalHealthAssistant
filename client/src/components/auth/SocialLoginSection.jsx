@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import googleLogo from '../../assets/login/google-logo.svg';
 
 export default function SocialLoginSection({ onCredential, onError, showUnavailable = false }) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const clientId = window.__MINDBRIDGE_CONFIG__?.googleClientId || import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const containerRef = useRef(null);
   const [buttonWidth, setButtonWidth] = useState(320);
   useEffect(() => {

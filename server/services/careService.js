@@ -1,5 +1,3 @@
-const {randomUUID}=require('node:crypto');
-const bcrypt=require('bcrypt');
 const {decryptValue}=require('./encryptionService');
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 function str(value,label,max=250,optional=false){if(typeof value!=='string'||value.length>max||(!optional&&!value.trim()))throw fail(`Provide ${label} (up to ${max} characters).`);return value.trim();}

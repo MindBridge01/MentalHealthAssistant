@@ -35,14 +35,14 @@ test('hospital affiliations, profile publication, booking lifecycle and transact
  assert.equal((await care.bookings({_id:'intruder',role:'hospital'})).length,0);
  await assert.rejects(care.transition({_id:'intruder',role:'hospital'},b.id,{version:1,action:'confirm'}),{status:403});
  const messages=[];const config={appOrigin:'https://example.test',from:'mail@example.test',adminEmail:'admin@example.test'};
- while(await deliverCareNext({database:db,transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to],rejected:[]};}},config})){}
+ while(await deliverCareNext({database:db,transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to],rejected:[]};}},config})){/* Drain the synthetic email queue. */}
  assert.equal(messages.length,4);assert.ok(messages.every(m=>m.subject.startsWith('[DEMO]')));assert.ok(messages.every(m=>!m.text.includes('PRIVATE_PHONE')));
  b=await care.transition(officer,b.id,{version:b.version,action:'propose',slotId:s2.id});assert.equal(b.status,'proposed');
  await assert.rejects(care.transition(officer,b.id,{version:b.version,action:'confirm'}),/not available/);
  await assert.rejects(care.transition(other,b.id,{version:b.version,action:'accept'}),{status:403});
  b=await care.transition(patient,b.id,{version:b.version,action:'accept'});assert.equal(b.status,'confirmed');
  await assert.rejects(care.transition(patient,b.id,{version:1,action:'cancel'}),/changed/);
- messages.length=0;while(await deliverCareNext({database:db,transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to]};}},config})){}
+ messages.length=0;while(await deliverCareNext({database:db,transport:{sendMail:async m=>{messages.push(m);return {accepted:[m.to]};}},config})){/* Drain the synthetic email queue. */}
  assert.equal(messages.length,4);assert.ok(messages.find(m=>m.to==='patient@example.test').text.includes('Pay at hospital'));assert.ok(!messages.find(m=>m.to==='admin@example.test').text.includes('Pay at hospital'));
  assert.equal((await db.query("SELECT count(*)::int AS n FROM care_email_jobs WHERE status='skipped'")).rows[0].n,4);
  b=await care.transition(patient,b.id,{version:b.version,action:'cancel'});assert.equal(b.status,'cancelled');

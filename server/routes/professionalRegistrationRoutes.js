@@ -37,5 +37,5 @@ router.get('/documents/:owner/:id',run(async(req,res)=>{
   const file=await model.download(req.params.owner,req.params.id,req.user._id,req.user.role);
   res.set({'Content-Type':file.mime,'Content-Disposition':'attachment; filename="credential.'+(file.mime==='application/pdf'?'pdf':file.mime==='image/png'?'png':'jpg')+'"','X-Content-Type-Options':'nosniff'}).send(file.buffer);
 }));
-router.use((e,req,res,next)=>res.status(e.code==='LIMIT_FILE_SIZE'?413:e.status||500).json({error:e.code==='LIMIT_FILE_SIZE'?'Maximum file size is 5 MB.':e.status?e.message:'Unable to process registration. Please try again.'}));
+router.use((e,req,res,_next)=>res.status(e.code==='LIMIT_FILE_SIZE'?413:e.status||500).json({error:e.code==='LIMIT_FILE_SIZE'?'Maximum file size is 5 MB.':e.status?e.message:'Unable to process registration. Please try again.'}));
 module.exports=router;
