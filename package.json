@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "npm --prefix server test"
+    "test": "npm --prefix server test",
+    "preview:dashboards": "node scripts/preview-dashboards.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AuthButton from "./AuthButton";
 import AuthFooter from "./AuthFooter";
 import InputField from "./InputField";
@@ -94,12 +94,12 @@ export default function LoginForm({
   return (
     <div className="login-ui__form-wrap">
       <div className="login-ui__intro">
-        <p className="login-ui__eyebrow">YOUR ACCOUNT</p>
-        <h2 className="login-ui__title">{portalRole === "doctor" ? "Welcome back, professional." : "Welcome back."}</h2>
-        <p className="login-ui__subtitle">{portalRole === "doctor" ? "Sign in to manage your professional account." : "Sign in to continue to your Mind Bridge care space."}</p>
+        {portalRole === "doctor" && <p className="login-ui__eyebrow">YOUR ACCOUNT</p>}
+        <h1 className="login-ui__title">{portalRole === "doctor" ? "Welcome back, professional." : "Welcome back to Mind Bridge."}</h1>
+        <p className="login-ui__subtitle">{portalRole === "doctor" ? "Sign in to manage your professional account." : "Sign in to continue your wellbeing journey."}</p>
       </div>
 
-      <SocialLoginSection onCredential={onGoogleCredential} onError={onGoogleError}/>
+      <SocialLoginSection showUnavailable={portalRole === "patient"} onCredential={onGoogleCredential} onError={onGoogleError}/>
       <form className="login-ui__form" noValidate onSubmit={onSubmit}>
         <InputField
           autoComplete="email"
@@ -155,7 +155,7 @@ export default function LoginForm({
 
       </form>
 
-      <AuthFooter role={portalRole} />
+      {portalRole === "doctor" ? <AuthFooter role={portalRole} /> : <p className="login-ui__professional-registration"><Link to="/signup/doctor">Mental health professional? Join our network.</Link></p>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { apiRequest } from "./apiClient";
 
-export function getDashboardData() {
-  return apiRequest("/api/patient/dashboard");
+export function getDashboardData(options = {}) {
+  return apiRequest("/api/patient/dashboard", options);
 }
 
 export function getOnboarding() {

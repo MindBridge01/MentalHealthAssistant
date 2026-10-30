@@ -1,8 +1,7 @@
 import ChatbotWorkspace from "../../components/ChatbotWorkspace";
-import BrandLogo from "../../components/BrandLogo.jsx";
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import DashboardShell, { DashboardHeading, DashboardMetric } from '../../components/dashboard/DashboardShell';
 import { apiRequest } from '../../lib/apiClient';
 import PatientRegistrationReview from '../../components/PatientRegistrationReview';
 import Verification from './admin-dashboard/Verification';
@@ -18,9 +17,9 @@ const stamp=value=>value?new Date(value).toLocaleString(): '—';
 const words=value=>String(value||'').replaceAll('_',' ');
 const Icon=({name})=><span className="material-icons" aria-hidden="true">{name}</span>;
 function Badge({value}){return <span className={'admin-badge admin-badge-'+String(value).toLowerCase()}>{words(value)}</span>;}
+const endpoints={directory:'directory',appointments:'appointment-list',emails:'email-delivery',activity:'activity'};
 function DataView({view,onChanged}) {
  const [items,setItems]=useState([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[search,setSearch]=useState(''),[filter,setFilter]=useState(''),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[more,setMore]=useState(false),[reload,setReload]=useState(0),[retrying,setRetrying]=useState(null);
- const endpoints={directory:'directory',appointments:'appointment-list',emails:'email-delivery',activity:'activity'};
  useEffect(()=>{let active=true;setBusy(true);setError('');
   apiRequest('/api/admin/'+endpoints[view]+'?'+new URLSearchParams({search:query,status:filter,offset:String(offset)})).then(result=>{if(active){setItems(result.items);setMore(result.hasMore);}}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};
  },[view,query,filter,offset,reload]);
@@ -39,24 +38,25 @@ function DataView({view,onChanged}) {
 }
 function Overview({data,busy,onNavigate}) {
  const cards=[['Patient accounts',data?.patients,'group','directory'],['Approved professionals',data?.professionals,'verified','directory'],['Applications to review',data?data.patient_reviews+data.professional_reviews:null,'assignment','registrations'],['Total appointments',data?.appointments,'calendar_month','care-bookings']];
- return <><div className="admin-metrics">{cards.map(([label,value,icon,target])=><button className="admin-metric" key={label} onClick={()=>onNavigate(target)}><span className="admin-metric-icon"><Icon name={icon}/></span><span>{label}</span><strong>{busy?'…':value??'—'}</strong><small>View records <span aria-hidden="true">↗</span></small></button>)}</div>
+ return <><div className="mb-metrics mb-metrics--four">{cards.map(([label,value,icon,target])=><DashboardMetric key={label} label={label} value={busy?'…':value} icon={icon} hint="View records" onClick={()=>onNavigate(target)} />)}</div>
  <div className="admin-overview-grid"><section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-eyebrow">REVIEW QUEUE</span><h2>People waiting for a decision</h2><p>Review each application and share the next step.</p></div><Icon name="fact_check"/></div>{[['Patient applications',data?.patient_reviews,'Identity and registration review','registrations'],['Professional applications',data?.professional_reviews,'Credentials and scope verification','verification']].map(([title,count,description,target])=><button className="admin-review-card" key={target} onClick={()=>onNavigate(target)}><span className="admin-review-number">{busy?'…':count??'—'}</span><span><strong>{title}</strong><small>{description}</small></span><Icon name="arrow_forward"/></button>)}</section>
  <section className="admin-panel admin-delivery-panel"><span className="admin-eyebrow">COMMUNICATIONS</span><h2>Registration emails</h2><p>Follow application notifications from queue to email server.</p><dl className="admin-email-counts"><div><dt>Queued / processing</dt><dd>{busy?'…':data?.queued_emails??'—'}</dd></div><div><dt>Accepted by server</dt><dd>{busy?'…':data?.sent_emails??'—'}</dd></div><div><dt>Failed</dt><dd>{busy?'…':data?.failed_emails??'—'}</dd></div></dl><button className="admin-button admin-button-primary" onClick={()=>onNavigate('emails')}>Open delivery monitor <Icon name="arrow_forward"/></button></section></div>
  <section className="admin-guidance"><Icon name="shield"/><div><h3>Review with care</h3><p>Verify professional credentials with their issuing authority. Keep medical details inside authorized patient records and use application notes only for the registration decision.</p></div><button className="admin-button" onClick={()=>onNavigate('activity')}>View audit activity</button></section></>;
 }
 export default function AdminDashboard(){
- const {user,logout}=useAuth();const [params,setParams]=useSearchParams();const requested=params.get('view');const view=sections.some(s=>s[0]===requested)?requested:'dashboard';
+ const [params,setParams]=useSearchParams();const requested=params.get('view');const view=sections.some(s=>s[0]===requested)?requested:'dashboard';
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const refresh=useCallback(async()=>{setBusy(true);setError('');try{setData(await apiRequest('/api/admin/dashboard'));}catch(e){setData(null);setError(e.message);}finally{setBusy(false);}},[]);
  useEffect(()=>{refresh();},[refresh,view]);
- const navigate=next=>setParams({view:next});
+ const navigate=next=>{const query=new URLSearchParams(params);query.set('view',next);setParams(query);};
  const title=sections.find(s=>s[0]===view)?.[1];
  const total=data?data.patient_reviews+data.professional_reviews:null;
- return <div className="admin-workspace"><a className="admin-skip" href="#admin-main">Skip to content</a><aside className="admin-sidebar"><a className="admin-brand" href="/"><BrandLogo/></a><span className="admin-sidebar-caption">ADMINISTRATION</span><nav aria-label="Administration">{sections.map(([id,label,icon])=><button key={id} aria-current={view===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/><span>{label}</span>{id==='registrations'&&data?.patient_reviews>0&&<b>{data.patient_reviews}</b>}{id==='verification'&&data?.professional_reviews>0&&<b>{data.professional_reviews}</b>}</button>)}</nav><div className="admin-sidebar-footer"><Icon name="lock"/><span>Administrator workspace<small>Access is recorded and controlled.</small></span></div></aside>
- <div className="admin-main-shell"><header className="admin-topbar"><a className="admin-mobile-brand" href="/" aria-label="MindBridge home"><BrandLogo/></a><span className="admin-breadcrumb">Workspace <span>/</span> {title}</span><div><span className="admin-avatar" aria-hidden="true">{(user?.name||'A').slice(0,1).toUpperCase()}</span><span className="admin-user-name">{user?.name||'Administrator'}<small>Administrator</small></span><button className="admin-button" onClick={logout}>Sign out</button></div></header><label className="admin-mobile-nav">Go to<select value={view} onChange={e=>navigate(e.target.value)}>{sections.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
- <main id="admin-main" className="admin-main" tabIndex={-1}><div className="admin-page-heading"><div><span className="admin-eyebrow">MINDBRIDGE OPERATIONS</span><h1>{view==='dashboard'?'A clear view of your care community.':title}</h1><p>{view==='dashboard'?'Review applications, support your team, and keep people informed.':'Manage your workspace with clear decisions and a recorded history.'}</p></div><button className="admin-button" disabled={busy} onClick={refresh}><Icon name="refresh"/>Refresh counts</button></div>
+ return <DashboardShell className="admin-workspace" roleLabel="Administration" title={title}
+ navigation={sections.map(([id,label,icon])=>({label,icon,active:view===id,onClick:()=>navigate(id),count:id==='registrations'?data?.patient_reviews:id==='verification'?data?.professional_reviews:undefined}))}
+ sidebarNote={<><strong>Review with care.</strong>Support your community with clear decisions and a recorded history.</>}>
+ <DashboardHeading eyebrow="Mind Bridge operations" title={view==='dashboard'?'A clear view of your care community.':title} description={view==='dashboard'?'Review applications, coordinate care, and keep people informed.':'Manage your workspace with clear decisions and a recorded history.'} actions={<button className="mb-button" disabled={busy} onClick={refresh}><Icon name="refresh"/>Refresh counts</button>} />
  {error&&<p role="alert" className="admin-error">{error}</p>}
  <div className="admin-status-line"><span><span className="admin-status-dot"/>{total===null?'Review counts unavailable':`${total} application${total===1?'':'s'} awaiting review`}</span><span>{data?'Updated '+stamp(data.updatedAt):'Waiting for current data'}</span></div>
  {view==='dashboard'?<Overview data={data} busy={busy} onNavigate={navigate}/>:view==='registrations'?<div className="admin-panel admin-review-host"><PatientRegistrationReview onReviewed={refresh}/></div>:view==='verification'?<div className="admin-panel admin-review-host"><Verification onReviewed={refresh}/></div>:view==='knowledge'?<ChatbotWorkspace initialPage="knowledge"/>:view==='hospitals'?<HospitalManagement/>:view==='care-bookings'?<CareOperations/>:<DataView key={view} view={view} onChanged={refresh}/>}
- <footer className="admin-page-footer">MindBridge · Administration<span>Clinical records remain in the authorized patient workspace.</span></footer></main></div></div>;
+ </DashboardShell>;
 }

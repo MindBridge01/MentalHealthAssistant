@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api, Field, Feedback, useCareLoad, Demo, BookingList } from './shared';
 
 const blank = {
@@ -66,7 +66,7 @@ export default function HospitalManagement() {
 
   const handleResendInvite = async (invitationId) => {
     try {
-      const res = await api(`/hospital-officers/invitations/${invitationId}/resend`, 'POST');
+      await api(`/hospital-officers/invitations/${invitationId}/resend`, 'POST');
       alert('A new invitation email has been queued. The old link no longer works.');
       state.reload();
     } catch (err) {
@@ -82,8 +82,8 @@ export default function HospitalManagement() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <span className="care-eyebrow">HOSPITALS & CLINICS</span>
-          <h1 style={{ margin: '4px 0 0' }}>Medical Centres & Staff Invitations</h1>
-          <p style={{ margin: '4px 0 0', color: '#52685e', fontSize: '14px' }}>
+          <h2 style={{ margin: '4px 0 0' }}>Medical centres & staff invitations</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--mb-muted)', fontSize: '14px' }}>
             Manage affiliated partner hospitals and securely invite dedicated booking officers.
           </p>
         </div>
@@ -93,7 +93,7 @@ export default function HospitalManagement() {
             setInviteModalOpen(!inviteModalOpen);
             setInviteFeedback({ busy: false, error: '', success: '', link: '' });
           }}
-          style={{ background: '#0d9488', borderColor: '#0d9488', fontWeight: '600' }}
+          style={{ background: 'var(--mb-primary)', borderColor: 'var(--mb-primary)', fontWeight: '600' }}
         >
           {inviteModalOpen ? 'Close Invitation Panel' : '+ Invite Booking Officer'}
         </button>
@@ -101,12 +101,12 @@ export default function HospitalManagement() {
 
       {/* Officer Invitation Panel */}
       {inviteModalOpen && (
-        <section className="care-card" style={{ borderColor: '#0d9488', background: '#f0fdfa' }}>
+        <section className="care-card" style={{ borderColor: 'var(--mb-primary)', background: 'var(--mb-purple-50)' }}>
           <div className="care-heading">
-            <h2 style={{ color: '#0f766e', margin: 0 }}>Invite Hospital Booking Officer</h2>
-            <span className="care-badge" style={{ background: '#ccfbf1', color: '#0f766e' }}>Single-Use Token</span>
+            <h2 style={{ color: 'var(--mb-purple-600)', margin: 0 }}>Invite Hospital Booking Officer</h2>
+            <span className="care-badge" style={{ background: 'var(--mb-purple-100)', color: 'var(--mb-purple-600)' }}>Single-Use Token</span>
           </div>
-          <p style={{ fontSize: '14px', color: '#134e4a' }}>
+          <p style={{ fontSize: '14px', color: 'var(--mb-muted)' }}>
             The officer receives a private invitation by email. The link can be used once and expires in 48 hours.
             The officer sets their own password and must enroll in Multi-Factor Authentication (MFA).
           </p>
@@ -167,7 +167,7 @@ export default function HospitalManagement() {
               <button
                 type="button"
                 onClick={() => setInviteModalOpen(false)}
-                style={{ marginLeft: '10px', background: '#e2e8f0', color: '#334155', borderColor: '#cbd5e1' }}
+                style={{ marginLeft: '10px', background: 'var(--mb-line)', color: 'var(--mb-ink)', borderColor: 'var(--mb-line)' }}
               >
                 Cancel
               </button>
@@ -181,18 +181,18 @@ export default function HospitalManagement() {
         <section className="care-card">
           <div className="care-heading">
             <h2>Hospital Officer Invitations</h2>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
+            <span style={{ fontSize: '13px', color: 'var(--mb-subtle)' }}>
               {state.data.invitations.length} invitation(s) tracked
             </span>
           </div>
-          <p style={{ fontSize: '13px', color: '#64748b' }}>
+          <p style={{ fontSize: '13px', color: 'var(--mb-subtle)' }}>
             Officer invitations are single-use. Once accepted, access is linked to the assigned hospital.
           </p>
 
           <div style={{ overflowX: 'auto', marginTop: '14px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                <tr style={{ borderBottom: '2px solid var(--mb-line)', color: 'var(--mb-muted)' }}>
                   <th style={{ padding: '10px 8px' }}>Staff Name</th>
                   <th style={{ padding: '10px 8px' }}>Work Email</th>
                   <th style={{ padding: '10px 8px' }}>Assigned Hospital</th>
@@ -203,9 +203,9 @@ export default function HospitalManagement() {
               </thead>
               <tbody>
                 {state.data.invitations.map((inv) => (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={inv.id} style={{ borderBottom: '1px solid var(--mb-purple-50)' }}>
                     <td style={{ padding: '12px 8px', fontWeight: '500' }}>{inv.name}</td>
-                    <td style={{ padding: '12px 8px', color: '#64748b' }}>{inv.email}</td>
+                    <td style={{ padding: '12px 8px', color: 'var(--mb-subtle)' }}>{inv.email}</td>
                     <td style={{ padding: '12px 8px' }}>{inv.hospital_name}</td>
                     <td style={{ padding: '12px 8px' }}>
                       <span
@@ -228,7 +228,7 @@ export default function HospitalManagement() {
                         {inv.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 8px', fontSize: '12px', color: '#64748b' }}>
+                    <td style={{ padding: '12px 8px', fontSize: '12px', color: 'var(--mb-subtle)' }}>
                       {new Date(inv.expires_at).toLocaleDateString()}
                     </td>
                     <td style={{ padding: '12px 8px', textAlign: 'right' }}>
@@ -237,7 +237,7 @@ export default function HospitalManagement() {
                           <button
                             type="button"
                             onClick={() => handleResendInvite(inv.id)}
-                            style={{ fontSize: '11px', padding: '6px 10px', background: '#f8fafc', color: '#0f766e', borderColor: '#0f766e' }}
+                            style={{ fontSize: '11px', padding: '6px 10px', background: 'var(--mb-purple-50)', color: 'var(--mb-purple-600)', borderColor: 'var(--mb-purple-600)' }}
                           >
                             Resend
                           </button>
@@ -254,7 +254,7 @@ export default function HospitalManagement() {
                         <span style={{ fontSize: '12px', color: '#16a34a' }}>✓ Activated</span>
                       )}
                       {inv.status === 'revoked' && (
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>Revoked</span>
+                        <span style={{ fontSize: '12px', color: 'var(--mb-subtle)' }}>Revoked</span>
                       )}
                     </td>
                   </tr>
@@ -317,7 +317,7 @@ export default function HospitalManagement() {
           </label>
         </div>
 
-        <p style={{ fontSize: '13px', color: '#64748b' }}>
+        <p style={{ fontSize: '13px', color: 'var(--mb-subtle)' }}>
           💡 Tip: Recommended workflow is creating the hospital and inviting the officer via the <strong>Invite Booking Officer</strong> panel above.
         </p>
 
@@ -382,7 +382,7 @@ export default function HospitalManagement() {
                   setInviteModalOpen(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                style={{ background: '#0f766e', borderColor: '#0f766e', fontSize: '13px' }}
+                style={{ background: 'var(--mb-purple-600)', borderColor: 'var(--mb-purple-600)', fontSize: '13px' }}
               >
                 + Invite Officer
               </button>
