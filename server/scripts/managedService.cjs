@@ -35,7 +35,8 @@ process.on('disconnect',stop);
     await import(pathToFileURL(path.join(root,'chatbot/server',entry)).href);
   }
 })().catch(error=>{
-  const explanations={ENOSPC:'Disk is full. Free space on the project drive.',EADDRINUSE:'The service port is occupied. Close the separately started service.',ERR_MODULE_NOT_FOUND:'A required dependency is missing. Install dependencies for the project and chatbot.',ENOENT:'A required file or executable is missing.',CHATBOT_CONFIG:'Set CHATBOT_DATABASE_URL, CHATBOT_DATA_KEY (64 hex characters), and CHATBOT_AUTH_SECRET (at least 32 characters) in server/.env.'};
+  const explanations={ENOSPC:'Disk is full. Free space on the project drive.',EADDRINUSE:'The service port is occupied. Close the separately started service.',ERR_MODULE_NOT_FOUND:'A required dependency is missing. Install dependencies for the project and chatbot.',ENOENT:'A required file or executable is missing.',CHATBOT_CONFIG:'Set CHATBOT_DATABASE_URL, CHATBOT_DATA_KEY (64 hex characters), and CHATBOT_AUTH_SECRET (at least 32 characters) in mentalhealth/mentalhealth/server/.env.'};
   console.error(`[startup] ${process.argv[2]}: ${explanations[error.code]||'Service could not start. Check configuration and dependencies.'}`);
   process.exit(1);
 });
+

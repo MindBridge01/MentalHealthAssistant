@@ -96,10 +96,10 @@ const {communityUpload, uploadDirectory} = require('./services/communityUpload')
 
 async function connectToDatabase() {
   try {
-    await testConnection();
+    await require('./services/databaseStartup').connectWithRetry(testConnection);
     console.log("Successfully connected to PostgreSQL");
   } catch (error) {
-    console.error("PostgreSQL connection error:", error);
+    console.error("[startup] PostgreSQL unavailable:", require('./services/databaseDiagnostic').databaseDiagnostic(error));
     process.exit(1);
   }
 }
@@ -213,3 +213,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+

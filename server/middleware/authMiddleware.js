@@ -37,6 +37,7 @@ function authenticateJWT(requiredRole = null) {
 
       next();
     } catch (err) {
+      if (err.status !== 401 && !['JsonWebTokenError','TokenExpiredError','NotBeforeError'].includes(err.name)) return res.status(503).json({error:'Session verification is temporarily unavailable. Please retry.'});
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   };
@@ -55,3 +56,4 @@ function authorizeRoles(...allowedRoles) {
 }
 
 module.exports = { authenticateJWT, authorizeRoles };
+

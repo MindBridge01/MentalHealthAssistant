@@ -234,6 +234,7 @@ export function createApp({
     app.get('/{*path}', (_, res) => res.sendFile(resolve('dist/index.html')));
   }
   app.use((error, req, res, next) => {
+    if (!(error instanceof HttpError)) console.error('[chatbot] Request failed:', /^[A-Z0-9_]{2,50}$/.test(error.code || '') ? error.code : 'UNCLASSIFIED');
     const status = error instanceof HttpError ? error.status : error.code === 'LIMIT_FILE_SIZE' ? 413 : error.type === 'entity.too.large' ? 413 : 500;
     res.status(status).json({
       error: status === 500 ? 'The request could not be completed. Please try again.' : status === 413 ? 'File or request is too large.' : error.message
@@ -241,3 +242,4 @@ export function createApp({
   });
   return app;
 }
+

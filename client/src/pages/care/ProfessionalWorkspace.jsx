@@ -35,7 +35,7 @@ export default function ProfessionalWorkspace() {
       </>}
       {view === 'profile' && <>
         <section className="care-card care-identity"><div className="care-heading"><div><p className="mb-eyebrow">Verified professional details</p><h2>{state.data.identity.name}</h2></div><span className="mb-status mb-status--approved">{state.data.identity.profession} · approved</span></div><p>{state.data.identity.qualification} · {state.data.identity.specialty}</p><p>{state.data.identity.institution} · {state.data.identity.regulator} {state.data.identity.licenseNumber}</p><small>Verified details are read-only. Contact your administrator if your credentials change.</small></section>
-        <form className="care-card" onSubmit={event => { event.preventDefault(); setNotice(''); state.act(async () => { await api('/profile','PUT',form); setNotice('Your public profile has been saved.'); }); }}>
+        <form className="care-card" onSubmit={event => { event.preventDefault(); setNotice(''); state.act(async () => { await api('/profile','PUT',Object.fromEntries(['bio','services','languages','age_groups','published','accepting'].map(key=>[key,form[key]]))); setNotice('Your public profile has been saved.'); }); }}>
           <div className="care-heading"><h2>Public profile</h2><span className="mb-status">{form.published ? 'Published' : 'Draft'}</span></div>
           <ProfessionalPhoto photo={state.data.profile.photo} name={state.data.identity.name} onSaved={state.reload} />
           <label className="care-field"><span>Professional introduction</span><textarea required maxLength={2000} value={form.bio} onChange={event => set('bio',event.target.value)} /></label>
@@ -53,3 +53,4 @@ export default function ProfessionalWorkspace() {
     </>}
   </DashboardShell>;
 }
+

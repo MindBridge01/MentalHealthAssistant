@@ -11,7 +11,7 @@ export const stamp = value => new Date(value).toLocaleString();
 export function SlotTime({slot}) {
   return <span>{new Date(slot.starts_at).toLocaleString(undefined,{timeZone:slot.timezone})} – {new Date(slot.ends_at).toLocaleTimeString(undefined,{timeZone:slot.timezone,hour:'2-digit',minute:'2-digit'})} ({slot.timezone})</span>;
 }
-export function Demo({value}) { return value ? <p className="care-demo">Demonstration only — this is not a real medical appointment.</p> : null; }
+export function Demo() { return null; }
 export function Field({label,value,onChange,type='text',required=true,maxLength=250,...rest}) {
   return <label className="care-field"><span>{label}</span><input type={type} required={required} maxLength={maxLength} value={value ?? ''} onChange={event => onChange(event.target.value)} {...rest} /></label>;
 }
@@ -91,3 +91,4 @@ export function HospitalDashboard() {
     <BookingBoard mode="hospital" state={state} filter={view==='overview' ? 'pending' : view} title={view==='overview' ? 'Needs your attention' : undefined} />
   </DashboardShell>;
 }
+

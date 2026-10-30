@@ -94,7 +94,7 @@ const AuthWindow = ({ mode = "login" }) => {
         navigate("/doctor/mfa-setup");
         return;
       }
-      navigate(location.state?.from || "/doctor/dashboard");
+      navigate(location.state?.from?.startsWith("/doctor/") ? location.state.from : "/doctor/dashboard");
       return;
     }
 
@@ -114,7 +114,7 @@ const AuthWindow = ({ mode = "login" }) => {
       return;
     }
 
-    navigate(location.state?.from || "/patient/dashboard");
+    navigate(location.state?.from?.startsWith("/patient/") ? location.state.from : "/patient/dashboard");
   };
 
   const handleSubmit = async (event) => {
@@ -501,3 +501,4 @@ const AuthWindow = ({ mode = "login" }) => {
 };
 
 export default AuthWindow;
+

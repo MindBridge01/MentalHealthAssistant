@@ -9,8 +9,7 @@ import { createApp } from './app.js';
 const config = readConfig();
 const store = config.demo ? new MemoryStore() : new PostgresStore(new pg.Pool({
   ...databaseOptions(config),
-  max: 8,
-  connectionTimeoutMillis: 5000
+  max: 8
 }), config.dataKey);
 const app = createApp({
   config,
@@ -28,3 +27,4 @@ async function shutdown() {
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+

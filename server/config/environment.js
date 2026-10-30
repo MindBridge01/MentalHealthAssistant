@@ -4,9 +4,9 @@ let loaded = false;
 
 function loadEnvironment() {
   if (loaded) return;
-  // All backend and chatbot processes share server/.env.
+  // Backend and chatbot share the configured project environment file.
   // Existing process-environment overrides are preserved.
-  require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+  require("dotenv").config({ path: path.resolve(__dirname, "../../mentalhealth/mentalhealth/server/.env") });
   loaded = true;
 }
 
@@ -46,3 +46,4 @@ module.exports = {
   isProduction,
   getCorsOrigins,
 };
+
