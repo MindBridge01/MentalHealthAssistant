@@ -1,0 +1,72 @@
+name: mindbridge
+services:
+  web:
+    image: ${APP_IMAGE:?Immutable application image required}
+    restart: unless-stopped
+    env_file: /opt/mindbridge/runtime.env
+    environment: &common
+      NODE_ENV: production
+      FRONTEND_AUTOSTART: 'false'
+      CHATBOT_AUTOSTART: 'false'
+      CHATBOT_MODELS_AUTOSTART: 'false'
+      PORT: '10000'
+      SERVE_WEB: 'true'
+      ENABLE_CLAMAV: 'true'
+      CHATBOT_SERVICE_URL: http://chatbot:3100
+      MODEL_SERVICE_URL: http://models:8100
+    ports: ['127.0.0.1:10000:10000']
+    volumes: [uploads:/app/server/uploads, web-antivirus:/var/lib/clamav]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:10000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+  chatbot:
+    image: ${APP_IMAGE:?Immutable application image required}
+    restart: unless-stopped
+    command: [node, chatbot/server/index.js]
+    env_file: /opt/mindbridge/runtime.env
+    environment:
+      <<: *common
+      SERVE_WEB: 'false'
+      CHATBOT_HOST: 0.0.0.0
+      CHATBOT_PORT: '3100'
+      EMAIL_WORKER_ENABLED: 'false'
+    volumes: [chat-antivirus:/var/lib/clamav]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3100/api/health').then(r=>r.json()).then(d=>process.exit(d.mode==='connected'?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+  ingestion:
+    image: ${APP_IMAGE:?Immutable application image required}
+    restart: unless-stopped
+    command: [node, chatbot/server/worker.js]
+    env_file: /opt/mindbridge/runtime.env
+    environment:
+      <<: *common
+      SERVE_WEB: 'false'
+      ENABLE_CLAMAV: 'false'
+      EMAIL_WORKER_ENABLED: 'false'
+  models:
+    image: ${MODELS_IMAGE:?Immutable model image required}
+    restart: unless-stopped
+    volumes: [model-cache:/home/model/.cache/huggingface]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=10)"]
+      interval: 15s
+      timeout: 15s
+      retries: 40
+      start_period: 180s
+  migrate:
+    image: ${APP_IMAGE:?Immutable application image required}
+    profiles: [maintenance]
+    entrypoint: [node, deploy/migrate.cjs]
+    env_file: /opt/mindbridge/runtime.env
+volumes:
+  uploads:
+  web-antivirus:
+  chat-antivirus:
+  model-cache:

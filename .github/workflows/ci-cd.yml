@@ -110,52 +110,38 @@ jobs:
           cache-from: type=gha,scope=models
           cache-to: type=gha,mode=max,scope=models
 
-  staging:
+  production:
     needs: images
-    # Paid Render infrastructure is disabled under the zero-budget requirement.
-    if: ${{ false }}
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.AWS_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    environment: staging
+    timeout-minutes: 65
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: ec2-production
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      - name: Deploy the tested images and wait for all services
-        run: node deploy/render.mjs
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: mindbridge-${{ github.run_id }}
+      - name: Deploy immutable images through Systems Manager
+        run: node deploy/ec2.mjs
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
-          RENDER_SERVICES_JSON: ${{ vars.RENDER_SERVICES_JSON }}
+          EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          DEPLOY_SHA: ${{ github.sha }}
           APP_IMAGE: ${{ needs.images.outputs.prefix }}-app@${{ needs.images.outputs.app_digest }}
           MODELS_IMAGE: ${{ needs.images.outputs.prefix }}-models@${{ needs.images.outputs.models_digest }}
-      - run: node deploy/smoke.mjs
+      - name: Verify public HTTPS deployment
+        run: node deploy/smoke.mjs
         env:
           DEPLOY_URL: ${{ vars.DEPLOY_URL }}
           DEPLOY_SHA: ${{ github.sha }}
 
-  production:
-    needs: [images, staging]
-    # Do not re-enable paid production without a new budget decision.
-    if: ${{ false }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    environment: production
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-      - name: Promote the same image digests that passed staging
-        run: node deploy/render.mjs
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
-          RENDER_SERVICES_JSON: ${{ vars.RENDER_SERVICES_JSON }}
-          APP_IMAGE: ${{ needs.images.outputs.prefix }}-app@${{ needs.images.outputs.app_digest }}
-          MODELS_IMAGE: ${{ needs.images.outputs.prefix }}-models@${{ needs.images.outputs.models_digest }}
-      - run: node deploy/smoke.mjs
-        env:
-          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
-          DEPLOY_SHA: ${{ github.sha }}

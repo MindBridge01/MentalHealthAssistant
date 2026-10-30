@@ -17,6 +17,10 @@ export default [
     ignores: [
       "**/node_modules/**",
       "dist/**",
+      "build/**",
+      "tmp/**",
+      "output/**",
+      "chatbot/dist/**",
       "server/coverage/**",
       ".scannerwork/**",
       "MentalHealthAssistant/**",
