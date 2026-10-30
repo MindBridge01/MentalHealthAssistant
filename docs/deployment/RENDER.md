@@ -1,5 +1,7 @@
 # Render deployment and CI/CD
 
+> **Zero-budget requirement:** Paid staging and production jobs are now hard-disabled in CI/CD. The multi-service Blueprints below are retained as paid reference configurations and must not be applied for the free setup. No Render services have been provisioned. A free cloud demo requires an explicit choice of feature limits; keeping the full services at no hosting charge requires user-owned compute or separately verified free compute capacity.
+
 The public website serves the Vite build and Express API from one origin. The chatbot API and Python model API are private services; ingestion is a background worker, and retention runs daily at 02:00 UTC. Registration email processing remains inside the single web instance. PostgreSQL stays on Supabase and must support pgvector.
 
 ## Release files
@@ -68,7 +70,7 @@ Create `staging` and `production` environments, each with:
 ]
 ```
 
-Set repository variable `RENDER_DEPLOY_ENABLED=true` to activate staging deployment. Set `RENDER_PRODUCTION_DEPLOY_ENABLED=true` to activate production promotion after staging passes. Leave both unset until the environments and secrets are configured. Database/provider secrets do not belong in the GitHub test job.
+The earlier `RENDER_DEPLOY_ENABLED` and `RENDER_PRODUCTION_DEPLOY_ENABLED` variables no longer enable the paid jobs. Both jobs currently have an explicit false condition to enforce the zero-budget requirement. Re-enabling this paid reference flow requires a code change and a new budget decision. Database/provider secrets do not belong in the GitHub test job.
 
 ## Verification and operations
 
