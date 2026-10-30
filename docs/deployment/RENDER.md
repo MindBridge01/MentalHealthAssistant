@@ -72,7 +72,7 @@ Set repository variable `RENDER_DEPLOY_ENABLED=true` to activate staging deploym
 
 ## Verification and operations
 
-`/health` is liveness; `/ready` checks PostgreSQL and reports the built release SHA. Internal probes work without the public HTTPS proxy. `node deploy/smoke.mjs` checks readiness, release identity, public configuration and all role SPA entry routes without creating accounts or modifying records. It does not prove that a user can authenticate or that Gemini/model retrieval is connected.
+`/health` is liveness; `/ready` checks PostgreSQL and reports the built release SHA. Internal probes work without the public HTTPS proxy. Render uses TCP health checks for the two private services; their HTTP health endpoints remain available for manual diagnostics. `node deploy/smoke.mjs` checks readiness, release identity, public configuration and all role SPA entry routes without creating accounts or modifying records. It does not prove that a user can authenticate or that Gemini/model retrieval is connected.
 
 Before production promotion, check actual login/MFA, role permissions, certificate scans, profile photo uploads, booking workflows, email delivery and one chatbot conversation using synthetic data. Approve and index reviewed educational knowledge sources separately; no corpus or administrator account is seeded automatically. The model cache downloads weights on initial retrieval; allow cold-start time and confirm embedding/reranking works before opening chat access.
 

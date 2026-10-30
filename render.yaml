@@ -92,7 +92,6 @@ services:
     envVars:
       - key: HF_HOME
         value: /home/model/.cache/huggingface
-    healthCheckPath: /health
     disk:
       name: mindbridge-staging-models
       mountPath: /home/model/.cache
@@ -154,7 +153,6 @@ services:
           type: pserv
           name: mindbridge-staging-models
           property: hostport
-    healthCheckPath: /api/health
     dockerCommand: node chatbot/server/index.js
   - type: worker
     name: mindbridge-staging-ingestion
