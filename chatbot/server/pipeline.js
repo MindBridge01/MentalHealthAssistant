@@ -1,5 +1,6 @@
 import { deterministicSafety, mergeSafety, controlledResponse, outputAllowed, safeFallback, categories } from './safety.js';
 import { retrieve, buildContext } from './retrieval.js';
+import { educationalFaq } from './educationalFaq.js';
 const policy = 'You are a supportive mental-health information assistant, not a clinician, diagnostic tool, prescriber or emergency service. Never diagnose the user, recommend medication initiation/discontinuation/dose changes, promise cures, or affirm delusions. Do not include helpline numbers or URLs. Use only supplied approved knowledge for factual claims and cite [S1], etc. Distinguish education from clinical advice. If evidence is insufficient, say so. Respond warmly, briefly, and without clinical certainty. Return {"answer":"..."}.';
 export class Pipeline {
   constructor({
@@ -42,7 +43,10 @@ export class Pipeline {
       if (typeof rewrite.query !== 'string' || !rewrite.query.trim() || rewrite.query.length > 1200) throw Error('Invalid query');
       const chunks = await this.retriever(store.db, this.models, rewrite.query);
       const context = buildContext(chunks);
-      if (!context.length) return result(safeFallback, 'insufficient_evidence');
+      if (!context.length) {
+        const faq = educationalFaq(question, safety);
+        return faq ? result(faq, 'educational_faq') : result(safeFallback, 'insufficient_evidence');
+      }
       const memories = (await store.listMemories(c.user_id)).map(m => m.memory).join('\n').slice(0, 1200);
       const sources = chunks.slice(0, context.length).map((chunk, i) => ({
         id: chunk.id,
