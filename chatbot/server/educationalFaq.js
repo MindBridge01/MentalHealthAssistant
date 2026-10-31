@@ -42,5 +42,5 @@ export function educationalFaq(question, safety) {
   if (safety.risk_level !== 'LOW' || safety.categories.some(category => category !== 'NORMAL_INFORMATION')) return null;
   const entry = lookup.get(normalize(question));
   if (!entry) return null;
-  return `Built-in educational FAQ — not an answer retrieved from your uploaded PDFs.\n\n${entry.answer}\n\nGeneral information only; not a personal assessment or treatment plan.\nSource: ${entry.url}`;
+  return `${entry.answer}\n\nGeneral information only; not a personal assessment or treatment plan.\nSource: ${entry.url}`;
 }

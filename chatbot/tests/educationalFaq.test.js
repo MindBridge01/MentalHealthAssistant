@@ -4,14 +4,15 @@ import { educationalFaq, faqEntries, normalize } from '../server/educationalFaq.
 import { Pipeline } from '../server/pipeline.js';
 const safe = { categories: ['NORMAL_INFORMATION'], risk_level: 'LOW' };
 const conversation = { user_id: 'test', messages: [], summary: '' };
-test('1,000 unique question phrasings resolve to sourced, labelled FAQs', () => {
+test('1,000 unique question phrasings resolve to sourced educational answers', () => {
   assert.equal(faqEntries.length, 1000);
   assert.equal(new Set(faqEntries.map(e => normalize(e.question))).size, 1000);
   for (const entry of faqEntries) {
     const answer = educationalFaq(entry.question, safe);
     assert.ok(answer.includes(entry.answer));
     assert.ok(answer.includes(entry.url));
-    assert.match(answer, /Built-in educational FAQ/);
+    assert.match(answer, /General information only/);
+    assert.doesNotMatch(answer, /Built-in educational FAQ|uploaded PDFs/);
   }
 });
 test('does not keyword-match personal diagnoses, mixed requests or attacks', () => {
