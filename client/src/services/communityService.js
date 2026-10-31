@@ -33,3 +33,10 @@ export function togglePostSave(postId) {
     method: "POST",
   });
 }
+
+export function getPostsForReview(status='pending',offset=0) {
+  return apiRequest('/api/admin/community-posts?'+new URLSearchParams({status,offset:String(offset)}));
+}
+export function reviewCommunityPost(id,decision,note='') {
+  return apiRequest(`/api/admin/community-posts/${id}/review`,{method:'PATCH',body:{decision,note}});
+}

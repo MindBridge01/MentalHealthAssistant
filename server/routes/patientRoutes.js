@@ -267,7 +267,7 @@ router.get("/community/posts/:postId", requirePermission("view_own_profile"), as
 router.post("/community/posts", requirePermission("view_own_profile"), async (req, res) => {
   const { caption, location, image } = req.body || {};
 
-  if (!caption || caption.trim().length < 3) {
+  if (typeof caption !== "string" || caption.trim().length < 3 || caption.length > 5000 || (location && typeof location !== "string") || (image && typeof image !== "string")) {
     return res.status(400).json({ error: "Please write a little more before posting." });
   }
 
@@ -279,10 +279,11 @@ router.post("/community/posts", requirePermission("view_own_profile"), async (re
       location: location?.trim() || "",
       image: image?.trim() || "",
       name: user?.name || "MindBridge member",
+      submittedBy: req.user._id,
       createdAt: new Date(),
     });
 
-    return res.status(201).json({ post });
+    return res.status(201).json({ post, message: "Your post was submitted for admin review. It will appear after approval." });
   } catch (_error) {
     return res.status(500).json({ error: "Failed to create post" });
   }
@@ -295,6 +296,7 @@ router.post("/community/posts/:postId/comments", requirePermission("view_own_pro
   }
 
   try {
+    if(!await findCommunityPostById(req.params.postId,req.user._id))return res.status(404).json({error:'Post not found'});
     const user = await findUserById(req.user._id);
     const comment = await addPostComment({
       _id: createObjectId(),
@@ -313,6 +315,7 @@ router.post("/community/posts/:postId/comments", requirePermission("view_own_pro
 
 async function handlePostReaction(req, res, reactionType) {
   try {
+    if(!await findCommunityPostById(req.params.postId,req.user._id))return res.status(404).json({error:"Post not found"});
     const result = await togglePostEngagement({
       postId: req.params.postId,
       userId: req.user._id,

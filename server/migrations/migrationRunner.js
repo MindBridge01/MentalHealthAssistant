@@ -13,6 +13,7 @@ const MIGRATIONS = [
   { id: '006_hospital_booking', file: '006_hospital_booking.sql' },
   { id: '007_invitations_and_mfa', file: '007_invitations_and_mfa.sql' },
   { id: '008_auth_security', file: '008_auth_security.sql' },
+  { id: '009_community_post_review', file: '009_community_post_review.sql' },
 ];
 
 async function runMigrations(client, backfillRegistry) {

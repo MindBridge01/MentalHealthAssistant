@@ -1,4 +1,4 @@
-const { query } = require("../config/database");
+const { query, withTransaction } = require("../config/database");
 const { normalizeId } = require("./_shared");
 
 function mapComment(row) {
@@ -25,6 +25,7 @@ function mapCommunityPost(row, extras = {}) {
     commentsCount: Number(row.comments_count || row.comments || 0),
     savedCount: Number(row.saved_count || row.saved || 0),
     createdAt: row.created_at,
+    moderationStatus: row.moderation_status,
     viewerHasLiked: Boolean(row.viewer_has_liked),
     viewerHasSaved: Boolean(row.viewer_has_saved),
     comments: extras.comments || [],
@@ -57,6 +58,7 @@ async function listCommunityPosts(userId) {
     LEFT JOIN (
       SELECT post_id, COUNT(*) AS total FROM post_comments GROUP BY post_id
     ) comment_counts ON comment_counts.post_id = p.id
+    WHERE p.moderation_status = 'approved'
     ORDER BY p.created_at DESC`
     ,
     [normalizedUserId]
@@ -90,8 +92,8 @@ async function findCommunityPostById(postId, userId) {
 
 async function createCommunityPost(post) {
   const result = await query(
-    `INSERT INTO posts (id, caption, name, location, image, likes, comments, saved, created_at)
-     VALUES ($1,$2,$3,$4,$5,0,0,0,$6)
+    `INSERT INTO posts (id, caption, name, location, image, likes, comments, saved, created_at, moderation_status, submitted_by)
+     VALUES ($1,$2,$3,$4,$5,0,0,0,$6,'pending',$7)
      RETURNING *`,
     [
       normalizeId(post._id),
@@ -100,6 +102,7 @@ async function createCommunityPost(post) {
       post.location || null,
       post.image || null,
       post.createdAt || new Date(),
+      normalizeId(post.submittedBy),
     ]
   );
 
@@ -148,7 +151,25 @@ async function addPostComment(comment) {
   return mapComment(result.rows[0]);
 }
 
+async function listPostsForReview({status='pending',offset=0} = {}) {
+  const result=await query(`SELECT id,caption,name,location,image,created_at,moderation_status,reviewed_at,review_note
+    FROM posts WHERE moderation_status=$1 ORDER BY created_at DESC,id DESC LIMIT 26 OFFSET $2`,[status,offset]);
+  return {posts:result.rows.slice(0,25).map(row=>({...mapCommunityPost(row),reviewedAt:row.reviewed_at,reviewNote:row.review_note})),hasMore:result.rows.length>25};
+}
+async function reviewPost(postId,adminId,decision,note='') {
+  return withTransaction(async client=>{
+    const row=(await client.query(`UPDATE posts SET moderation_status=$2,reviewed_by=$3,reviewed_at=NOW(),review_note=$4
+      WHERE id=$1 AND moderation_status='pending' RETURNING *`,[normalizeId(postId),decision,normalizeId(adminId),note])).rows[0];
+    if(!row)return null;
+    await client.query(`INSERT INTO audit_logs(user_id,user_role,action,resource_type,resource_id)
+      VALUES($1,'admin',$2,'community_post',$3)`,[normalizeId(adminId),decision==='approved'?'approve_community_post':'reject_community_post',row.id]);
+    return {...mapCommunityPost(row),reviewedAt:row.reviewed_at,reviewNote:row.review_note};
+  });
+}
+
 module.exports = {
+  listPostsForReview,
+  reviewPost,
   listCommunityPosts,
   findCommunityPostById,
   createCommunityPost,

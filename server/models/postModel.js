@@ -13,18 +13,19 @@ function mapPost(row) {
     comments: row.comments,
     saved: row.saved,
     createdAt: row.created_at,
+    moderationStatus: row.moderation_status,
   };
 }
 
 async function listPosts() {
-  const result = await query("SELECT * FROM posts ORDER BY created_at DESC");
+  const result = await query("SELECT * FROM posts WHERE moderation_status='approved' ORDER BY created_at DESC");
   return result.rows.map(mapPost);
 }
 
 async function createPost(post) {
   const result = await query(
-    `INSERT INTO posts (id, caption, name, location, image, likes, comments, saved, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO posts (id, caption, name, location, image, likes, comments, saved, created_at,moderation_status,submitted_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10)
      RETURNING *`,
     [
       normalizeId(post._id),
@@ -36,6 +37,7 @@ async function createPost(post) {
       post.comments || 0,
       post.saved || 0,
       post.createdAt || new Date(),
+      normalizeId(post.submittedBy),
     ]
   );
   return mapPost(result.rows[0]);
@@ -45,7 +47,7 @@ async function incrementPostMetric(id, action) {
   const column =
     action === "like" ? "likes" : action === "comment" ? "comments" : "saved";
   const result = await query(
-    `UPDATE posts SET ${column} = ${column} + 1 WHERE id = $1 RETURNING *`,
+    `UPDATE posts SET ${column} = ${column} + 1 WHERE id = $1 AND moderation_status='approved' RETURNING *`,
     [normalizeId(id)]
   );
   return mapPost(result.rows[0]);

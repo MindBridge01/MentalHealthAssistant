@@ -40,6 +40,25 @@ router.get('/email-delivery',dashboardHandler(req => dashboard.emails(req.query)
 router.get('/activity',dashboardHandler(req => dashboard.activity(req.query)));
 router.post('/email-delivery/:id/retry',dashboardHandler(req => dashboard.retryEmail(req.params.id,req.user._id)));
 
+router.get('/community-posts', dashboardHandler(async req=>{
+  const status=req.query.status || 'pending';
+  const offset=Number(req.query.offset || 0);
+  if(!['pending','approved','rejected'].includes(status)||!Number.isSafeInteger(offset)||offset<0||offset>100000)
+    throw Object.assign(new Error('Choose a valid review status and page.'),{status:400});
+  return require('../models/communityModel').listPostsForReview({status,offset});
+}));
+router.patch('/community-posts/:id/review',async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  const {decision,note=''}=req.body || {};
+  if(!/^[a-f0-9]{24}$/i.test(req.params.id)||!['approved','rejected'].includes(decision)||typeof note!=='string'||note.length>1000)
+    return res.status(400).json({error:'Choose approve or reject and keep the note within 1,000 characters.'});
+  try {
+    const post=await require('../models/communityModel').reviewPost(req.params.id,req.user._id,decision,note.trim());
+    if(!post)return res.status(409).json({error:'This post is no longer awaiting review. Refresh the queue.'});
+    return res.json({post});
+  }catch {return res.status(503).json({error:'Unable to review this post. Please try again.'});}
+});
+
 // Legacy endpoints cannot bypass versioned credential review.
 router.get('/pending-doctors', async (_req,res) => {
   try {

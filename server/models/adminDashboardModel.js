@@ -8,6 +8,7 @@ function filters(input = {}) {
 async function summary() {
   const result = await query(`SELECT
     (SELECT count(*)::int FROM users WHERE role='patient') AS patients,
+    (SELECT count(*)::int FROM posts WHERE moderation_status='pending') AS community_reviews,
     (SELECT count(*)::int FROM users WHERE role='doctor') AS professionals,
     (SELECT count(*)::int FROM patient_registrations WHERE status='submitted') AS patient_reviews,
     (SELECT count(*)::int FROM professional_applications WHERE status='submitted') AS professional_reviews,

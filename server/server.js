@@ -120,13 +120,14 @@ app.get("/api/posts", async (_req, res) => {
   }
 });
 
-app.post("/api/posts", async (req, res) => {
+app.post("/api/posts", require("./middleware/authMiddleware").authenticateJWT("patient"), require("./middleware/registrationMiddleware").requireApprovedPatient, async (req, res) => {
   const { caption, name, location, image } = req.body;
-  if (!caption) return res.status(400).json({ error: "Caption is required" });
+  if (typeof caption !== "string" || caption.trim().length < 3 || caption.length > 5000) return res.status(400).json({ error: "Write a caption of 3–5,000 characters." });
 
   const newPost = {
     _id: createObjectId(),
-    caption,
+    caption: caption.trim(),
+    submittedBy: req.user._id,
     ...(name ? { name } : {}),
     ...(location ? { location } : {}),
     ...(image ? { image } : {}),
@@ -138,7 +139,7 @@ app.post("/api/posts", async (req, res) => {
 
   try {
     const post = await createPost(newPost);
-    return res.status(201).json({ id: post._id, ...post });
+    return res.status(201).json({ id: post._id, ...post, message: "Your post was submitted for admin review." });
   } catch (error) {
     console.error("Error creating post:", error);
     return res.status(500).json({ error: "Failed to create post" });
