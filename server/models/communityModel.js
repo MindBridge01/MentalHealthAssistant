@@ -1,4 +1,4 @@
-const { query } = require("../config/database");
+const { query, withTransaction } = require("../config/database");
 const { normalizeId } = require("./_shared");
 
 function mapComment(row) {
@@ -25,6 +25,7 @@ function mapCommunityPost(row, extras = {}) {
     commentsCount: Number(row.comments_count || row.comments || 0),
     savedCount: Number(row.saved_count || row.saved || 0),
     createdAt: row.created_at,
+    moderationStatus: row.moderation_status,
     viewerHasLiked: Boolean(row.viewer_has_liked),
     viewerHasSaved: Boolean(row.viewer_has_saved),
     comments: extras.comments || [],
@@ -57,6 +58,7 @@ async function listCommunityPosts(userId) {
     LEFT JOIN (
       SELECT post_id, COUNT(*) AS total FROM post_comments GROUP BY post_id
     ) comment_counts ON comment_counts.post_id = p.id
+    WHERE p.moderation_status = 'approved'
     ORDER BY p.created_at DESC`
     ,
     [normalizedUserId]
@@ -89,21 +91,66 @@ async function findCommunityPostById(postId, userId) {
 }
 
 async function createCommunityPost(post) {
-  const result = await query(
-    `INSERT INTO posts (id, caption, name, location, image, likes, comments, saved, created_at)
-     VALUES ($1,$2,$3,$4,$5,0,0,0,$6)
-     RETURNING *`,
-    [
-      normalizeId(post._id),
-      post.caption,
-      post.name || null,
-      post.location || null,
-      post.image || null,
-      post.createdAt || new Date(),
-    ]
-  );
+  return withTransaction(async (client) => {
+    const result = await client.query(
+      `INSERT INTO posts
+        (id, caption, name, location, image, likes, comments, saved, created_at, moderation_status, submitted_by)
+       VALUES ($1,$2,$3,$4,$5,0,0,0,$6,'pending',$7)
+       RETURNING *`,
+      [
+        normalizeId(post._id),
+        post.caption,
+        post.name || null,
+        post.location || null,
+        post.image || null,
+        post.createdAt || new Date(),
+        normalizeId(post.submittedBy),
+      ]
+    );
 
-  return mapCommunityPost(result.rows[0], { comments: [] });
+    await client.query(
+      `INSERT INTO community_post_email_jobs (post_id) VALUES ($1)`,
+      [result.rows[0].id]
+    );
+
+    return mapCommunityPost(result.rows[0], { comments: [] });
+  });
+}
+
+async function listPendingCommunityPosts() {
+  const result = await query(
+    `SELECT p.id, p.caption, p.name, p.location, p.image, p.created_at,
+      u.id AS submitter_id, u.name AS submitter_name, u.email AS submitter_email
+     FROM posts p
+     LEFT JOIN users u ON u.id = p.submitted_by
+     WHERE p.moderation_status = 'pending'
+     ORDER BY p.created_at ASC`
+  );
+  return result.rows.map((row) => ({
+    _id: row.id,
+    caption: row.caption,
+    name: row.name,
+    location: row.location,
+    image: row.image,
+    createdAt: row.created_at,
+    submitter: row.submitter_id
+      ? { _id: row.submitter_id, name: row.submitter_name, email: row.submitter_email }
+      : null,
+  }));
+}
+
+async function reviewCommunityPost(postId, adminId, decision) {
+  const result = await query(
+    `UPDATE posts
+     SET moderation_status = $2, reviewed_by = $3, reviewed_at = NOW()
+     WHERE id = $1 AND moderation_status = 'pending'
+     RETURNING id, moderation_status, reviewed_at`,
+    [normalizeId(postId), decision, normalizeId(adminId)]
+  );
+  const row = result.rows[0];
+  return row
+    ? { _id: row.id, moderationStatus: row.moderation_status, reviewedAt: row.reviewed_at }
+    : null;
 }
 
 async function togglePostEngagement({ postId, userId, reactionType }) {
@@ -152,6 +199,8 @@ module.exports = {
   listCommunityPosts,
   findCommunityPostById,
   createCommunityPost,
+  listPendingCommunityPosts,
+  reviewCommunityPost,
   togglePostEngagement,
   addPostComment,
 };

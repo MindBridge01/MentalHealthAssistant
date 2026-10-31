@@ -3,6 +3,7 @@ loadEnvironment();
 let database;
 const nodemailer = require('nodemailer');
 const { deliverCareNext } = require('../services/careEmailDelivery');
+const { deliverCommunityPostNext } = require('../services/communityPostEmailDelivery');
 const { createCareService } = require('../services/careService');
 const { deliverNext } = require('../services/registrationEmailDelivery');
 const { validateEmailConfiguration, safeWorkerError } = require('../services/emailWorkerDiagnostics');
@@ -16,6 +17,7 @@ async function run() {
   database = require('../config/database');
   await database.query('SELECT id FROM registration_email_jobs LIMIT 0');
   await database.query('SELECT id FROM care_email_jobs LIMIT 0');
+  await database.query('SELECT id FROM community_post_email_jobs LIMIT 0');
   console.log('[email-worker] Database and email queue are available.');
   const transport = nodemailer.createTransport({ host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_SECURE === 'true',
@@ -35,7 +37,8 @@ async function run() {
     await createCareService(database).maintenance();
     const registrationDelivered = await deliverNext({ database, transport, config });
     const careDelivered = await deliverCareNext({ database, transport, config });
-    const delivered = registrationDelivered || careDelivered;
+    const communityPostDelivered = await deliverCommunityPostNext({ database, transport, config });
+    const delivered = registrationDelivered || careDelivered || communityPostDelivered;
     if (process.argv.includes('--once')) break;
     if (!delivered) await new Promise((resolve) => setTimeout(resolve, 5000));
   }

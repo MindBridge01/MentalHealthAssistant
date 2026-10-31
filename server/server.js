@@ -12,8 +12,11 @@ const { testConnection } = require("./config/database");
 
 const { errorHandler } = require("./middleware/errorHandler");
 const { auditLogger } = require("./middleware/auditLogger");
-const { listPosts, createPost, incrementPostMetric } = require("./models/postModel");
+const { listPosts, incrementPostMetric } = require("./models/postModel");
+const { createCommunityPost } = require("./models/communityModel");
+const { findUserById } = require("./models/userModel");
 const { createObjectId } = require("./lib/objectId");
+const { authenticateJWT, authorizeRoles } = require("./middleware/authMiddleware");
 
 loadEnvironment();
 
@@ -112,25 +115,27 @@ app.get("/api/posts", async (_req, res) => {
   }
 });
 
-app.post("/api/posts", async (req, res) => {
-  const { caption, name, location, image } = req.body;
-  if (!caption) return res.status(400).json({ error: "Caption is required" });
-
-  const newPost = {
-    _id: createObjectId(),
-    caption,
-    ...(name ? { name } : {}),
-    ...(location ? { location } : {}),
-    ...(image ? { image } : {}),
-    likes: 0,
-    comments: 0,
-    saved: 0,
-    createdAt: new Date().toISOString(),
-  };
+app.post("/api/posts", authenticateJWT(), authorizeRoles("patient"), async (req, res) => {
+  const { caption, location, image } = req.body || {};
+  if (typeof caption !== "string" || caption.trim().length < 3) {
+    return res.status(400).json({ error: "Please write a little more before posting." });
+  }
 
   try {
-    const post = await createPost(newPost);
-    return res.status(201).json({ id: post._id, ...post });
+    const user = await findUserById(req.user._id);
+    const post = await createCommunityPost({
+      _id: createObjectId(),
+      caption: caption.trim(),
+      location: typeof location === "string" ? location.trim() : "",
+      image: typeof image === "string" ? image.trim() : "",
+      name: user?.name || "MindBridge member",
+      submittedBy: req.user._id,
+      createdAt: new Date(),
+    });
+    return res.status(202).json({
+      post,
+      message: "Your post was submitted for review and will appear in the community after approval.",
+    });
   } catch (error) {
     console.error("Error creating post:", error);
     return res.status(500).json({ error: "Failed to create post" });

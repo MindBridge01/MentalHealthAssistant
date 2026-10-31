@@ -4,8 +4,6 @@ const { requirePermission } = require("../middleware/permissionMiddleware");
 const { createObjectId } = require("../lib/objectId");
 const { upsertProfile, findProfileByUserId } = require("../models/profileModel");
 const { updateUser, findUserById } = require("../models/userModel");
-const { listAllDoctors } = require("../models/doctorModel");
-const { findAppointmentsByPatientId } = require("../models/appointmentModel");
 const {
   createAssessmentSession,
   findLatestAssessmentByUserId,
@@ -269,7 +267,7 @@ router.get("/community/posts/:postId", requirePermission("view_own_profile"), as
 router.post("/community/posts", requirePermission("view_own_profile"), async (req, res) => {
   const { caption, location, image } = req.body || {};
 
-  if (!caption || caption.trim().length < 3) {
+  if (typeof caption !== "string" || caption.trim().length < 3) {
     return res.status(400).json({ error: "Please write a little more before posting." });
   }
 
@@ -278,13 +276,17 @@ router.post("/community/posts", requirePermission("view_own_profile"), async (re
     const post = await createCommunityPost({
       _id: createObjectId(),
       caption: caption.trim(),
-      location: location?.trim() || "",
-      image: image?.trim() || "",
+      location: typeof location === "string" ? location.trim() : "",
+      image: typeof image === "string" ? image.trim() : "",
       name: user?.name || "MindBridge member",
+      submittedBy: req.user._id,
       createdAt: new Date(),
     });
 
-    return res.status(201).json({ post });
+    return res.status(202).json({
+      post,
+      message: "Your post was submitted for review and will appear in the community after approval.",
+    });
   } catch (_error) {
     return res.status(500).json({ error: "Failed to create post" });
   }

@@ -72,6 +72,14 @@ npm --prefix server ci
 npm --prefix server run migrate:postgres
 ```
 
+For community post review emails, configure `APP_PUBLIC_URL`,
+`REGISTRATION_ADMIN_EMAIL`, `MAIL_FROM`, and the `SMTP_*` settings in
+`server/.env`. Start the existing email worker in its own terminal:
+
+```bash
+npm --prefix server run worker:registration-email
+```
+
 ## 4. Start Ollama
 
 Start the Ollama desktop application or run:

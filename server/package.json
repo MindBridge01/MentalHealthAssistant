@@ -13,7 +13,7 @@
     "migrate:postgres": "node migrations/runMigrations.js",
     "load:knowledge": "node scripts/loadKnowledgeBase.js",
     "test": "npm run test:registry && jest --runInBand",
-    "test:registry": "node --test tests/registration.test.js tests/registrationAccess.test.js tests/registrationDocuments.test.js tests/registry.integration.test.js tests/registrationRoutes.test.js tests/professionalRoutes.test.js tests/care.integration.test.js tests/careRoutes.test.js",
+    "test:registry": "node --test tests/registration.test.js tests/registrationAccess.test.js tests/registrationDocuments.test.js tests/registry.integration.test.js tests/registrationRoutes.test.js tests/professionalRoutes.test.js tests/care.integration.test.js tests/careRoutes.test.js tests/communityModeration.test.js",
     "test:care": "node --test tests/care.integration.test.js tests/careRoutes.test.js"
   },
   "keywords": [],

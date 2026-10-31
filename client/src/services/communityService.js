@@ -15,6 +15,17 @@ export function createCommunityPost(payload) {
   });
 }
 
+export function getPendingCommunityPosts() {
+  return apiRequest("/api/admin/community-posts/pending");
+}
+
+export function reviewCommunityPost(postId, decision) {
+  return apiRequest(`/api/admin/community-posts/${postId}/review`, {
+    method: "PATCH",
+    body: { decision },
+  });
+}
+
 export function addComment(postId, content) {
   return apiRequest(`/api/patient/community/posts/${postId}/comments`, {
     method: "POST",

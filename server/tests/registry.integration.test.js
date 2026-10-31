@@ -49,7 +49,7 @@ test('registry migrations and workflows against embedded PostgreSQL', async (t) 
   t.after(() => db.close());
   const migrate = () => database.withTransaction((client) => runMigrations(client, backfillRegistry));
   await t.test('fresh install and repeat migration', async () => {
-    assert.equal((await migrate()).length, 6);
+    assert.equal((await migrate()).length, 7);
     assert.equal((await migrate()).length, 0);
     const tables = await database.query(`SELECT table_name FROM information_schema.tables
       WHERE table_name IN ('patients','patient_contacts','registration_revisions','patient_consents','care_team_assignments')`);

@@ -2,8 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const {
-  listPendingDoctors,
-  approveDoctor,
   deleteUser,
   listUsers,
   findUserById,
@@ -41,6 +39,34 @@ router.get('/appointment-list',dashboardHandler(req => dashboard.appointments(re
 router.get('/email-delivery',dashboardHandler(req => dashboard.emails(req.query)));
 router.get('/activity',dashboardHandler(req => dashboard.activity(req.query)));
 router.post('/email-delivery/:id/retry',dashboardHandler(req => dashboard.retryEmail(req.params.id,req.user._id)));
+
+const communityModel = require('../models/communityModel');
+router.get('/community-posts/pending', dashboardHandler(async () => ({
+  posts: await communityModel.listPendingCommunityPosts(),
+})));
+router.patch('/community-posts/:postId/review', async (req, res) => {
+  const { decision } = req.body || {};
+  if (!/^[a-f0-9]{24}$/i.test(req.params.postId)) {
+    return res.status(400).json({ error: 'Invalid community post.' });
+  }
+  if (!['approved', 'rejected'].includes(decision)) {
+    return res.status(400).json({ error: 'Choose approve or reject.' });
+  }
+
+  try {
+    const post = await communityModel.reviewCommunityPost(req.params.postId, req.user._id, decision);
+    if (!post) return res.status(409).json({ error: 'This post has already been reviewed. Refresh the queue.' });
+    await req.logAuditEvent?.({
+      action: decision === 'approved' ? 'approve_community_post' : 'reject_community_post',
+      resourceType: 'community_post',
+      resourceId: post._id,
+      metadata: { adminAction: true },
+    });
+    return res.json({ post });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Unable to review community post.' });
+  }
+});
 
 // Legacy endpoints cannot bypass versioned credential review.
 router.get('/pending-doctors', async (_req,res) => {

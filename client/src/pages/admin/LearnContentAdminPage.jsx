@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { readLearnContent, readLearnSubmissions, writeLearnContent, writeLearnSubmissions } from "../../data/learnContent";
+import { getPendingCommunityPosts, reviewCommunityPost } from "../../services/communityService";
 
 const defaultDraft = {
   title: "",
@@ -22,12 +23,18 @@ const defaultDraft = {
 export default function LearnContentAdminPage() {
   const [resources, setResources] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [communityError, setCommunityError] = useState("");
+  const [reviewingPostId, setReviewingPostId] = useState("");
   const [draft, setDraft] = useState(defaultDraft);
   const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     setResources(readLearnContent());
     setSubmissions(readLearnSubmissions());
+    getPendingCommunityPosts()
+      .then((response) => setCommunityPosts(response.posts || []))
+      .catch((error) => setCommunityError(error.message));
   }, []);
 
   const publishedCount = useMemo(
@@ -89,8 +96,64 @@ export default function LearnContentAdminPage() {
     writeLearnSubmissions(updatedSubmissions);
   };
 
+  const handleCommunityReview = async (postId, decision) => {
+    setReviewingPostId(postId);
+    setCommunityError("");
+    try {
+      await reviewCommunityPost(postId, decision);
+      setCommunityPosts((current) => current.filter((post) => post._id !== postId));
+    } catch (error) {
+      setCommunityError(error.message);
+    } finally {
+      setReviewingPostId("");
+    }
+  };
+
   return (
     <div className="space-y-8">
+      <div className="admin-panel">
+        <div className="admin-panel-heading">
+          <div>
+            <span className="admin-eyebrow">CONTENT MODERATION</span>
+            <h2>Community post review</h2>
+            <p>Patient posts stay hidden from the community until an admin approves them.</p>
+          </div>
+          <span className="admin-badge">{communityPosts.length} awaiting review</span>
+        </div>
+
+        {communityError ? <p role="alert" className="mb-4 rounded-2xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger)]">{communityError}</p> : null}
+        {communityPosts.length === 0 && !communityError ? (
+          <p className="rounded-2xl bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-muted)]">No community posts are waiting for review.</p>
+        ) : null}
+        <div className="grid gap-5 xl:grid-cols-2">
+          {communityPosts.map((post) => (
+            <article key={post._id} className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--color-text)]">{post.name || "Community contributor"}</h3>
+                  <p className="mt-1 text-xs text-[var(--color-text-subtle)]">{new Date(post.createdAt).toLocaleString()}</p>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[var(--color-text)]">Pending review</span>
+              </div>
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--color-text-muted)]">{post.caption}</p>
+              {post.image ? <img src={post.image} alt="Image submitted with community post" className="mt-4 max-h-64 w-full rounded-2xl object-cover" /> : null}
+              <dl className="mt-4 grid gap-2 text-sm text-[var(--color-text-muted)]">
+                <div className="flex justify-between gap-4"><dt>Submitter</dt><dd className="text-right font-medium text-[var(--color-text)]">{post.submitter?.name || "Account unavailable"}</dd></div>
+                <div className="flex justify-between gap-4"><dt>Account email</dt><dd className="text-right font-medium text-[var(--color-text)]">{post.submitter?.email || "Unavailable"}</dd></div>
+                {post.location ? <div className="flex justify-between gap-4"><dt>Location</dt><dd className="text-right font-medium text-[var(--color-text)]">{post.location}</dd></div> : null}
+                <div className="flex justify-between gap-4"><dt>Reference</dt><dd className="font-mono text-xs text-[var(--color-text)]">{post._id}</dd></div>
+              </dl>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" disabled={Boolean(reviewingPostId)} className="admin-button admin-button-primary" onClick={() => handleCommunityReview(post._id, "approved")}>
+                  {reviewingPostId === post._id ? "Saving..." : "Approve and publish"}
+                </button>
+                <button type="button" disabled={Boolean(reviewingPostId)} className="admin-button" onClick={() => handleCommunityReview(post._id, "rejected")}>Reject</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
       <div className="admin-panel">
         <div className="admin-panel-heading">
           <div>

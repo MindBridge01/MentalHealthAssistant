@@ -18,6 +18,7 @@ export default function CommunityPage() {
   const [location, setLocation] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isSubmitting, setSubmitting] = useState(false);
 
   async function loadPosts() {
@@ -33,6 +34,7 @@ export default function CommunityPage() {
     event.preventDefault();
     setSubmitting(true);
     setError("");
+    setSuccess("");
 
     try {
       let imagePath = "";
@@ -46,10 +48,10 @@ export default function CommunityPage() {
         location,
         image: imagePath,
       });
-      setPosts((current) => [response.post, ...current]);
       setCaption("");
       setLocation("");
       setSelectedFile(null);
+      setSuccess(response.message || "Your post was submitted for review. It will appear after an admin approves it.");
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -83,6 +85,9 @@ export default function CommunityPage() {
               className="w-full rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               placeholder="What is helping you lately, or what kind of encouragement would you like to share?"
             />
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Your post will be reviewed by an admin before it appears in the community.
+            </p>
             <div className="grid gap-4 md:grid-cols-[1fr_auto_auto]">
               <input
                 value={location}
@@ -100,10 +105,11 @@ export default function CommunityPage() {
                 {selectedFile ? selectedFile.name : "Add image"}
               </label>
               <button type="submit" disabled={isSubmitting} className="primary-button">
-                {isSubmitting ? "Posting..." : "Share post"}
+                {isSubmitting ? "Submitting..." : "Submit for review"}
               </button>
             </div>
             {error ? <p className="rounded-2xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
+            {success ? <p role="status" className="rounded-2xl bg-[var(--color-primary-soft)] px-4 py-3 text-sm text-[var(--color-primary)]">{success}</p> : null}
           </form>
         </div>
       </section>
