@@ -1,5 +1,5 @@
 const path = require('node:path');
-const LOGO_PATH = path.join(__dirname, '../../assets/logo/logolight.png');
+const LOGO_PATH = path.join(__dirname, '../../assets/logo/email-logo.png');
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function emailLayout({ title, paragraphs, action, url, footer = 'MindBridge · Please do not reply with medical information.' }) {
   const target = new URL(url);

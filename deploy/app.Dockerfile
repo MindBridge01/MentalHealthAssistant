@@ -34,10 +34,12 @@ COPY --chown=node:node --from=dependencies /app/server/node_modules ./server/nod
 COPY --chown=node:node --from=dependencies /app/chatbot/node_modules ./chatbot/node_modules
 COPY --chown=node:node package.json ./
 COPY --chown=node:node server ./server
+COPY --chown=node:node assets/logo/email-logo.png ./assets/logo/email-logo.png
 COPY --chown=node:node chatbot ./chatbot
 COPY --chown=node:node deploy ./deploy
 COPY --chown=node:node --from=frontend /app/dist ./dist
 USER node
+RUN node -e "const fs=require('node:fs'); const {LOGO_PATH}=require('./server/services/emailLayout'); fs.accessSync(LOGO_PATH,fs.constants.R_OK)"
 EXPOSE 10000
 ENTRYPOINT ["/usr/bin/tini", "-g", "--", "node", "deploy/start.cjs"]
 CMD ["node", "server/server.js"]
